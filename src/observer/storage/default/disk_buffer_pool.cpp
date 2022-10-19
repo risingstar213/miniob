@@ -296,6 +296,7 @@ RC DiskBufferPool::allocate_page(Frame **frame)
         (file_header_->allocated_pages)++;
         file_header_->bitmap[byte] |= (1 << bit);
         // TODO,  do we need clean the loaded page's data?
+        // There is no need to clean the data, and we just need to get a free page.
 	hdr_frame_->mark_dirty();
         return get_this_page(i, frame);
       }
@@ -347,6 +348,7 @@ RC DiskBufferPool::unpin_page(Frame *frame)
   if (--frame->pin_count_ == 0) {
     PageNum page_num = frame->page_num();
     auto pages_it = disposed_pages.find(page_num);
+    // dispose the page when the pin count get down to 0.
     if (pages_it != disposed_pages.end()) {
       LOG_INFO("Dispose file_desc:%d, page:%d", file_desc_, page_num);
       dispose_page(page_num);
@@ -368,6 +370,7 @@ RC DiskBufferPool::dispose_page(PageNum page_num)
   if (rc != RC::SUCCESS) {
     LOG_INFO("Dispose page %s:%d later, due to this page is being used", file_name_.c_str(), page_num);
 
+    // mark the page will be deleted after using. That is for synchoize.
     disposed_pages.insert(page_num);
     return rc;
   }
