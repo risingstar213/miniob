@@ -53,6 +53,7 @@ RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::stri
 RC get_table_and_field(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
 		       const RelAttr &attr, Table *&table, const FieldMeta *&field)
 {
+  table = nullptr;
   if (common::is_blank(attr.relation_name)) {
     table = default_table;
   } else if (nullptr != tables) {
@@ -124,5 +125,9 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   filter_unit->set_right(right);
 
   // 检查两个类型是否能够比较
+  if (left->type() != right->type()) {
+    LOG_WARN("cannot compare");
+    return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+  }
   return rc;
 }
