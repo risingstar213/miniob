@@ -144,7 +144,7 @@ RC Table::drop(const char *path, const char *name)
     return rc;
   }
 
-  unlink(path);
+  remove(path);
 
   return RC::SUCCESS;
 }

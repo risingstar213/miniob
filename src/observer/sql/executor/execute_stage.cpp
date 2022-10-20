@@ -525,7 +525,7 @@ RC ExecuteStage::do_show_tables(SQLStageEvent *sql_event)
   std::vector<std::string> all_tables;
   db->all_tables(all_tables);
   if (all_tables.empty()) {
-    session_event->set_response("No table\n");
+    session_event->set_response("FAILURE\n");
   } else {
     std::stringstream ss;
     for (const auto &table : all_tables) {

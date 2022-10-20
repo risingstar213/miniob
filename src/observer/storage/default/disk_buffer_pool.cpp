@@ -689,9 +689,15 @@ RC BufferPoolManager::drop_file(const char *_file_name)
   
   DiskBufferPool *bp = iter->second;
   // Close file && erase it from buffer_pools_ and fd_buffer_pools_
-  bp->close_file();
+  RC rc;
+  if ((rc = bp->purge_all_pages()) != RC::SUCCESS) {
+    return rc;
+  }
+  if ((rc = bp->close_file()) != RC::SUCCESS) {
+    return rc;
+  }
 
-  unlink(_file_name);
+  remove(_file_name);
   return RC::SUCCESS;
 }
 
