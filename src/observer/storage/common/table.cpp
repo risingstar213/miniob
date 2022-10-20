@@ -120,6 +120,35 @@ RC Table::create(
   return rc;
 }
 
+RC Table::drop(const char *path, const char *name)
+{
+  RC rc;
+  // delete index
+  for (std::vector<Index *>::iterator it = indexes_.begin(); it != indexes_.end(); ++it) {
+    Index *index = *it;
+    delete index;
+  }
+  indexes_.clear();
+
+  if (record_handler_ != nullptr) {
+    delete record_handler_;
+    record_handler_ = nullptr;
+  }
+
+  data_buffer_pool_ = nullptr;
+
+  std::string data_file = table_data_file(base_dir_.c_str(), name);
+  BufferPoolManager &bpm = BufferPoolManager::instance();
+  
+  if ((rc = bpm.drop_file(data_file.c_str())) != RC::SUCCESS) {
+    return rc;
+  }
+
+  unlink(path);
+
+  return RC::SUCCESS;
+}
+
 RC Table::open(const char *meta_file, const char *base_dir, CLogManager *clog_manager)
 {
   // 加载元数据文件

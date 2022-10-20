@@ -678,6 +678,23 @@ RC BufferPoolManager::close_file(const char *_file_name)
   return RC::SUCCESS;
 }
 
+RC BufferPoolManager::drop_file(const char *_file_name)
+{
+  std::string file_name(_file_name);
+  auto iter = buffer_pools_.find(file_name);
+  if (iter == buffer_pools_.end()) {
+    LOG_WARN("file has not opened: %s", _file_name);
+    return RC::INTERNAL;
+  }
+  
+  DiskBufferPool *bp = iter->second;
+  // Close file && erase it from buffer_pools_ and fd_buffer_pools_
+  bp->close_file();
+
+  unlink(_file_name);
+  return RC::SUCCESS;
+}
+
 RC BufferPoolManager::flush_page(Frame &frame)
 {
   int fd = frame.file_desc();
