@@ -61,6 +61,7 @@ public:
       const Condition conditions[], int *updated_count);
   RC delete_record(Trx *trx, ConditionFilter *filter, int *deleted_count);
   RC delete_record(Trx *trx, Record *record);
+  RC update_record(Trx *trx, Record *old_record, int cell_num, Value *values);
   RC recover_delete_record(Record *record);
 
   RC scan_record(Trx *trx, ConditionFilter *filter, int limit, void *context,
