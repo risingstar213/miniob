@@ -505,7 +505,7 @@ RC ExecuteStage::do_show_index(SQLStageEvent *sql_event)
   const ShowIndex &show_index = sql_event->query()->sstr.show_index;
   Table *table = db->find_table(show_index.relation_name);
   if (nullptr == table) {
-    session_event->set_response("No table\n");
+    session_event->set_response("FAILURE\n");
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
   std::stringstream ss;
