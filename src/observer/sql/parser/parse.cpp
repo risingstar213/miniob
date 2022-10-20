@@ -280,6 +280,17 @@ void drop_index_destroy(DropIndex *drop_index)
   drop_index->index_name = nullptr;
 }
 
+void show_index_init(ShowIndex *show_index, const char *relation_name)
+{
+  show_index->relation_name = strdup(relation_name);
+}
+
+void show_index_destroy(ShowIndex *show_index)
+{
+  free((char *)show_index->relation_name);
+  show_index->relation_name = nullptr;
+}
+
 void desc_table_init(DescTable *desc_table, const char *relation_name)
 {
   desc_table->relation_name = strdup(relation_name);
@@ -358,6 +369,9 @@ void query_reset(Query *query)
     } break;
     case SCF_DROP_INDEX: {
       drop_index_destroy(&query->sstr.drop_index);
+    } break;
+    case SCF_SHOW_INDEX: {
+      show_index_destroy(&query->sstr.show_index);
     } break;
     case SCF_SYNC: {
 
