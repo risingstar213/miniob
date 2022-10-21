@@ -22,7 +22,7 @@ UpdateStmt::UpdateStmt(Table *table, const char * field_name, Value *values, int
     : table_(table), field_name_(field_name), values_(values), value_amount_(value_amount), filter_stmt_(filter_stmt)
 {}
 
-RC UpdateStmt::create(Db *db, const Updates &update, Stmt *&stmt)
+RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
 {
   // TODO
   const char *table_name = update.relation_name;
