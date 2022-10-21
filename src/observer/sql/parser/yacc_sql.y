@@ -54,6 +54,9 @@ ParserContext *get_context(yyscan_t scanner)
 
 #define CONTEXT get_context(scanner)
 
+extern int atoi();
+extern double atof();
+
 %}
 
 %define api.pure full
@@ -113,8 +116,8 @@ ParserContext *get_context(yyscan_t scanner)
 	char *position;
 }
 
-%token <number> NUMBER
-%token <floats> FLOAT 
+%token <string> NUMBER
+%token <string> FLOAT 
 %token <string> ID
 %token <string> PATH
 %token <string> SSS
@@ -311,10 +314,10 @@ value_list:
     ;
 value:
     NUMBER{	
-  		value_init_integer(&CONTEXT->values[CONTEXT->value_length++], $1);
+  		value_init_integer(&CONTEXT->values[CONTEXT->value_length++], atoi($1), $1);
 		}
     |FLOAT{
-  		value_init_float(&CONTEXT->values[CONTEXT->value_length++], $1);
+  		value_init_float(&CONTEXT->values[CONTEXT->value_length++], (float)(atof($1)), $1);
 		}
     |SSS {
 			$1 = substr($1,1,strlen($1)-2);

@@ -40,28 +40,33 @@ void relation_attr_destroy(RelAttr *relation_attr)
   relation_attr->attribute_name = nullptr;
 }
 
-void value_init_integer(Value *value, int v)
+void value_init_integer(Value *value, int v, const char *raw)
 {
   value->type = INTS;
   value->data = malloc(sizeof(v));
   memcpy(value->data, &v, sizeof(v));
+  value->raw_data = strdup(raw);
 }
-void value_init_float(Value *value, float v)
+void value_init_float(Value *value, float v, const char *raw)
 {
   value->type = FLOATS;
   value->data = malloc(sizeof(v));
   memcpy(value->data, &v, sizeof(v));
+  value->raw_data = strdup(raw);
 }
 void value_init_string(Value *value, const char *v)
 {
   value->type = CHARS;
   value->data = strdup(v);
+  value->raw_data = strdup(v);
 }
 void value_destroy(Value *value)
 {
   value->type = UNDEFINED;
   free(value->data);
   value->data = nullptr;
+  free(value->raw_data);
+  value->raw_data = nullptr;
 }
 
 void condition_init(Condition *condition, CompOp comp, int left_is_attr, RelAttr *left_attr, Value *left_value,

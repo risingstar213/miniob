@@ -101,7 +101,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 106 "yacc_sql.y" /* yacc.c:1909  */
+#line 109 "yacc_sql.y" /* yacc.c:1909  */
 
   struct _Attr *attr;
   struct _Condition *condition1;

@@ -51,8 +51,7 @@ void CastUnit::cast_to(Value &value, AttrType type)
       switch (type) {
         case AttrType::CHARS: {
           convert = true;
-          value.data = malloc(sizeof(10));
-          sprintf((char *)value.data, "%f", (*old_data) >= 0? (*old_data):(-*old_data));
+          std::swap(value.data, value.raw_data);
           value.type = AttrType::CHARS;
         } break;
         case AttrType::INTS: {
@@ -60,12 +59,10 @@ void CastUnit::cast_to(Value &value, AttrType type)
           value.data = malloc(sizeof(int));
           *(int *)(value.data) = cast_float_to_int(*old_data);
           value.type = AttrType::INTS;
+          free(old_data);
         } break;
         default:
           break;
-      }
-      if (convert == true) {
-        free(old_data);
       }
     } break;
     case AttrType::INTS: {
@@ -73,8 +70,7 @@ void CastUnit::cast_to(Value &value, AttrType type)
       switch (type) {
         case AttrType::CHARS: {
           convert = true;
-          value.data = malloc(sizeof(10));
-          sprintf((char *)value.data, "%d", (*old_data) >= 0? (*old_data):(-*old_data));
+          std::swap(value.data, value.raw_data);
           value.type = AttrType::CHARS;
         } break;
         case AttrType::FLOATS: {
@@ -82,12 +78,10 @@ void CastUnit::cast_to(Value &value, AttrType type)
           value.data = malloc(sizeof(float));
           *(float *)(value.data) = *old_data;
           value.type = AttrType::FLOATS;
+          free(old_data);
         } break;
         default:
           break;
-      }
-      if (convert == true) {
-        free(old_data);
       }
     } break;
     default:

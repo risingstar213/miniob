@@ -236,7 +236,7 @@ RC insert_record_from_file(
 
           rc = RC::SCHEMA_FIELD_TYPE_MISMATCH;
         } else {
-          value_init_integer(&record_values[i], int_value);
+          value_init_integer(&record_values[i], int_value, file_value.c_str());
         }
       }
 
@@ -251,7 +251,7 @@ RC insert_record_from_file(
           errmsg << "need a float number but got '" << file_values[i] << "'(field index:" << i << ")";
           rc = RC::SCHEMA_FIELD_TYPE_MISMATCH;
         } else {
-          value_init_float(&record_values[i], float_value);
+          value_init_float(&record_values[i], float_value, file_value.c_str());
         }
       } break;
       case CHARS: {

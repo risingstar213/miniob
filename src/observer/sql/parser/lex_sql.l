@@ -5,8 +5,6 @@
 struct ParserContext;
 
 #include "yacc_sql.tab.h"
-extern int atoi();
-extern double atof();
 
 #if YYDEBUG > 0
 #define debug_printf  printf
@@ -35,8 +33,8 @@ QUOTE            [\'\"]
 {WHITE_SAPCE}                                        // ignore whitespace
 \n                                                   ;
 
-[\-]?{DIGIT}+                                        yylval->number=atoi(yytext); RETURN_TOKEN(NUMBER);
-[\-]?{DIGIT}+{DOT}{DIGIT}+                           yylval->floats=(float)(atof(yytext)); RETURN_TOKEN(FLOAT);
+[\-]?{DIGIT}+                                        yylval->string=strdup(yytext); RETURN_TOKEN(NUMBER);
+[\-]?{DIGIT}+{DOT}{DIGIT}+                           yylval->string=strdup(yytext); RETURN_TOKEN(FLOAT);
 
 ";"                                                  RETURN_TOKEN(SEMICOLON);
 {DOT}                                                RETURN_TOKEN(DOT);

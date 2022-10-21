@@ -52,6 +52,7 @@ typedef enum
 typedef struct _Value {
   AttrType type;  // type of value
   void *data;     // value
+  void *raw_data; // raw vlaue
 } Value;
 
 typedef struct _Condition {
@@ -194,8 +195,8 @@ extern "C" {
 void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const char *attribute_name);
 void relation_attr_destroy(RelAttr *relation_attr);
 
-void value_init_integer(Value *value, int v);
-void value_init_float(Value *value, float v);
+void value_init_integer(Value *value, int v, const char *raw);
+void value_init_float(Value *value, float v, const char *raw);
 void value_init_string(Value *value, const char *v);
 void value_destroy(Value *value);
 
