@@ -365,6 +365,7 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
   // 检查字段类型是否一致
   if (value_num + table_meta_.sys_field_num() != table_meta_.field_num()) {
     LOG_WARN("Input values don't match the table's schema, table name:%s", table_meta_.name());
+    LOG_WARN("Input num: %d, need num: %d", value_num, table_meta_.field_num() - table_meta_.sys_field_num());
     return RC::SCHEMA_FIELD_MISSING;
   }
 
@@ -973,7 +974,7 @@ RC Table::update_record(Trx *trx, Record *old_record, int cell_num, Value *value
   RC rc = RC::SUCCESS;
 
   char *record_data;
-  rc = make_record(cell_num, values, record_data);
+  rc = make_record(cell_num-1, values+1, record_data);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to make a record: %s", strrc(rc));
     return rc;

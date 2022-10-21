@@ -18,8 +18,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/filter_stmt.h"
 #include "storage/common/table.h"
 
-UpdateStmt::UpdateStmt(Table *table, Field field, Value *values, int value_amount, FilterStmt *filter_stmt)
-    : table_(table), field_(field), values_(values), value_amount_(value_amount), filter_stmt_(filter_stmt)
+UpdateStmt::UpdateStmt(Table *table, const char * field_name, Value *values, int value_amount, FilterStmt *filter_stmt)
+    : table_(table), field_name_(field_name), values_(values), value_amount_(value_amount), filter_stmt_(filter_stmt)
 {}
 
 RC UpdateStmt::create(Db *db, const Updates &update, Stmt *&stmt)
@@ -66,6 +66,6 @@ RC UpdateStmt::create(Db *db, const Updates &update, Stmt *&stmt)
   }
 
   // everything alright
-  stmt = new UpdateStmt(table, Field(table, field_meta), (Value *)&update.value, 1, filter_stmt);
+  stmt = new UpdateStmt(table, column_name, (Value *)&update.value, 1, filter_stmt);
   return RC::SUCCESS;
 }

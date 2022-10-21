@@ -144,7 +144,7 @@ void ExecuteStage::handle_request(common::StageEvent *event)
         do_insert(sql_event);
       } break;
       case StmtType::UPDATE: {
-        // do_update((UpdateStmt *)stmt, session_event);
+        do_update(sql_event);
       } break;
       case StmtType::DELETE: {
         do_delete(sql_event);

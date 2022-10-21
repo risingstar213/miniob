@@ -24,7 +24,7 @@ class FilterStmt;
 class UpdateStmt : public Stmt {
 public:
   UpdateStmt() = default;
-  UpdateStmt(Table *table, Field field, Value *values, int value_amount, FilterStmt *filter_stmt);
+  UpdateStmt(Table *table, const char* field_name, Value *values, int value_amount, FilterStmt *filter_stmt);
 
   StmtType type() const override
   {
@@ -39,9 +39,9 @@ public:
   {
     return table_;
   }
-  Field field()
+  const char* field_name()
   {
-    return field_;
+    return field_name_;
   }
   FilterStmt *filter_stmt() const
   {
@@ -58,7 +58,7 @@ public:
 
 private:
   Table *table_ = nullptr;
-  Field field_;
+  const char * field_name_;
   Value *values_ = nullptr;
   int value_amount_ = 0;
   FilterStmt *filter_stmt_ = nullptr;

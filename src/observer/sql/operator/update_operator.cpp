@@ -34,7 +34,9 @@ RC UpdateOperator::open()
       values[i].type = cell.attr_type();
       values[i].data = (void *)cell.data();
     }
-    values[update_stmt_->field().meta()->offset()] = update_stmt_->values()[0];
+    int offset = update_stmt_->table()->table_meta().field_index(update_stmt_->field_name());
+    values[offset] = update_stmt_->values()[0];
+    // LOG_INFO("offset: %d", update_stmt_->field().meta()->offset());
     Record &old_record = row_tuple->record();
     rc = table->update_record(trx_, &old_record, row_tuple->cell_num(), values);
     if (rc != RC::SUCCESS) {
