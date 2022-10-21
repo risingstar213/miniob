@@ -1601,7 +1601,7 @@ yyreduce:
 
   case 39:
 #line 281 "yacc_sql.y" /* yacc.c:1646  */
-    {(yyval.number) = (yyvsp[0].string);}
+    {(yyval.number) = atoi((yyvsp[0].string));}
 #line 1606 "yacc_sql.tab.c" /* yacc.c:1646  */
     break;
 

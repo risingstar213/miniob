@@ -115,6 +115,7 @@ void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t
   attr_info->name = strdup(name);
   attr_info->type = type;
   attr_info->length = length;
+  LOG_INFO("attr_info_init: %s, %d, %d", name, type, length);
 }
 void attr_info_destroy(AttrInfo *attr_info)
 {

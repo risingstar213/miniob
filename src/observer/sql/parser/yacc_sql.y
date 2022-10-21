@@ -278,7 +278,7 @@ attr_def:
 		}
     ;
 number:
-		NUMBER {$$ = $1;}
+		NUMBER {$$ = atoi($1);}
 		;
 type:
 	INT_T { $$=INTS; }
