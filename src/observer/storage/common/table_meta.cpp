@@ -53,6 +53,9 @@ RC TableMeta::init_sys_fields()
 }
 RC TableMeta::init(const char *name, int field_num, const AttrInfo attributes[])
 {
+  for (int i = 0; i < field_num; i++) {
+    LOG_INFO("%d", attributes[i].type);
+  }
   if (common::is_blank(name)) {
     LOG_ERROR("Name cannot be empty");
     return RC::INVALID_ARGUMENT;
@@ -82,6 +85,7 @@ RC TableMeta::init(const char *name, int field_num, const AttrInfo attributes[])
 
   for (int i = 0; i < field_num; i++) {
     const AttrInfo &attr_info = attributes[i];
+    LOG_INFO("%d", attr_info.type);
     rc = fields_[i + sys_fields_.size()].init(attr_info.name, attr_info.type, field_offset, attr_info.length, true);
     if (rc != RC::SUCCESS) {
       LOG_ERROR("Failed to init field meta. table name=%s, field name: %s", name, attr_info.name);
