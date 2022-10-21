@@ -145,6 +145,16 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     return RC::SCHEMA_FIELD_TYPE_MISMATCH;
   }
 
+  // Check whether like comparator is valid
+  if (comp == LIKE_SCH || comp == UNLIKE_SCH) {
+    if (!condition.left_is_attr || right_type != CHARS) {
+      delete left;
+      delete right;
+      LOG_WARN("not supported");
+      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+    }
+  }
+
   filter_unit = new FilterUnit;
   filter_unit->set_comp(comp);
   filter_unit->set_left(left);

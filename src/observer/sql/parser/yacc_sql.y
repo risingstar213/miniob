@@ -95,6 +95,8 @@ extern double atof();
         WHERE
         AND
         SET
+		NOT
+		LIKE
         ON
         LOAD
         DATA
@@ -121,6 +123,7 @@ extern double atof();
 %token <string> ID
 %token <string> PATH
 %token <string> SSS
+%token <string> LIKE_SSS
 %token <string> STAR
 %token <string> STRING_V
 //非终结符
@@ -325,6 +328,17 @@ value:
 		}
     ;
     
+like_value:
+	LIKE_SSS {
+		$1 = substr($1,1,strlen($1)-2);
+  		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
+	}
+	|SSS {
+		$1 = substr($1,1,strlen($1)-2);
+  		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
+	}
+	;
+
 delete:		/*  delete 语句的语法解析树*/
     DELETE FROM ID where SEMICOLON 
 		{
@@ -562,6 +576,47 @@ condition:
 			// $$->right_attr.relation_name=$5;
 			// $$->right_attr.attribute_name=$7;
     }
+	|ID like_comOp like_value
+		{
+			RelAttr left_attr;
+			relation_attr_init(&left_attr, NULL, $1);
+
+			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
+
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 0, NULL, right_value);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
+			// $$ = ( Condition *)malloc(sizeof( Condition));
+			// $$->left_is_attr = 1;
+			// $$->left_attr.relation_name = NULL;
+			// $$->left_attr.attribute_name= $1;
+			// $$->comp = CONTEXT->comp;
+			// $$->right_is_attr = 0;
+			// $$->right_attr.relation_name = NULL;
+			// $$->right_attr.attribute_name = NULL;
+			// $$->right_value = *$3;
+	}
+	|ID DOT ID like_comOp like_value
+		{
+			RelAttr left_attr;
+			relation_attr_init(&left_attr, $1, $3);
+			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
+
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 0, NULL, right_value);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
+
+			// $$=( Condition *)malloc(sizeof( Condition));
+			// $$->left_is_attr = 1;
+			// $$->left_attr.relation_name=$1;
+			// $$->left_attr.attribute_name=$3;
+			// $$->comp=CONTEXT->comp;
+			// $$->right_is_attr = 0;   //属性值
+			// $$->right_attr.relation_name=NULL;
+			// $$->right_attr.attribute_name=NULL;
+			// $$->right_value =*$5;			
+							
+    }
     ;
 
 comOp:
@@ -571,6 +626,11 @@ comOp:
     | LE { CONTEXT->comp = LESS_EQUAL; }
     | GE { CONTEXT->comp = GREAT_EQUAL; }
     | NE { CONTEXT->comp = NOT_EQUAL; }
+	;
+
+like_comOp:
+	  NOT LIKE { CONTEXT->comp = UNLIKE_SCH; }
+	| LIKE { CONTEXT->comp = LIKE_SCH; }
     ;
 
 load_data:
