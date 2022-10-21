@@ -101,11 +101,6 @@ float CastUnit::cast_string_to_float(char * data, int length) {
   return f;
 }
 int CastUnit::cast_string_to_int(char * data, int length) {
-  int i;
-  if (data[0] <'0' || data[0] > '9') {
-    i = 0;
-  } else {
-    sscanf(data, "%d", &i);
-  }
-  return i;
+  float f = cast_string_to_float(data, length);
+  return cast_float_to_int(f);
 }
