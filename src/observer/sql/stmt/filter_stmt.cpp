@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "common/lang/string.h"
 #include "sql/stmt/filter_stmt.h"
+#include "sql/stmt/cast.h"
 #include "storage/common/db.h"
 #include "storage/common/table.h"
 
@@ -127,6 +128,13 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right_type = condition.right_value.type;
   }
 
+  if (condition.left_is_attr) {
+    CastUnit::cast_to(right, left_type);
+    right_type = right->type();
+  } else {
+    CastUnit::cast_to(left, right_type);
+    left_type = left->type();
+  }
   // 检查两个类型是否能够比较
   if (left_type != right_type) {
     delete left;
