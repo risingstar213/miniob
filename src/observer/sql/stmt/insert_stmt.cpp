@@ -13,7 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/stmt/insert_stmt.h"
-#include "sql/stmt/cast.h"
+#include "util/cast.h"
 #include "common/log/log.h"
 #include "storage/common/db.h"
 #include "storage/common/table.h"
@@ -50,7 +50,6 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
 
   // check fields type
   const int sys_field_num = table_meta.sys_field_num();
-  RC rc;
   for (int i = 0; i < value_num; i++) {
     const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
     const AttrType field_type = field_meta->type();

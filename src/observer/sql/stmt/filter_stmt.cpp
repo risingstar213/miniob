@@ -16,7 +16,6 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "common/lang/string.h"
 #include "sql/stmt/filter_stmt.h"
-#include "sql/stmt/cast.h"
 #include "storage/common/db.h"
 #include "storage/common/table.h"
 
@@ -128,19 +127,18 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right_type = condition.right_value.type;
   }
 
-  if (condition.left_is_attr) {
-    CastUnit::cast_to(condition.right_value, left_type);
-    delete right;
-    right = new ValueExpr(condition.right_value);
-    right_type = condition.right_value.type;
+  bool can_compare = true;
+  bool left_cast = left_type == CHARS || left_type == INTS || left_type == FLOATS;
+  bool right_cast = right_type == CHARS || right_type == INTS || right_type == FLOATS;
+  if (left_cast && right_cast) {
+    can_compare = true;
+  } else if (left_type == right_type) {
+    can_compare = true;
   } else {
-    CastUnit::cast_to(condition.left_value, right_type);
-    delete left;
-    left = new ValueExpr(condition.left_value);
-    left_type = condition.left_value.type;
+    can_compare = false;
   }
   // 检查两个类型是否能够比较
-  if (left_type != right_type) {
+  if (!can_compare) {
     delete left;
     delete right;
     LOG_WARN("cannot compare");

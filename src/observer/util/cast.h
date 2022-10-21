@@ -8,7 +8,8 @@ class CastUnit
 {
 public:
   static void cast_to(Value &value, AttrType type);
-  // static RC cast_compare(Value &left, Value &right);
+  static float cast_string_to_float(char * data, int length);
+  static int cast_string_to_int(char * data, int length);
 };
 
 #endif

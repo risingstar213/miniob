@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/tuple_cell.h"
 #include "storage/common/field.h"
 #include "common/log/log.h"
+#include "util/cast.h"
 #include "util/comparator.h"
 #include "util/util.h"
 
@@ -59,6 +60,22 @@ int TupleCell::compare(const TupleCell &other) const
   } else if (this->attr_type_ == FLOATS && other.attr_type_ == INTS) {
     float other_data = *(int *)other.data_;
     return compare_float(data_, &other_data);
+  } else if (this->attr_type_ == CHARS && (other.attr_type_ == INTS || other.attr_type_ == FLOATS)) {
+    if (other.attr_type_ == INTS) {
+      int this_data = CastUnit::cast_string_to_int(this->data_, this->length_);
+      return compare_int(&this_data, other.data_);
+    } else {
+      float this_data = CastUnit::cast_string_to_float(this->data_, this->length_);
+      return compare_float(&this_data, other.data_);
+    }
+  } else if ((this->attr_type_ == INTS || this->attr_type_ == FLOATS) && other.attr_type_ == CHARS) {
+    if (this->attr_type_ == INTS) {
+      int other_data = CastUnit::cast_string_to_int(other.data_, other.length_);
+      return compare_int(data_, &other_data);
+    } else {
+      float other_data = CastUnit::cast_string_to_float(other.data_, other.length_);
+      return compare_float(data_, &other_data);
+    }
   }
   LOG_WARN("not supported");
   return -1; // TODO return rc?

@@ -1,8 +1,8 @@
 
-#include "cast.h"
+#include "util/cast.h"
 #include "common/log/log.h"
 
-static int float_to_int(float f)
+static int cast_float_to_int(float f)
 {
   if (f > 0) {
     return (f * 10 + 5) / 10;
@@ -58,7 +58,7 @@ void CastUnit::cast_to(Value &value, AttrType type)
         case AttrType::INTS: {
           convert = true;
           value.data = malloc(sizeof(int));
-          *(int *)(value.data) = float_to_int(*old_data);
+          *(int *)(value.data) = cast_float_to_int(*old_data);
           value.type = AttrType::INTS;
         } break;
         default:
@@ -94,4 +94,24 @@ void CastUnit::cast_to(Value &value, AttrType type)
       break;
   }
   // return RC::SUCCESS;
+}
+
+
+float CastUnit::cast_string_to_float(char * data, int length) {
+  float f;
+  if (data[0] <'0' || data[0] > '9') {
+    f = 0;
+  } else {
+    sscanf(data, "%f", &f);
+  }
+  return f;
+}
+int CastUnit::cast_string_to_int(char * data, int length) {
+  int i;
+  if (data[0] <'0' || data[0] > '9') {
+    i = 0;
+  } else {
+    sscanf(data, "%d", &i);
+  }
+  return i;
 }
