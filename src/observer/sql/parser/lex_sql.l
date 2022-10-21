@@ -32,7 +32,7 @@ QUOTE            [\'\"]
 
 {WHITE_SAPCE}                                        // ignore whitespace
 \n                                                   ;
-
+{DIGIT}+-{DIGIT}{1,2}-{DIGIT}{1,2}                   yylval->string = strdup(yytext); RETURN_TOKEN(DATE_DATA);
 [\-]?{DIGIT}+                                        yylval->string=strdup(yytext); RETURN_TOKEN(NUMBER);
 [\-]?{DIGIT}+{DOT}{DIGIT}+                           yylval->string=strdup(yytext); RETURN_TOKEN(FLOAT);
 
@@ -62,6 +62,7 @@ QUOTE            [\'\"]
 [Ss][Ee][Tt]                                         RETURN_TOKEN(SET);
 [Nn][Oo][Tt]                                         RETURN_TOKEN(NOT);
 [Ll][Ii][Kk][Ee]                                     RETURN_TOKEN(LIKE);
+[Dd][Aa][Tt][Ee]                                     RETURN_TOKEN(DATE_T);
 [Bb][Ee][Gg][Ii][Nn]                                 RETURN_TOKEN(TRX_BEGIN);
 [Cc][Oo][Mm][Mm][Ii][Tt]                             RETURN_TOKEN(TRX_COMMIT);
 [Rr][Oo][Ll][Ll][Bb][Aa][Cc][Kk]                     RETURN_TOKEN(TRX_ROLLBACK);

@@ -160,6 +160,17 @@ bool DefaultConditionFilter::filter(const Record &rec) const
       float result = left - right;
       cmp_result = result >= 0 ? ceil(result) : floor(result);
     } break;
+    case DATES: {
+      Date left = *(Date *)left_value;
+      Date right = *(Date *)right_value;
+      if (left > right) {
+        cmp_result = 1;
+      } else if (left < right) {
+        cmp_result = -1;
+      } else {
+        return 0;
+      }
+    } break;
     default: {
     }
   }

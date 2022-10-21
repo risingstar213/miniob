@@ -97,6 +97,7 @@ extern double atof();
         SET
 		NOT
 		LIKE
+		DATE_T
         ON
         LOAD
         DATA
@@ -120,6 +121,7 @@ extern double atof();
 
 %token <string> NUMBER
 %token <string> FLOAT 
+%token <string> DATE_DATA
 %token <string> ID
 %token <string> PATH
 %token <string> SSS
@@ -282,6 +284,7 @@ type:
 	INT_T { $$=INTS; }
        | STRING_T { $$=CHARS; }
        | FLOAT_T { $$=FLOATS; }
+	   | DATE_T { $$=DATES; }
        ;
 ID_get:
 	ID 
@@ -326,8 +329,12 @@ value:
 			$1 = substr($1,1,strlen($1)-2);
   		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
 		}
+	|DATE_DATA {
+		$1 = substr($1,1,strlen($1)-2);
+		value_init_date(&CONTEXT->values[CONTEXT->value_length++], $1);
+	}
     ;
-    
+
 like_value:
 	LIKE_SSS {
 		$1 = substr($1,1,strlen($1)-2);
@@ -338,7 +345,7 @@ like_value:
   		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
 	}
 	;
-
+    
 delete:		/*  delete 语句的语法解析树*/
     DELETE FROM ID where SEMICOLON 
 		{
@@ -626,7 +633,7 @@ comOp:
     | LE { CONTEXT->comp = LESS_EQUAL; }
     | GE { CONTEXT->comp = GREAT_EQUAL; }
     | NE { CONTEXT->comp = NOT_EQUAL; }
-	;
+    ;
 
 like_comOp:
 	  NOT LIKE { CONTEXT->comp = UNLIKE_SCH; }

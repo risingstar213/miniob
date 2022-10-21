@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <string.h>
 #include <algorithm>
+#include "util/date.h"
 
 const double epsilon = 1E-6;
 
@@ -54,6 +55,17 @@ int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_len
 
   if (arg2_max_length > maxlen) {
     return 0 - s2[maxlen];
+  }
+  return 0;
+}
+
+int compare_date(void *arg1, void *arg2) {
+  Date d1 = *(Date *)arg1;
+  Date d2 = *(Date *)arg2;
+  if (d1 > d2) {
+    return 1;
+  } else if (d1 < d2) {
+    return -1;
   }
   return 0;
 }

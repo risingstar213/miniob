@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "util/cast.h"
 #include "util/comparator.h"
 #include "util/util.h"
+#include "util/date.h"
 
 void TupleCell::to_string(std::ostream &os) const
 {
@@ -37,6 +38,10 @@ void TupleCell::to_string(std::ostream &os) const
       os << data_[i];
     }
   } break;
+  case DATES: {
+    Date v = *(Date *)data_;
+    os << v.toString();
+  } break;
   default: {
     LOG_WARN("unsupported attr type: %d", attr_type_);
   } break;
@@ -50,6 +55,7 @@ int TupleCell::compare(const TupleCell &other) const
     case INTS: return compare_int(this->data_, other.data_);
     case FLOATS: return compare_float(this->data_, other.data_);
     case CHARS: return compare_string(this->data_, this->length_, other.data_, other.length_);
+    case DATES: return compare_date(this->data_, other.data_);
     default: {
       LOG_WARN("unsupported type: %d", this->attr_type_);
     }
@@ -60,7 +66,7 @@ int TupleCell::compare(const TupleCell &other) const
   } else if (this->attr_type_ == FLOATS && other.attr_type_ == INTS) {
     float other_data = *(int *)other.data_;
     return compare_float(data_, &other_data);
-  } else if (this->attr_type_ == CHARS && (other.attr_type_ == INTS || other.attr_type_ == FLOATS)) {
+  }  else if (this->attr_type_ == CHARS && (other.attr_type_ == INTS || other.attr_type_ == FLOATS)) {
     if (other.attr_type_ == INTS) {
       int this_data = CastUnit::cast_string_to_int(this->data_, this->length_);
       return compare_int(&this_data, other.data_);

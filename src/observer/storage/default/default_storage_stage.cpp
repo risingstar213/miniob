@@ -257,6 +257,9 @@ RC insert_record_from_file(
       case CHARS: {
         value_init_string(&record_values[i], file_value.c_str());
       } break;
+      case DATES: {
+        value_init_date(&record_values[i], file_value.c_str());
+      } break;
       default: {
         errmsg << "Unsupported field type to loading: " << field->type();
         rc = RC::SCHEMA_FIELD_TYPE_MISMATCH;
