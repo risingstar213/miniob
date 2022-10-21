@@ -293,9 +293,14 @@ IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
 
     Expression *left = filter_unit->left();
     Expression *right = filter_unit->right();
+    CompOp comp = filter_unit->comp();
     if (left->type() == ExprType::FIELD && right->type() == ExprType::VALUE) {
     } else if (left->type() == ExprType::VALUE && right->type() == ExprType::FIELD) {
       std::swap(left, right);
+    } else if (left->type() == ExprType::VALUE && right->type() == ExprType::VALUE) {
+      continue;
+    } else if (comp > GREAT_THAN) {
+      continue;
     }
     FieldExpr &left_field_expr = *(FieldExpr *)left;
     const Field &field = left_field_expr.field();
@@ -409,6 +414,7 @@ IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
 
 RC ExecuteStage::do_select(SQLStageEvent *sql_event)
 {
+  LOG_INFO("DO SELECCT");
   SelectStmt *select_stmt = (SelectStmt *)(sql_event->stmt());
   SessionEvent *session_event = sql_event->session_event();
   RC rc = RC::SUCCESS;
@@ -417,14 +423,14 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
     rc = RC::UNIMPLENMENT;
     return rc;
   }
-
+  LOG_INFO("scan begin");
   Operator *scan_oper = try_to_create_index_scan_operator(select_stmt->filter_stmt());
   if (nullptr == scan_oper) {
     scan_oper = new TableScanOperator(select_stmt->tables()[0]);
   }
 
   DEFER([&]() { delete scan_oper; });
-
+  LOG_INFO("scan");
   PredicateOperator pred_oper(select_stmt->filter_stmt());
   pred_oper.add_child(scan_oper);
   ProjectOperator project_oper;
@@ -437,7 +443,7 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
     LOG_WARN("failed to open operator");
     return rc;
   }
-
+  LOG_INFO("init successfully");
   std::stringstream ss;
   print_tuple_header(ss, project_oper);
   while ((rc = project_oper.next()) == RC::SUCCESS) {

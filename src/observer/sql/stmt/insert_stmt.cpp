@@ -55,6 +55,9 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
     const AttrType field_type = field_meta->type();
     CastUnit::cast_to(values[i], field_type);
     const AttrType value_type = values[i].type;
+    if (value_type == CHARS) {
+      LOG_INFO("%s", values[i].data);
+    }
     if (value_type != field_type) { // TODO try to convert the value type to field type
       LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d", 
                table_name, field_meta->name(), field_type, value_type);
