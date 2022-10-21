@@ -13,7 +13,7 @@ bool LikeUnit::like_schema(const char *data, int data_len, const char *schema, i
     for (int i = data_len; i > 0; i--) {
       switch (schema[j]) {
         case '%': {
-          for (int k = i-1; k >= 0; k--) {
+          for (int k = i; k >= 0; k--) {
             if (match[k]) {
               match[i] = true;
               break;
@@ -30,6 +30,9 @@ bool LikeUnit::like_schema(const char *data, int data_len, const char *schema, i
           } else {
             match[i] = false;
           }
+          if (i == 1) {
+            match[0] = false;
+          }
         } break;
         default: {
           if (match[i-1] && data[i-1] == schema[j]) {
@@ -37,10 +40,12 @@ bool LikeUnit::like_schema(const char *data, int data_len, const char *schema, i
           } else {
             match[i] = false;
           }
+          if (i == 1) {
+            match[0] = false;
+          }
         } break;
       }
     }
-    match[0] = false;
   }
   bool comp = match[data_len];
   delete []match;
