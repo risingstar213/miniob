@@ -143,8 +143,6 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     }
     right = new ValueExpr(condition.right_value);
     right_type = condition.right_value.type;
-    if (right_type == CHARS)
-      LOG_INFO("VALUE:%s", condition.left_value.data);
   }
 
   bool can_compare = true;

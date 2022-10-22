@@ -65,12 +65,6 @@ void Date::set_date(string s) {
     sstream >> this->year >> c;
     sstream >> this->month >> c;
     sstream >> this->day;
-    int len = s.size();
-    int found1, found2;
-    found1 = s.find_first_of('-');
-    found2 = s.find_last_of('-');
-    month_space = found2 - found1 - 1;
-    day_space = len - found2 - 1;
 }
 
 bool Date::is_valid() {
@@ -122,9 +116,9 @@ string Date::toString() {
     std::string str;
     sstream << year << '-';
     str += sstream.str(); sstream.str("");
-    sstream << std::setw(month_space) << std::setfill('0') << month;
+    sstream << std::setw(2) << std::setfill('0') << month;
     str += sstream.str() + '-'; sstream.str("");
-    sstream << std::setw(day_space) << std::setfill('0') << day;
+    sstream << std::setw(2) << std::setfill('0') << day;
     str += sstream.str(); sstream.clear();
     return str;
 }

@@ -271,7 +271,7 @@ attr_def:
 			if ($2 != DATES) {
 				attr_info_init(&attribute, CONTEXT->id, $2, 4);
 			} else {
-				attr_info_init(&attribute, CONTEXT->id, $2, 20);
+				attr_info_init(&attribute, CONTEXT->id, $2, 12);
 			}
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name=(char*)malloc(sizeof(char));

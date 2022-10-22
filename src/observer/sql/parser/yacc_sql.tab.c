@@ -1591,7 +1591,7 @@ yyreduce:
 			if ((yyvsp[0].number) != DATES) {
 				attr_info_init(&attribute, CONTEXT->id, (yyvsp[0].number), 4);
 			} else {
-				attr_info_init(&attribute, CONTEXT->id, (yyvsp[0].number), 20);
+				attr_info_init(&attribute, CONTEXT->id, (yyvsp[0].number), 12);
 			}
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name=(char*)malloc(sizeof(char));

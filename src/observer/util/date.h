@@ -11,8 +11,7 @@ class Date {
 		int month = 0;
 		int day = 0;
 		int year = 0;
-    int month_space = 0;
-    int day_space = 0;
+
 
     public:
         Date() = default;

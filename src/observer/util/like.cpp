@@ -20,7 +20,7 @@ static bool equal(char schemai, char datai)
 bool LikeUnit::like_schema(const char *data, int data_len, const char *schema, int schema_len)
 {
   bool *match = new bool[data_len+1];
-  // LOG_INFO("data(%d):%s, schema(%d):%s", data_len, data, schema_len, schema);
+  LOG_INFO("like: data(%d):%s, schema(%d):%s", data_len, data, schema_len, schema);
   match[0] = true;
   for (int i = 1; i <= data_len; i++) {
     match[i] = false;
@@ -69,5 +69,6 @@ bool LikeUnit::like_schema(const char *data, int data_len, const char *schema, i
 }
 
 bool LikeUnit::unlike_schema(const char *data, int data_len, const char *schema, int schema_len) {
+  LOG_INFO("unlike: data(%d):%s, schema(%d):%s", data_len, data, schema_len, schema);
   return !like_schema(data, data_len, schema, schema_len);
 }
