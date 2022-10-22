@@ -24,11 +24,11 @@ const static Json::StaticString FIELD_OFFSET("offset");
 const static Json::StaticString FIELD_LEN("len");
 const static Json::StaticString FIELD_VISIBLE("visible");
 
-const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats"};
+const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "dates"};
 
 const char *attr_type_to_string(AttrType type)
 {
-  if (type >= UNDEFINED && type <= FLOATS) {
+  if (type >= UNDEFINED && type <= DATES) {
     return ATTR_TYPE_NAME[type];
   }
   return "unknown";
@@ -62,6 +62,7 @@ RC FieldMeta::init(const char *name, AttrType attr_type, int attr_offset, int at
 
   name_ = name;
   attr_type_ = attr_type;
+  LOG_INFO("%d", attr_type_);
   attr_len_ = attr_len;
   attr_offset_ = attr_offset;
   visible_ = visible;
