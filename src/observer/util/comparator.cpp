@@ -60,11 +60,11 @@ int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_len
 }
 
 int compare_date(void *arg1, void *arg2) {
-  Date d1 = *(Date *)arg1;
-  Date d2 = *(Date *)arg2;
-  if (d1 > d2) {
+  Date *d1 = (Date *)arg1;
+  Date *d2 = (Date *)arg2;
+  if (*d1 > *d2) {
     return 1;
-  } else if (d1 < d2) {
+  } else if (*d1 < *d2) {
     return -1;
   }
   return 0;

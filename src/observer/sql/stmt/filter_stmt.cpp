@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/filter_stmt.h"
 #include "storage/common/db.h"
 #include "storage/common/table.h"
+#include "util/date.h"
 
 FilterStmt::~FilterStmt()
 {
@@ -107,10 +108,16 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     left = new FieldExpr(table, field);
     left_type = field->type();
   } else {
+    // check
+    if (left_type == DATES) {
+      Date *d = (Date *)condition.left_value.data;
+      if (!d->is_valid()) {
+        LOG_WARN("The date %s is not valid", d->toString().c_str());
+        return RC::SQL_SYNTAX;
+      }
+    }
     left = new ValueExpr(condition.left_value);
     left_type = condition.left_value.type;
-    if (left_type == CHARS)
-      LOG_INFO("VALUE:%s", condition.left_value.data);
   }
 
   if (condition.right_is_attr) {
@@ -125,6 +132,15 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right = new FieldExpr(table, field);
     right_type = field->type();
   } else {
+    // check
+    if (right_type == DATES) {
+      Date *d = (Date *)condition.right_value.data;
+      if (!d->is_valid()) {
+        delete left;
+        LOG_WARN("The date %s is not valid", d->toString().c_str());
+        return RC::SQL_SYNTAX;
+      }
+    }
     right = new ValueExpr(condition.right_value);
     right_type = condition.right_value.type;
     if (right_type == CHARS)

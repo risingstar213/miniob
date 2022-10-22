@@ -206,6 +206,7 @@ RC insert_record_from_file(
     Table *table, std::vector<std::string> &file_values, std::vector<Value> &record_values, std::stringstream &errmsg)
 {
 
+  LOG_INFO("insert_record_from_file !!!!!!!!!!!!!!!");
   const int field_num = record_values.size();
   const int sys_field_num = table->table_meta().sys_field_num();
 
@@ -282,6 +283,7 @@ RC insert_record_from_file(
 std::string DefaultStorageStage::load_data(const char *db_name, const char *table_name, const char *file_name)
 {
 
+  LOG_INFO("DefaultStorageStage::load_data");
   std::stringstream result_string;
   Table *table = handler_->find_table(db_name, table_name);
   if (nullptr == table) {

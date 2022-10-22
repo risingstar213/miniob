@@ -75,7 +75,7 @@ void value_init_date(Value *value, const char *v) {
   string s(v);
   value->data = malloc(sizeof(Date));
   ((Date *)value->data)->set_date(s);
-  LOG_INFO("%s", ((Date *)value->data)->toString());
+  LOG_INFO("%s", ((Date *)value->data)->toString().c_str());
   value->raw_data = strdup(v);
 }
 
