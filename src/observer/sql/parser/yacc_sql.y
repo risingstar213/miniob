@@ -268,7 +268,11 @@ attr_def:
     |ID_get type
 		{
 			AttrInfo attribute;
-			attr_info_init(&attribute, CONTEXT->id, $2, 4);
+			if ($2 != DATES) {
+				attr_info_init(&attribute, CONTEXT->id, $2, 4);
+			} else {
+				attr_info_init(&attribute, CONTEXT->id, $2, 12);
+			}
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name=(char*)malloc(sizeof(char));
 			// strcpy(CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name, CONTEXT->id); 

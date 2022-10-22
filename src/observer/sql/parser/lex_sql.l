@@ -32,7 +32,7 @@ QUOTE            [\'\"]
 
 {WHITE_SAPCE}                                        // ignore whitespace
 \n                                                   ;
-{DIGIT}+-{DIGIT}{1,2}-{DIGIT}{1,2}                   yylval->string = strdup(yytext); RETURN_TOKEN(DATE_DATA);
+{QUOTE}{DIGIT}\-{DIGIT}\-{DIGIT}{QUOTE}              yylval->string = strdup(yytext); RETURN_TOKEN(DATE_DATA);
 [\-]?{DIGIT}+                                        yylval->string=strdup(yytext); RETURN_TOKEN(NUMBER);
 [\-]?{DIGIT}+{DOT}{DIGIT}+                           yylval->string=strdup(yytext); RETURN_TOKEN(FLOAT);
 

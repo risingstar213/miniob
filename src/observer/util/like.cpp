@@ -1,6 +1,22 @@
 #include "util/like.h"
 #include "common/log/log.h"
 
+static bool equal(char schemai, char datai)
+{
+  char s, d;
+  if (schemai >= 'A' && schemai <= 'Z') {
+    s = schemai - 'A' + 'a';
+  } else {
+    s = schemai;
+  }
+  if (datai >= 'A' && datai <= 'Z') {
+    d = datai - 'A' + 'a';
+  } else {
+    d = datai;
+  }
+  return s == d;
+}
+
 bool LikeUnit::like_schema(const char *data, int data_len, const char *schema, int schema_len)
 {
   bool *match = new bool[data_len+1];
@@ -35,7 +51,7 @@ bool LikeUnit::like_schema(const char *data, int data_len, const char *schema, i
           }
         } break;
         default: {
-          if (match[i-1] && data[i-1] == schema[j]) {
+          if (match[i-1] && equal(data[i-1],schema[j])) {
             match[i] = true;
           } else {
             match[i] = false;

@@ -1,4 +1,5 @@
 #include "util/date.h"
+#include "common/log/log.h"
 
 bool Date::operator > (Date& d) const {
 	if (this->year > d.year)
@@ -64,6 +65,7 @@ void Date::set_date(string s) {
     sstream >> this->year >> c;
     sstream >> this->month >> c;
     sstream >> this->day;
+    LOG_INFO("%d-%d-%d", year, month, day);
 }
 
 bool Date::is_valid() {
