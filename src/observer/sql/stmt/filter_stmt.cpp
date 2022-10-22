@@ -108,7 +108,9 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     left = new FieldExpr(table, field);
     left_type = field->type();
   } else {
+    left_type = condition.left_value.type;
     // check
+    LOG_INFO("CHECK DATES: %s", condition.left_value.raw_data);
     if (left_type == DATES) {
       Date *d = (Date *)condition.left_value.data;
       if (!d->is_valid()) {
@@ -117,7 +119,6 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
       }
     }
     left = new ValueExpr(condition.left_value);
-    left_type = condition.left_value.type;
   }
 
   if (condition.right_is_attr) {
@@ -132,7 +133,9 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right = new FieldExpr(table, field);
     right_type = field->type();
   } else {
+    right_type = condition.right_value.type;
     // check
+    LOG_INFO("CHECK DATES %s", condition.right_value.raw_data);
     if (right_type == DATES) {
       Date *d = (Date *)condition.right_value.data;
       if (!d->is_valid()) {
@@ -142,7 +145,6 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
       }
     }
     right = new ValueExpr(condition.right_value);
-    right_type = condition.right_value.type;
   }
 
   bool can_compare = true;

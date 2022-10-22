@@ -30,7 +30,7 @@ public:
   RC next() override;
   RC close() override;
 
-  Tuple * current_tuple() override;
+  std::vector<Tuple *> current_tuple() override;
 private:
   const Table *table_ = nullptr;
   Index *index_ = nullptr;

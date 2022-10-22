@@ -44,10 +44,12 @@ RC ProjectOperator::close()
   children_[0]->close();
   return RC::SUCCESS;
 }
-Tuple *ProjectOperator::current_tuple()
+std::vector<Tuple *> ProjectOperator::current_tuple()
 {
-  tuple_.set_tuple(children_[0]->current_tuple());
-  return &tuple_;
+  tuple_.set_tuple(children_[0]->current_tuple()[0]);
+  std::vector<Tuple *> tuples;
+  tuples.push_back(&tuple_);
+  return tuples;
 }
 
 void ProjectOperator::add_projection(const Table *table, const FieldMeta *field_meta)

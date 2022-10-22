@@ -35,7 +35,7 @@ public:
   RC next() override;
   RC close() override;
 
-  Tuple * current_tuple() override;
+  std::vector<Tuple *> current_tuple() override;
   //int tuple_cell_num() const override;
   //RC tuple_cell_spec_at(int index, TupleCellSpec &spec) const override;
 private:

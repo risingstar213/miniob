@@ -449,7 +449,7 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   while ((rc = project_oper.next()) == RC::SUCCESS) {
     // get current record
     // write to response
-    Tuple *tuple = project_oper.current_tuple();
+    Tuple *tuple = project_oper.current_tuple()[0];
     if (nullptr == tuple) {
       rc = RC::INTERNAL;
       LOG_WARN("failed to get current record. rc=%s", strrc(rc));

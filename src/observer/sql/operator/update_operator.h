@@ -19,9 +19,11 @@ public:
   RC next() override;
   RC close() override;
 
-  Tuple *current_tuple() override
+  std::vector<Tuple *> current_tuple() override
   {
-    return nullptr;
+    std::vector<Tuple *> tuples;
+    tuples.push_back(nullptr);
+    return tuples;
   }
 
 private:

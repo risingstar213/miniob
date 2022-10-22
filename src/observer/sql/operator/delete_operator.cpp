@@ -35,7 +35,7 @@ RC DeleteOperator::open()
 
   Table *table = delete_stmt_->table();
   while (RC::SUCCESS == (rc = child->next())) {
-    Tuple *tuple = child->current_tuple();
+    Tuple *tuple = child->current_tuple()[0];
     if (nullptr == tuple) {
       LOG_WARN("failed to get current record: %s", strrc(rc));
       return rc;

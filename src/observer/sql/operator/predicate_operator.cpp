@@ -35,7 +35,7 @@ RC PredicateOperator::next()
   Operator *oper = children_[0];
   
   while (RC::SUCCESS == (rc = oper->next())) {
-    Tuple *tuple = oper->current_tuple();
+    Tuple *tuple = oper->current_tuple()[0];
     if (nullptr == tuple) {
       rc = RC::INTERNAL;
       LOG_WARN("failed to get tuple from operator");
@@ -55,7 +55,7 @@ RC PredicateOperator::close()
   return RC::SUCCESS;
 }
 
-Tuple * PredicateOperator::current_tuple()
+std::vector<Tuple *> PredicateOperator::current_tuple()
 {
   return children_[0]->current_tuple();
 }

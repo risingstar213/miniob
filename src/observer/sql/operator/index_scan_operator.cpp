@@ -74,8 +74,10 @@ RC IndexScanOperator::close()
   return RC::SUCCESS;
 }
 
-Tuple * IndexScanOperator::current_tuple()
+std::vector<Tuple *> IndexScanOperator::current_tuple()
 {
   tuple_.set_record(&current_record_);
-  return &tuple_;
+  std::vector<Tuple *> tuples;
+  tuples.push_back(&tuple_);
+  return tuples;
 }
