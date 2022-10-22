@@ -20,9 +20,19 @@ See the Mulan PSL v2 for more details. */
 RC InsertOperator::open()
 {
   Table *table = insert_stmt_->table();
-  const Value *values = insert_stmt_->values();
+  //const Value *values = insert_stmt_->values();
+  //int value_amount = insert_stmt_->value_amount();
+  //return table->insert_record(nullptr, value_amount, values); // TODO trx
+  const Value **values = insert_stmt_->values();
   int value_amount = insert_stmt_->value_amount();
-  return table->insert_record(nullptr, value_amount, values); // TODO trx
+  int n = insert_stmt_->num();
+  for (int i = 0; i < n; i++) {
+    RC rc = table->insert_record(nullptr, value_amount, values[i]); // TODO trx
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+  }
+  return RC::SUCCESS;
 }
 
 RC InsertOperator::next()
