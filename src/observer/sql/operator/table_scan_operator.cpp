@@ -40,7 +40,7 @@ RC TableScanOperator::close()
   return record_scanner_.close_scan();
 }
 
-std::vector<Tuple *> TableScanOperator::current_tuple()
+std::vector<Tuple *> TableScanOperator::current_tuples()
 {
   tuple_.set_record(&current_record_);
   std::vector<Tuple *> tuples;

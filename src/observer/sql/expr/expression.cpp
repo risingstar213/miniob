@@ -15,12 +15,18 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/tuple.h"
 
 
-RC FieldExpr::get_value(const Tuple &tuple, TupleCell &cell) const
+RC FieldExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
 {
-  return tuple.find_cell(field_, cell);
+  for (uint i = 0; i < tuples.size(); i++) {
+    if (tuples[i]->find_cell(field_, cell) == RC::SUCCESS) {
+      return RC::SUCCESS;
+    }
+  }
+
+  return RC::NOTFOUND;
 }
 
-RC ValueExpr::get_value(const Tuple &tuple, TupleCell & cell) const
+RC ValueExpr::get_value(const std::vector<Tuple *> tuples, TupleCell & cell) const
 {
   cell = tuple_cell_;
   return RC::SUCCESS;

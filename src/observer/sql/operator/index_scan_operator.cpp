@@ -74,7 +74,7 @@ RC IndexScanOperator::close()
   return RC::SUCCESS;
 }
 
-std::vector<Tuple *> IndexScanOperator::current_tuple()
+std::vector<Tuple *> IndexScanOperator::current_tuples()
 {
   tuple_.set_record(&current_record_);
   std::vector<Tuple *> tuples;

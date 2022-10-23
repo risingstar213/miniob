@@ -35,14 +35,14 @@ RC PredicateOperator::next()
   Operator *oper = children_[0];
   
   while (RC::SUCCESS == (rc = oper->next())) {
-    Tuple *tuple = oper->current_tuple()[0];
-    if (nullptr == tuple) {
+    std::vector<Tuple *> tuples = oper->current_tuples();
+    if (nullptr == tuples[0]) {
       rc = RC::INTERNAL;
       LOG_WARN("failed to get tuple from operator");
       break;
     }
 
-    if (do_predicate(static_cast<RowTuple &>(*tuple))) {
+    if (do_predicate(tuples)) {
       return rc;
     }
   }
@@ -55,12 +55,12 @@ RC PredicateOperator::close()
   return RC::SUCCESS;
 }
 
-std::vector<Tuple *> PredicateOperator::current_tuple()
+std::vector<Tuple *> PredicateOperator::current_tuples()
 {
-  return children_[0]->current_tuple();
+  return children_[0]->current_tuples();
 }
 
-bool PredicateOperator::do_predicate(RowTuple &tuple)
+bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
 {
   if (filter_stmt_ == nullptr || filter_stmt_->filter_units().empty()) {
     return true;
@@ -72,8 +72,8 @@ bool PredicateOperator::do_predicate(RowTuple &tuple)
     CompOp comp = filter_unit->comp();
     TupleCell left_cell;
     TupleCell right_cell;
-    left_expr->get_value(tuple, left_cell);
-    right_expr->get_value(tuple, right_cell);
+    left_expr->get_value(tuples, left_cell);
+    right_expr->get_value(tuples, right_cell);
 
     int compare;
     if (comp <= GREAT_THAN) {

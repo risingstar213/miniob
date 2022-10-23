@@ -14,6 +14,8 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include <vector>
+
 #include "sql/operator/operator.h"
 #include "rc.h"
 
@@ -38,7 +40,7 @@ public:
 
   RC tuple_cell_spec_at(int index, const TupleCellSpec *&spec) const;
 
-  std::vector<Tuple *> current_tuple() override;
+  std::vector<Tuple *> current_tuples() override;
 private:
   ProjectTuple tuple_;
 };

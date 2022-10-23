@@ -22,7 +22,11 @@ public:
   RC next() override;
   RC close() override;
 
-  std::vector<Tuple *> current_tuple() override;
+  std::vector<Tuple *> current_tuples() override;
 
 private:
+  std::vector<Tuple *> tuples_;
+  bool start_ = false;
+  bool stop_ = false;
+  RC rc_;
 };

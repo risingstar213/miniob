@@ -33,7 +33,7 @@ public:
   RC next() override;
   RC close() override;
 
-  std::vector<Tuple *> current_tuple() override;
+  std::vector<Tuple *> current_tuples() override;
 
   // int tuple_cell_num() const override
   // {

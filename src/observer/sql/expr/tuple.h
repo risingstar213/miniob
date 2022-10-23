@@ -186,9 +186,9 @@ public:
     speces_.clear();
   }
 
-  void set_tuple(Tuple *tuple)
+  void set_tuples(std::vector<Tuple *> tuples)
   {
-    this->tuple_ = tuple;
+    this->tuples_ = tuples;
   }
 
   void add_cell_spec(TupleCellSpec *spec)
@@ -205,17 +205,23 @@ public:
     if (index < 0 || index >= static_cast<int>(speces_.size())) {
       return RC::GENERIC_ERROR;
     }
-    if (tuple_ == nullptr) {
+    if (tuples_.size() == 0) {
       return RC::GENERIC_ERROR;
     }
 
     const TupleCellSpec *spec = speces_[index];
-    return spec->expression()->get_value(*tuple_, cell);
+    return spec->expression()->get_value(tuples_, cell);
   }
 
   RC find_cell(const Field &field, TupleCell &cell) const override
   {
-    return tuple_->find_cell(field, cell);
+    RC rc;
+    for (uint i = 0; i < tuples_.size(); i++) {
+      if ((rc = tuples_[i]->find_cell(field, cell)) == RC::SUCCESS) {
+        return rc;
+      }
+    }
+    return rc;
   }
   RC cell_spec_at(int index, const TupleCellSpec *&spec) const override
   {
@@ -227,5 +233,5 @@ public:
   }
 private:
   std::vector<TupleCellSpec *> speces_;
-  Tuple *tuple_ = nullptr;
+  std::vector<Tuple *> tuples_;
 };

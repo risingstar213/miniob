@@ -44,9 +44,9 @@ RC ProjectOperator::close()
   children_[0]->close();
   return RC::SUCCESS;
 }
-std::vector<Tuple *> ProjectOperator::current_tuple()
+std::vector<Tuple *> ProjectOperator::current_tuples()
 {
-  tuple_.set_tuple(children_[0]->current_tuple()[0]);
+  tuple_.set_tuples(children_[0]->current_tuples());
   std::vector<Tuple *> tuples;
   tuples.push_back(&tuple_);
   return tuples;

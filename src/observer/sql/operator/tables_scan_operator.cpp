@@ -7,34 +7,65 @@
 RC TablesScanOperator::open()
 {
   RC rc = RC::SUCCESS;
+  stop_ = false;
   for (int i = 0; i < children_.size(); i++) {
     rc = children_[i]->open();
     if (rc != RC::SUCCESS) {
       LOG_WARN("one of table scan operator cannot be opened");
       return rc;
     }
+    if (i < children_.size() - 1) {
+      rc_ = children_[i]->next();
+      if (rc_ != RC::SUCCESS) {
+        // There is no record in this table
+        stop_ = true;
+        break;
+      }
+      tuples_.push_back(children_[i]->current_tuples()[0]);
+    } else {
+      tuples_.push_back(nullptr);
+    }
   }
-
+  start_ = false;
   return rc;
 }
 
 RC TablesScanOperator::next()
 {
-  RC rc = RC::SUCCESS;
+  // if there is any empty tuple
+  if (stop_) {
+    return rc_;
+  }
+  RC rc;
+  int stack_top = children_.size() - 1;
+  while((rc = children_[stack_top]->next()) != RC::SUCCESS) {
+    if (start_ || stack_top == 0) {
+      return rc;
+    }
+    stack_top --;
+  }
+  for (uint i = stack_top+1; i < children_.size(); i++) {
+    children_[i]->close();
+    children_[i]->open();
+    children_[i]->next();
+  }
+  for (uint i = stack_top; i < children_.size(); i++) {
+    tuples_[i] = children_[i]->current_tuples()[0];
+  }
+  start_ = false;
+  return RC::SUCCESS;
 }
 
 RC TablesScanOperator::close()
 {
-  for (int i = 0; i < children_.size(); i++) {
+  for (uint i = 0; i < children_.size(); i++) {
     children_[i]->close();
   }
 
   return RC::SUCCESS;
 }
 
-std::vector<Tuple *> TablesScanOperator::current_tuple()
+std::vector<Tuple *> TablesScanOperator::current_tuples()
 {
-  std::vector<Tuple *> tuples;
-  tuples.push_back(nullptr);
-  return tuples;
+  return tuples_;
 }

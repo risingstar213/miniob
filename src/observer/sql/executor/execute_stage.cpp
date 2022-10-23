@@ -414,7 +414,6 @@ IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
 
 RC ExecuteStage::do_select(SQLStageEvent *sql_event)
 {
-  LOG_INFO("DO SELECCT");
   SelectStmt *select_stmt = (SelectStmt *)(sql_event->stmt());
   SessionEvent *session_event = sql_event->session_event();
   RC rc = RC::SUCCESS;
@@ -423,14 +422,12 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
     rc = RC::UNIMPLENMENT;
     return rc;
   }
-  LOG_INFO("scan begin");
   Operator *scan_oper = try_to_create_index_scan_operator(select_stmt->filter_stmt());
   if (nullptr == scan_oper) {
     scan_oper = new TableScanOperator(select_stmt->tables()[0]);
   }
 
   DEFER([&]() { delete scan_oper; });
-  LOG_INFO("scan");
   PredicateOperator pred_oper(select_stmt->filter_stmt());
   pred_oper.add_child(scan_oper);
   ProjectOperator project_oper;
@@ -443,13 +440,12 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
     LOG_WARN("failed to open operator");
     return rc;
   }
-  LOG_INFO("init successfully");
   std::stringstream ss;
   print_tuple_header(ss, project_oper);
   while ((rc = project_oper.next()) == RC::SUCCESS) {
     // get current record
     // write to response
-    Tuple *tuple = project_oper.current_tuple()[0];
+    Tuple *tuple = project_oper.current_tuples()[0];
     if (nullptr == tuple) {
       rc = RC::INTERNAL;
       LOG_WARN("failed to get current record. rc=%s", strrc(rc));
@@ -490,7 +486,7 @@ RC ExecuteStage::do_create_table(SQLStageEvent *sql_event)
   const CreateTable &create_table = sql_event->query()->sstr.create_table;
   SessionEvent *session_event = sql_event->session_event();
   Db *db = session_event->session()->get_current_db();
-  for (int i = 0; i < create_table.attribute_count; i++) {
+  for (uint i = 0; i < create_table.attribute_count; i++) {
     LOG_INFO("%d", create_table.attributes[i].type);
   }
   RC rc = db->create_table(create_table.relation_name, create_table.attribute_count, create_table.attributes);

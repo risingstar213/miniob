@@ -32,7 +32,7 @@ public:
   Expression() = default;
   virtual ~Expression() = default;
   
-  virtual RC get_value(const Tuple &tuple, TupleCell &cell) const = 0;
+  virtual RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const = 0;
   virtual ExprType type() const = 0;
 };
 
@@ -70,7 +70,7 @@ public:
     return field_.field_name();
   }
 
-  RC get_value(const Tuple &tuple, TupleCell &cell) const override;
+  RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const override;
 private:
   Field field_;
 };
@@ -88,7 +88,6 @@ public:
 
   virtual ~ValueExpr() = default;
 
-  RC get_value(const Tuple &tuple, TupleCell & cell) const override;
   ExprType type() const override
   {
     return ExprType::VALUE;
@@ -98,6 +97,7 @@ public:
     cell = tuple_cell_;
   }
 
+  RC get_value(const std::vector<Tuple *> tuples, TupleCell & cell) const override;
 private:
   TupleCell tuple_cell_;
 };

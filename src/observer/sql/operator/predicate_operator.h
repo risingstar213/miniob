@@ -35,11 +35,11 @@ public:
   RC next() override;
   RC close() override;
 
-  std::vector<Tuple *> current_tuple() override;
+  std::vector<Tuple *> current_tuples() override;
   //int tuple_cell_num() const override;
   //RC tuple_cell_spec_at(int index, TupleCellSpec &spec) const override;
 private:
-  bool do_predicate(RowTuple &tuple);
+  bool do_predicate(std::vector<Tuple *> tuples);
 private:
   FilterStmt *filter_stmt_ = nullptr;
 };
