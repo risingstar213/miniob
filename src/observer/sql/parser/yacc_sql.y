@@ -43,7 +43,7 @@ void yyerror(yyscan_t scanner, const char *str)
   context->from_length = 0;
   context->select_length = 0;
   context->value_length = 0;
-  context->ssql->sstr.insertion.value_num = 0;
+  context->ssql->sstr.insertion.row_num = 0;
   printf("parse sql failed. error=%s", str);
 }
 
@@ -300,7 +300,7 @@ ID_get:
 
 	
 insert:				/*insert   语句的语法解析树*/
-    INSERT INTO ID VALUES LBRACE value value_list RBRACE SEMICOLON 
+    INSERT INTO ID VALUES row row_list SEMICOLON 
 		{
 			// CONTEXT->values[CONTEXT->value_length++] = *$6;
 
@@ -310,17 +310,33 @@ insert:				/*insert   语句的语法解析树*/
 			// for(i = 0; i < CONTEXT->value_length; i++){
 			// 	CONTEXT->ssql->sstr.insertion.values[i] = CONTEXT->values[i];
       // }
-			inserts_init(&CONTEXT->ssql->sstr.insertion, $3, CONTEXT->values, CONTEXT->value_length);
+			inserts_init(&CONTEXT->ssql->sstr.insertion, $3);
 
       //临时变量清零
       CONTEXT->value_length=0;
     }
+	;
+
+row_list:
+	/* empty */
+	| COMMA row row_list
+	{	/* do nothing here */	}
+
+row:
+	LBRACE value value_list RBRACE {
+		insert_row_init(&CONTEXT->ssql->sstr.insertion.rows[CONTEXT->ssql->sstr.insertion.row_num], CONTEXT->values, CONTEXT->value_length);
+		(CONTEXT->ssql->sstr.insertion.row_num)++;
+
+		//临时变量清零
+      	CONTEXT->value_length=0;
+	}
+	;
 
 value_list:
     /* empty */
     | COMMA value value_list  { 
   		// CONTEXT->values[CONTEXT->value_length++] = *$2;
-	  }
+	}
     ;
 value:
     NUMBER{	

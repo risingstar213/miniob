@@ -610,9 +610,9 @@ RC ExecuteStage::do_insert(SQLStageEvent *sql_event)
   InsertStmt *insert_stmt = (InsertStmt *)stmt;
   Table *table = insert_stmt->table();
 
-  int n = insert_stmt->num();
+  int n = insert_stmt->row_amount();
   for (int i = 0; i < n; i++) {
-    RC rc = table->insert_record(trx, insert_stmt->value_amount(), insert_stmt->values()[i]);
+    RC rc = table->insert_record(trx, insert_stmt->value_amount(), insert_stmt->rows()[i].values);
     if (rc == RC::SUCCESS) {
       if (!session->is_trx_multi_operation_mode()) {
         CLogRecord *clog_record = nullptr;

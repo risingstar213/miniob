@@ -162,9 +162,13 @@ void selects_destroy(Selects *selects)
   selects->condition_num = 0;
 }
 
-void insert_value_append(Inserts *inserts, Value *v) {
-  Rows *row = &inserts->rows[inserts->row_num];
-  row->values[row->value_num++] = v;
+
+void insert_row_init(Rows *rows, Value values[], size_t value_num)
+{
+  for (size_t i = 0; i < value_num; i++) {
+    rows->values[i] = values[i];
+  }
+  rows->value_num = value_num;
 }
 
 void inserts_init(Inserts *inserts, const char *relation_name) {
@@ -184,9 +188,7 @@ void inserts_destroy(Inserts *inserts)
 
 void row_destory(Rows *row) {
   for (size_t i = 0; i < row->value_num; i++) {
-    value_destroy(row->values[i]);
-    free(row->values[i]);
-    row->values[i] = nullptr;
+    value_destroy(&row->values[i]);
   }
 }
 

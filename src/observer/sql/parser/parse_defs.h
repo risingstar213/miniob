@@ -82,7 +82,7 @@ typedef struct {
 
 typedef struct {
   size_t value_num;       // Length of values
-  Value *values[MAX_NUM]; // values to insert
+  Value values[MAX_NUM];  // values to insert
 } Rows;
 
 // struct of insert
@@ -222,7 +222,7 @@ void selects_append_relation(Selects *selects, const char *relation_name);
 void selects_append_conditions(Selects *selects, Condition conditions[], size_t condition_num);
 void selects_destroy(Selects *selects);
 
-void insert_value_append(Inserts *inserts, Value *v);
+void insert_row_init(Rows *rows, Value values[], size_t value_num);
 void inserts_init(Inserts *inserts, const char *relation_name);
 void inserts_destroy(Inserts *inserts);
 void row_destory(Rows *row);

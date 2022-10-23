@@ -19,8 +19,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/table.h"
 #include "util/date.h"
 
-InsertStmt::InsertStmt(Table *table, const Value **values, int value_amount, int num)
-  : table_ (table), values_(values), value_amount_(value_amount), num_(num)
+InsertStmt::InsertStmt(Table *table, const Rows *rows, int value_amount, int row_amount)
+  : table_ (table), rows_(rows), value_amount_(value_amount), row_amount_(row_amount)
 {}
 
 RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
@@ -39,16 +39,18 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
-  int n = inserts.row_num;
+  const TableMeta &table_meta = table->table_meta();
+  const int field_num = table_meta.field_num() - table_meta.sys_field_num();
 
-  Value ** temp = (Value **)malloc(n * sizeof(Value *));
-  for (int j = 0; j < n; j++) {
+  Rows *rows = inserts.rows;
+
+  int row_num = inserts.row_num;
+  for (int j = 0; j < row_num; j++) {
     // check the fields number
-    temp[j] = *inserts.rows[j].values;
-    Value *values = *inserts.rows[j].values;
+    // LOG_INFO("CHECK FIELD ROW %d", j);
+    Value *values = inserts.rows[j].values;
+
     const int value_num = inserts.rows[j].value_num;
-    const TableMeta &table_meta = table->table_meta();
-    const int field_num = table_meta.field_num() - table_meta.sys_field_num();
     if (field_num != value_num) {
       LOG_WARN("schema mismatch. value num=%d, field num in schema=%d", value_num, field_num);
       return RC::SCHEMA_FIELD_MISSING;
@@ -57,6 +59,7 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
     // check fields type && valid
     const int sys_field_num = table_meta.sys_field_num();
     for (int i = 0; i < value_num; i++) {
+      // LOG_INFO("CHECK FIELD VALUE %d", i);
       const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
       const AttrType field_type = field_meta->type();
       CastUnit::cast_to(values[i], field_type);
@@ -77,6 +80,6 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
   }
 
   // everything alright
-  stmt = new InsertStmt(table, (const Value **)temp, inserts.rows[0].value_num, n);
+  stmt = new InsertStmt(table, rows, inserts.rows[0].value_num, row_num);
   return RC::SUCCESS;
 }

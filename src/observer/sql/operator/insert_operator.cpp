@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/insert_stmt.h"
 #include "storage/common/table.h"
 #include "rc.h"
+#include "sql/parser/parse_defs.h"
 
 RC InsertOperator::open()
 {
@@ -23,11 +24,11 @@ RC InsertOperator::open()
   //const Value *values = insert_stmt_->values();
   //int value_amount = insert_stmt_->value_amount();
   //return table->insert_record(nullptr, value_amount, values); // TODO trx
-  const Value **values = insert_stmt_->values();
+  const Rows *rows = insert_stmt_->rows();
   int value_amount = insert_stmt_->value_amount();
-  int n = insert_stmt_->num();
+  int n = insert_stmt_->row_amount();
   for (int i = 0; i < n; i++) {
-    RC rc = table->insert_record(nullptr, value_amount, values[i]); // TODO trx
+    RC rc = table->insert_record(nullptr, value_amount, rows[i].values); // TODO trx
     if (rc != RC::SUCCESS) {
       return rc;
     }
