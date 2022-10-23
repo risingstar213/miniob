@@ -8,7 +8,7 @@ RC TablesScanOperator::open()
 {
   RC rc = RC::SUCCESS;
   stop_ = false;
-  for (int i = 0; i < children_.size(); i++) {
+  for (uint i = 0; i < children_.size(); i++) {
     rc = children_[i]->open();
     if (rc != RC::SUCCESS) {
       LOG_WARN("one of table scan operator cannot be opened");
@@ -26,7 +26,7 @@ RC TablesScanOperator::open()
       tuples_.push_back(nullptr);
     }
   }
-  start_ = false;
+  start_ = true;
   return rc;
 }
 

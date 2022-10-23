@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <memory>
 #include <vector>
+#include <string>
 
 #include "common/log/log.h"
 #include "sql/parser/parse.h"
@@ -40,11 +41,11 @@ public:
     }
   }
 
-  void set_alias(const char *alias)
+  void set_alias(std::string alias)
   {
     this->alias_ = alias;
   }
-  const char *alias() const
+  std::string alias() const
   {
     return alias_;
   }
@@ -55,7 +56,7 @@ public:
   }
 
 private:
-  const char *alias_ = nullptr;
+  std::string alias_;
   Expression *expression_ = nullptr;
 };
 

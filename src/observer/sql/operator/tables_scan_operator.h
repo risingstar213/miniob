@@ -12,9 +12,7 @@ class TablesScanOperator : public Operator
 {
 public:
   TablesScanOperator()
-  {
-
-  }
+  {}
 
   virtual ~TablesScanOperator() = default;
 
