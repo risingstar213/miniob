@@ -2,7 +2,7 @@
 %{
 
 #include "sql/parser/parse_defs.h"
-#include "sql/parser/yacc_sql.tab.hpp"
+#include "sql/parser/yacc_sql.tab.h"
 #include "sql/parser/lex.yy.h"
 // #include "common/log/log.h" // 包含C++中的头文件
 
@@ -12,13 +12,22 @@
 
 typedef struct ParserContext {
   Query * ssql;
+  size_t select_length;
+  size_t condition_length;
+  size_t join_length;
+  size_t from_length;
+  size_t value_length;
+  Value values[MAX_NUM];
+  Condition conditions[MAX_NUM];
+  Join joins[MAX_NUM];
+  CompOp comp;
 	char id[MAX_NUM];
 } ParserContext;
 
 //获取子串
 char *substr(const char *s,int n1,int n2)/*从s中提取下标为n1~n2的字符组成一个新字符串，然后返回这个新串的首地址*/
 {
-  char *sp = (char *)malloc(sizeof(char) * (n2 - n1 + 2));
+  char *sp = malloc(sizeof(char) * (n2 - n1 + 2));
   int i, j = 0;
   for (i = n1; i <= n2; i++) {
     sp[j++] = s[i];
@@ -32,6 +41,10 @@ void yyerror(yyscan_t scanner, const char *str)
   ParserContext *context = (ParserContext *)(yyget_extra(scanner));
   query_reset(context->ssql);
   context->ssql->flag = SCF_ERROR;
+  context->condition_length = 0;
+  context->from_length = 0;
+  context->select_length = 0;
+  context->value_length = 0;
   context->ssql->sstr.insertion.row_num = 0;
   printf("parse sql failed. error=%s", str);
 }
@@ -47,20 +60,6 @@ extern int atoi();
 extern double atof();
 
 %}
-
-%code requires{
-#include <deque>
-#include <string>
-typedef struct _Attr Attr;
-typedef struct _Selects Selects;
-typedef struct _Value Value;
-typedef struct _Condition Condition;
-typedef struct _Join Join;
-typedef std::deque<Value> ValueList;
-typedef std::deque<Condition> ConditionList;
-typedef std::deque<Join> JoinList;
-// typedef std::string String;
-}
 
 %define api.pure full
 %lex-param { yyscan_t scanner }
@@ -115,44 +114,30 @@ typedef std::deque<Join> JoinList;
         NE
 
 %union {
-  Attr *attr1;
-  Condition *condition1;
-  Value *value1;
-  Join *join1;
-  char *string1;
-  int number1;
-  float floats1;
-  char position1;
-  int comp1;
-  ValueList *values1;
-  ConditionList *conditions1;
-  JoinList *joins1;
+  struct _Attr *attr;
+  struct _Condition *condition1;
+  struct _Value *value1;
+  char *string;
+  int number;
+  float floats;
+	char *position;
 }
 
-%token <string1> NUMBER
-%token <string1> FLOAT 
-%token <string1> DATE_DATA
-%token <string1> ID
-%token <string1> PATH
-%token <string1> SSS
-%token <string1> LIKE_SSS
-%token <string1> STAR
-%token <string1> STRING_V
+%token <string> NUMBER
+%token <string> FLOAT 
+%token <string> DATE_DATA
+%token <string> ID
+%token <string> PATH
+%token <string> SSS
+%token <string> LIKE_SSS
+%token <string> STAR
+%token <string> STRING_V
 //非终结符
 
-%type <number1> type;
+%type <number> type;
 %type <condition1> condition;
 %type <value1> value;
-%type <value1> like_value;
-%type <number1> number;
-%type <comp1> comOp;
-%type <comp1> like_comOp;
-
-%type <values1> value_list;
-%type <conditions1> where;
-%type <conditions1> condition_list;
-%type <conditions1> join_condition_list;
-%type <joins1> join_list;
+%type <number> number;
 
 %%
 
@@ -263,6 +248,8 @@ create_table:		/*create table 语句的语法解析树*/
 			CONTEXT->ssql->flag=SCF_CREATE_TABLE;//"create_table";
 			// CONTEXT->ssql->sstr.create_table.attribute_count = CONTEXT->value_length;
 			create_table_init_name(&CONTEXT->ssql->sstr.create_table, $3);
+			//临时变量清零	
+			CONTEXT->value_length = 0;
 		}
     ;
 attr_def_list:
@@ -274,27 +261,28 @@ attr_def:
     ID_get type LBRACE number RBRACE 
 		{
 			AttrInfo attribute;
-			attr_info_init(&attribute, CONTEXT->id, AttrType($2), $4);
+			attr_info_init(&attribute, CONTEXT->id, $2, $4);
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name =(char*)malloc(sizeof(char));
 			// strcpy(CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name, CONTEXT->id); 
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].type = $2;  
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].length = $4;
-
+			CONTEXT->value_length++;
 		}
     |ID_get type
 		{
 			AttrInfo attribute;
 			if ($2 != DATES) {
-				attr_info_init(&attribute, CONTEXT->id, AttrType($2), 4);
+				attr_info_init(&attribute, CONTEXT->id, $2, 4);
 			} else {
-				attr_info_init(&attribute, CONTEXT->id, AttrType($2), 12);
+				attr_info_init(&attribute, CONTEXT->id, $2, 12);
 			}
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name=(char*)malloc(sizeof(char));
 			// strcpy(CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name, CONTEXT->id); 
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].type=$2;  
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].length=4; // default attribute length
+			CONTEXT->value_length++;
 		}
     ;
 number:
@@ -327,6 +315,9 @@ insert:				/*insert   语句的语法解析树*/
 			// 	CONTEXT->ssql->sstr.insertion.values[i] = CONTEXT->values[i];
       // }
 			inserts_init(&CONTEXT->ssql->sstr.insertion, $3);
+
+      //临时变量清零
+      CONTEXT->value_length=0;
     }
 	;
 
@@ -337,58 +328,45 @@ row_list:
 
 row:
 	LBRACE value value_list RBRACE {
-		$3->push_front(*$2);
-		inserts_row_init(&CONTEXT->ssql->sstr.insertion.rows[CONTEXT->ssql->sstr.insertion.row_num], *$3);
+		inserts_row_init(&CONTEXT->ssql->sstr.insertion.rows[CONTEXT->ssql->sstr.insertion.row_num], CONTEXT->values, CONTEXT->value_length);
 		(CONTEXT->ssql->sstr.insertion.row_num)++;
 
-		delete $2;
-		delete $3;
+		//临时变量清零
+      	CONTEXT->value_length=0;
 	}
 	;
 
 value_list:
-    /* empty */ {
-		$$ = new ValueList();
-	}
+    /* empty */
     | COMMA value value_list  { 
   		// CONTEXT->values[CONTEXT->value_length++] = *$2;
-		$$ = $3;
-		$$->push_front(*$2);
-
-		delete $2;
 	}
     ;
 value:
     NUMBER{	
-  		$$ = new Value();
-		value_init_integer($$, atoi($1), $1);
+  		value_init_integer(&CONTEXT->values[CONTEXT->value_length++], atoi($1), $1);
 		}
     |FLOAT{
-  		$$ = new Value();
-		value_init_float($$, (float)(atof($1)), $1);
+  		value_init_float(&CONTEXT->values[CONTEXT->value_length++], (float)(atof($1)), $1);
 		}
     |SSS {
-		$1 = substr($1,1,strlen($1)-2);
-		$$ = new Value();
-  		value_init_string($$, $1);
+			$1 = substr($1,1,strlen($1)-2);
+  		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
 		}
 	|DATE_DATA {
 		$1 = substr($1,1,strlen($1)-2);
-		$$ = new Value();
-		value_init_date($$, $1);
+		value_init_date(&CONTEXT->values[CONTEXT->value_length++], $1);
 	}
     ;
 
 like_value:
 	LIKE_SSS {
 		$1 = substr($1,1,strlen($1)-2);
-		$$ = new Value();
-  		value_init_string($$, $1);
+  		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
 	}
 	|SSS {
 		$1 = substr($1,1,strlen($1)-2);
-		$$ = new Value();
-  		value_init_string($$, $1);
+  		value_init_string(&CONTEXT->values[CONTEXT->value_length++], $1);
 	}
 	;
     
@@ -397,20 +375,19 @@ delete:		/*  delete 语句的语法解析树*/
 		{
 			CONTEXT->ssql->flag = SCF_DELETE;//"delete";
 			deletes_init_relation(&CONTEXT->ssql->sstr.deletion, $3);
-			deletes_set_conditions(&CONTEXT->ssql->sstr.deletion, *$4);
-
-			delete $4;
+			deletes_set_conditions(&CONTEXT->ssql->sstr.deletion, 
+					CONTEXT->conditions, CONTEXT->condition_length);
+			CONTEXT->condition_length = 0;	
     }
     ;
 update:			/*  update 语句的语法解析树*/
     UPDATE ID SET ID EQ value where SEMICOLON
 		{
 			CONTEXT->ssql->flag = SCF_UPDATE;//"update";
-			Value *value = $6;
-			updates_init(&CONTEXT->ssql->sstr.update, $2, $4, value, *$7);
-
-			delete $6;
-			delete $7;
+			Value *value = &CONTEXT->values[0];
+			updates_init(&CONTEXT->ssql->sstr.update, $2, $4, value, 
+					CONTEXT->conditions, CONTEXT->condition_length);
+			CONTEXT->condition_length = 0;
 		}
     ;
 select:				/*  select 语句的语法解析树*/
@@ -419,27 +396,19 @@ select:				/*  select 语句的语法解析树*/
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			selects_append_relation(&CONTEXT->ssql->sstr.selection, $4);
 
-            selects_append_joins(&CONTEXT->ssql->sstr.selection, JoinList());
+            selects_append_joins(&CONTEXT->ssql->sstr.selection, CONTEXT->joins, CONTEXT->join_length);
 
-			selects_append_conditions(&CONTEXT->ssql->sstr.selection, *$6);
-
-			CONTEXT->ssql->flag=SCF_SELECT;//"select";
-			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
-			delete $6;
-
-	}
-	| SELECT select_attr FROM ID join_list where SEMICOLON {
-		// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
-			selects_append_relation(&CONTEXT->ssql->sstr.selection, $4);
-
-            selects_append_joins(&CONTEXT->ssql->sstr.selection, *$5);
-
-			selects_append_conditions(&CONTEXT->ssql->sstr.selection, *$6);
+			selects_append_conditions(&CONTEXT->ssql->sstr.selection, CONTEXT->conditions, CONTEXT->condition_length);
 
 			CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
-			delete $5;
-			delete $6;
+
+			//临时变量清零
+			CONTEXT->condition_length=0;
+            CONTEXT->join_length=0;
+			CONTEXT->from_length=0;
+			CONTEXT->select_length=0;
+			CONTEXT->value_length = 0;
 	}
 	;
 
@@ -483,57 +452,25 @@ rel_list:
     | COMMA ID rel_list {	
 				selects_append_relation(&CONTEXT->ssql->sstr.selection, $2);
 		  }
+    | INNER JOIN ID ON condition condition_list rel_list {
+		join_append_conditions(&CONTEXT->joins[CONTEXT->join_length], CONTEXT->conditions, CONTEXT->condition_length);
+        join_set_relation(&CONTEXT->joins[CONTEXT->join_length++], $3);
+		// clear
+            CONTEXT->condition_length = 0;
+    }
     ;
-
-join_list:
-	INNER JOIN ID join_condition_list {
-		$$ = new JoinList();
-		Join join;
-		join_set_relation(&join, $3);
-		join_append_conditions(&join, *$4);
-		$$->push_back(join);
-
-		delete $4;
-	}
-	| INNER JOIN ID join_condition_list join_list {
-		$$ = $5;
-		Join join;
-		join_set_relation(&join, $3);
-		join_append_conditions(&join, *$4);
-		$$->push_front(join);
-
-		delete $4;
-	}
-	;
-
-join_condition_list:
-	ON condition condition_list {
-		$$ = $3;
-		$$->push_front(*$2);
-
-		delete $2;
-	}
-	;
 
 where:
-    /* empty */ {
-		$$ = new ConditionList();
-	}
-    | WHERE condition condition_list {
-		$$ = $3;
-		$$->push_front(*$2);
-		delete $2;
-	}
+    /* empty */ 
+    | WHERE condition condition_list {	
+				// CONTEXT->conditions[CONTEXT->condition_length++]=*$2;
+			}
     ;
 condition_list:
-    /* empty */ {
-		$$ = new ConditionList();
-	}
+    /* empty */
     | AND condition condition_list {
-		$$ = $3;
-		$$->push_front(*$2);
-		delete $2;
-	}
+				// CONTEXT->conditions[CONTEXT->condition_length++]=*$2;
+			}
     ;
 condition:
     ID comOp value 
@@ -541,12 +478,11 @@ condition:
 			RelAttr left_attr;
 			relation_attr_init(&left_attr, NULL, $1);
 
-			Value *right_value = $3;
+			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 1, &left_attr, NULL, 0, NULL, right_value);
-
-			delete $3;
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 0, NULL, right_value);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$ = ( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;
 			// $$->left_attr.relation_name = NULL;
@@ -560,14 +496,12 @@ condition:
 		}
 		|value comOp value 
 		{
-			Value *left_value = $1;
-			Value *right_value = $3;
+			Value *left_value = &CONTEXT->values[CONTEXT->value_length - 2];
+			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 0, NULL, left_value, 0, NULL, right_value);
-
-			delete $1;
-			delete $3;
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 0, NULL, left_value, 0, NULL, right_value);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$ = ( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 0;
 			// $$->left_attr.relation_name=NULL;
@@ -587,8 +521,9 @@ condition:
 			RelAttr right_attr;
 			relation_attr_init(&right_attr, NULL, $3);
 
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 1, &left_attr, NULL, 1, &right_attr, NULL);
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 1, &right_attr, NULL);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;
 			// $$->left_attr.relation_name=NULL;
@@ -601,14 +536,13 @@ condition:
 		}
     |value comOp ID
 		{
-			Value *left_value = $1;
+			Value *left_value = &CONTEXT->values[CONTEXT->value_length - 1];
 			RelAttr right_attr;
 			relation_attr_init(&right_attr, NULL, $3);
 
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 0, NULL, left_value, 1, &right_attr, NULL);
-
-			delete $1;
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 0, NULL, left_value, 1, &right_attr, NULL);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 0;
@@ -626,12 +560,11 @@ condition:
 		{
 			RelAttr left_attr;
 			relation_attr_init(&left_attr, $1, $3);
-			Value *right_value = $5;
+			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
-			$$ = new Condition();
-			condition_init($$, CompOp($4), 1, &left_attr, NULL, 0, NULL, right_value);
-
-			delete $5;
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 0, NULL, right_value);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;
@@ -646,15 +579,14 @@ condition:
     }
     |value comOp ID DOT ID
 		{
-			Value *left_value = $1;
+			Value *left_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
 			RelAttr right_attr;
 			relation_attr_init(&right_attr, $3, $5);
 
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 0, NULL, left_value, 1, &right_attr, NULL);
-
-			delete $1;
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 0, NULL, left_value, 1, &right_attr, NULL);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 0;//属性值
 			// $$->left_attr.relation_name=NULL;
@@ -673,8 +605,9 @@ condition:
 			RelAttr right_attr;
 			relation_attr_init(&right_attr, $5, $7);
 
-			$$ = new Condition();
-			condition_init($$, CompOp($4), 1, &left_attr, NULL, 1, &right_attr, NULL);
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 1, &right_attr, NULL);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;		//属性
 			// $$->left_attr.relation_name=$1;
@@ -689,12 +622,11 @@ condition:
 			RelAttr left_attr;
 			relation_attr_init(&left_attr, NULL, $1);
 
-			Value *right_value = $3;
+			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 1, &left_attr, NULL, 0, NULL, right_value);
-
-			delete $3;
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 0, NULL, right_value);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 			// $$ = ( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;
 			// $$->left_attr.relation_name = NULL;
@@ -709,12 +641,11 @@ condition:
 		{
 			RelAttr left_attr;
 			relation_attr_init(&left_attr, $1, $3);
-			Value *right_value = $5;
+			Value *right_value = &CONTEXT->values[CONTEXT->value_length - 1];
 
-			$$ = new Condition();
-			condition_init($$, CompOp($4), 1, &left_attr, NULL, 0, NULL, right_value);
-
-			delete $5;
+			Condition condition;
+			condition_init(&condition, CONTEXT->comp, 1, &left_attr, NULL, 0, NULL, right_value);
+			CONTEXT->conditions[CONTEXT->condition_length++] = condition;
 
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;
@@ -730,17 +661,17 @@ condition:
     ;
 
 comOp:
-  	  EQ { $$ = EQUAL_TO; }
-    | LT { $$ = LESS_THAN; }
-    | GT { $$ = GREAT_THAN; }
-    | LE { $$ = LESS_EQUAL; }
-    | GE { $$ = GREAT_EQUAL; }
-    | NE { $$ = NOT_EQUAL; }
+  	  EQ { CONTEXT->comp = EQUAL_TO; }
+    | LT { CONTEXT->comp = LESS_THAN; }
+    | GT { CONTEXT->comp = GREAT_THAN; }
+    | LE { CONTEXT->comp = LESS_EQUAL; }
+    | GE { CONTEXT->comp = GREAT_EQUAL; }
+    | NE { CONTEXT->comp = NOT_EQUAL; }
     ;
 
 like_comOp:
-	  NOT LIKE { $$ = UNLIKE_SCH; }
-	| LIKE { $$ = LIKE_SCH; }
+	  NOT LIKE { CONTEXT->comp = UNLIKE_SCH; }
+	| LIKE { CONTEXT->comp = LIKE_SCH; }
     ;
 
 load_data:

@@ -16,6 +16,15 @@ See the Mulan PSL v2 for more details. */
 #define __OBSERVER_SQL_PARSER_PARSE_DEFS_H__
 
 #include <stddef.h>
+#include <deque>
+
+typedef struct _Selects Selects;
+typedef struct _Value Value;
+typedef struct _Condition Condition;
+typedef struct _Join Join;
+typedef std::deque<Value> ValueList;
+typedef std::deque<Condition> ConditionList;
+typedef std::deque<Join> JoinList;
 
 #define MAX_NUM 20
 #define MAX_REL_NAME 20
@@ -52,13 +61,13 @@ typedef enum
 } AttrType;
 
 //属性值
-typedef struct _Value {
+struct _Value {
   AttrType type;  // type of value
   void *data;     // value
   void *raw_data; // raw vlaue
-} Value;
+};
 
-typedef struct _Condition {
+struct _Condition {
   int left_is_attr;    // TRUE if left-hand side is an attribute
                        // 1时，操作符左边是属性名，0时，是属性值
   Value left_value;    // left-hand side value if left_is_attr = FALSE
@@ -68,18 +77,28 @@ typedef struct _Condition {
                        // 1时，操作符右边是属性名，0时，是属性值
   RelAttr right_attr;  // right-hand side attribute if right_is_attr = TRUE 右边的属性
   Value right_value;   // right-hand side value if right_is_attr = FALSE
-} Condition;
+};
+
+// struct of join
+struct _Join {
+  char *relation_name;
+  size_t condition_num;
+  Condition conditions[MAX_NUM];
+};
 
 // struct of select
-typedef struct {
+struct _Selects {
   size_t attr_num;                // Length of attrs in Select clause
   RelAttr attributes[MAX_NUM];    // attrs in Select clause
   size_t relation_num;            // Length of relations in Fro clause
   char *relations[MAX_NUM];       // relations in From clause
+  size_t join_num;                // Length of joins in join clause
+  Join join[MAX_NUM];
   size_t condition_num;           // Length of conditions in Where clause
   Condition conditions[MAX_NUM];  // conditions in Where clause
-} Selects;
+};
 
+// sturct of row in insert
 typedef struct {
   size_t value_num;       // Length of values
   Value values[MAX_NUM];  // values to insert
@@ -196,9 +215,9 @@ typedef struct Query {
   union Queries sstr;
 } Query;
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
+// #ifdef __cplusplus
+// extern "C" {
+// #endif  // __cplusplus
 
 void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const char *attribute_name);
 void relation_attr_destroy(RelAttr *relation_attr);
@@ -216,23 +235,28 @@ void condition_destroy(Condition *condition);
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length);
 void attr_info_destroy(AttrInfo *attr_info);
 
+void join_set_relation(Join *join, const char *relation_name);
+void join_append_conditions(Join *join, std::deque<Condition> conditions);
+void join_destroy(Join *join);
+
 void selects_init(Selects *selects, ...);
 void selects_append_attribute(Selects *selects, RelAttr *rel_attr);
 void selects_append_relation(Selects *selects, const char *relation_name);
-void selects_append_conditions(Selects *selects, Condition conditions[], size_t condition_num);
+void selects_append_conditions(Selects *selects, std::deque<Condition> conditions);
+void selects_append_joins(Selects *selects, std::deque<Join> joins);
 void selects_destroy(Selects *selects);
 
-void insert_row_init(Rows *rows, Value values[], size_t value_num);
+void inserts_row_init(Rows *rows, std::deque<Value> values);
 void inserts_init(Inserts *inserts, const char *relation_name);
 void inserts_destroy(Inserts *inserts);
 void row_destory(Rows *row);
 
 void deletes_init_relation(Deletes *deletes, const char *relation_name);
-void deletes_set_conditions(Deletes *deletes, Condition conditions[], size_t condition_num);
+void deletes_set_conditions(Deletes *deletes, std::deque<Condition> conditions);
 void deletes_destroy(Deletes *deletes);
 
 void updates_init(Updates *updates, const char *relation_name, const char *attribute_name, Value *value,
-    Condition conditions[], size_t condition_num);
+    std::deque<Condition> conditions);
 void updates_destroy(Updates *updates);
 
 void create_table_append_attribute(CreateTable *create_table, AttrInfo *attr_info);
@@ -263,8 +287,8 @@ Query *query_create();  // create and init
 void query_reset(Query *query);
 void query_destroy(Query *query);  // reset and delete
 
-#ifdef __cplusplus
-}
-#endif  // __cplusplus
+// #ifdef __cplusplus
+// }
+// #endif  // __cplusplus
 
 #endif  // __OBSERVER_SQL_PARSER_PARSE_DEFS_H__

@@ -47,7 +47,7 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
   int row_num = inserts.row_num;
   for (int j = 0; j < row_num; j++) {
     // check the fields number
-    // LOG_INFO("CHECK FIELD ROW %d", j);
+    LOG_INFO("CHECK FIELD ROW %d", j);
     Value *values = inserts.rows[j].values;
 
     const int value_num = inserts.rows[j].value_num;
@@ -59,7 +59,7 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
     // check fields type && valid
     const int sys_field_num = table_meta.sys_field_num();
     for (int i = 0; i < value_num; i++) {
-      // LOG_INFO("CHECK FIELD VALUE %d", i);
+      LOG_INFO("CHECK FIELD VALUE %d", i);
       const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
       const AttrType field_type = field_meta->type();
       CastUnit::cast_to(values[i], field_type);

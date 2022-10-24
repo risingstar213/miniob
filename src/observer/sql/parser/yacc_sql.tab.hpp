@@ -39,6 +39,22 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 51 "yacc_sql.y" /* yacc.c:1909  */
+
+#include <deque>
+#include <string>
+typedef struct _Attr Attr;
+typedef struct _Selects Selects;
+typedef struct _Value Value;
+typedef struct _Condition Condition;
+typedef struct _Join Join;
+typedef std::deque<Value> ValueList;
+typedef std::deque<Condition> ConditionList;
+typedef std::deque<Join> JoinList;
+// typedef std::string String;
+
+#line 58 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -79,25 +95,27 @@ extern int yydebug;
     NOT = 289,
     LIKE = 290,
     DATE_T = 291,
-    ON = 292,
-    LOAD = 293,
-    DATA = 294,
-    INFILE = 295,
-    EQ = 296,
-    LT = 297,
-    GT = 298,
-    LE = 299,
-    GE = 300,
-    NE = 301,
-    NUMBER = 302,
-    FLOAT = 303,
-    DATE_DATA = 304,
-    ID = 305,
-    PATH = 306,
-    SSS = 307,
-    LIKE_SSS = 308,
-    STAR = 309,
-    STRING_V = 310
+    INNER = 292,
+    JOIN = 293,
+    ON = 294,
+    LOAD = 295,
+    DATA = 296,
+    INFILE = 297,
+    EQ = 298,
+    LT = 299,
+    GT = 300,
+    LE = 301,
+    GE = 302,
+    NE = 303,
+    NUMBER = 304,
+    FLOAT = 305,
+    DATE_DATA = 306,
+    ID = 307,
+    PATH = 308,
+    SSS = 309,
+    LIKE_SSS = 310,
+    STAR = 311,
+    STRING_V = 312
   };
 #endif
 
@@ -106,17 +124,22 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 112 "yacc_sql.y" /* yacc.c:1909  */
+#line 117 "yacc_sql.y" /* yacc.c:1909  */
 
-  struct _Attr *attr;
-  struct _Condition *condition1;
-  struct _Value *value1;
-  char *string;
-  int number;
-  float floats;
-	char *position;
+  Attr *attr1;
+  Condition *condition1;
+  Value *value1;
+  Join *join1;
+  char *string1;
+  int number1;
+  float floats1;
+  char position1;
+  int comp1;
+  ValueList *values1;
+  ConditionList *conditions1;
+  JoinList *joins1;
 
-#line 120 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 143 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

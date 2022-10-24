@@ -4,7 +4,7 @@
 
 struct ParserContext;
 
-#include "yacc_sql.tab.h"
+#include "yacc_sql.tab.hpp"
 
 #if YYDEBUG > 0
 #define debug_printf  printf
@@ -32,9 +32,9 @@ QUOTE            [\'\"]
 
 {WHITE_SAPCE}                                        // ignore whitespace
 \n                                                   ;
-{QUOTE}{DIGIT}\-{DIGIT}\-{DIGIT}{QUOTE}              yylval->string = strdup(yytext); RETURN_TOKEN(DATE_DATA);
-[\-]?{DIGIT}+                                        yylval->string=strdup(yytext); RETURN_TOKEN(NUMBER);
-[\-]?{DIGIT}+{DOT}{DIGIT}+                           yylval->string=strdup(yytext); RETURN_TOKEN(FLOAT);
+{QUOTE}{DIGIT}\-{DIGIT}\-{DIGIT}{QUOTE}              yylval->string1 = strdup(yytext); RETURN_TOKEN(DATE_DATA);
+[\-]?{DIGIT}+                                        yylval->string1=strdup(yytext); RETURN_TOKEN(NUMBER);
+[\-]?{DIGIT}+{DOT}{DIGIT}+                           yylval->string1=strdup(yytext); RETURN_TOKEN(FLOAT);
 
 ";"                                                  RETURN_TOKEN(SEMICOLON);
 {DOT}                                                RETURN_TOKEN(DOT);
@@ -52,6 +52,8 @@ QUOTE            [\'\"]
 [Ss][Yy][Nn][Cc]                                     RETURN_TOKEN(SYNC);
 [Ss][Ee][Ll][Ee][Cc][Tt]                             RETURN_TOKEN(SELECT);
 [Ff][Rr][Oo][Mm]                                     RETURN_TOKEN(FROM);
+[Ii][Nn][Nn][Ee][Rr]                                 RETURN_TOKEN(INNER);
+[Jj][Oo][Ii][Nn]                                     RETURN_TOKEN(JOIN);
 [Ww][Hh][Ee][Rr][Ee]                                 RETURN_TOKEN(WHERE);
 [Aa][Nn][Dd]                                         RETURN_TOKEN(AND);
 [Ii][Nn][Ss][Ee][rR][tT]                             RETURN_TOKEN(INSERT);
@@ -72,7 +74,7 @@ QUOTE            [\'\"]
 [Ll][Oo][Aa][Dd]                                     RETURN_TOKEN(LOAD);
 [Dd][Aa][Tt][Aa]                                     RETURN_TOKEN(DATA);
 [Ii][Nn][Ff][Ii][Ll][Ee]                             RETURN_TOKEN(INFILE);
-{ID}                                                 yylval->string=strdup(yytext); RETURN_TOKEN(ID);
+{ID}                                                 yylval->string1=strdup(yytext); RETURN_TOKEN(ID);
 "("                                                  RETURN_TOKEN(LBRACE);
 ")"                                                  RETURN_TOKEN(RBRACE);
 
@@ -84,8 +86,8 @@ QUOTE            [\'\"]
 "<"                                                  RETURN_TOKEN(LT);
 ">="                                                 RETURN_TOKEN(GE);
 ">"                                                  RETURN_TOKEN(GT);
-{QUOTE}[A-Za-z0-9_/\.\-]*{QUOTE}                     yylval->string=strdup(yytext); RETURN_TOKEN(SSS);
-{QUOTE}[A-Za-z0-9_/\.\-\%]*{QUOTE}                   yylval->string=strdup(yytext); RETURN_TOKEN(LIKE_SSS);
+{QUOTE}[A-Za-z0-9_/\.\-]*{QUOTE}                     yylval->string1=strdup(yytext); RETURN_TOKEN(SSS);
+{QUOTE}[A-Za-z0-9_/\.\-\%]*{QUOTE}                   yylval->string1=strdup(yytext); RETURN_TOKEN(LIKE_SSS);
 
 .                                                    printf("Unknown character [%c]\n",yytext[0]); return yytext[0];
 %%

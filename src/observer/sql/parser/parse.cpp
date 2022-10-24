@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include <mutex>
+#include <deque>
 #include "sql/parser/parse.h"
 #include "rc.h"
 #include "common/log/log.h"
@@ -20,9 +21,9 @@ See the Mulan PSL v2 for more details. */
 
 RC parse(char *st, Query *sqln);
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
+// #ifdef __cplusplus
+// extern "C" {
+// #endif  // __cplusplus
 void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const char *attribute_name)
 {
   if (relation_name != nullptr) {
@@ -124,6 +125,31 @@ void attr_info_destroy(AttrInfo *attr_info)
   attr_info->name = nullptr;
 }
 
+void join_set_relation(Join *join, const char *relation_name)
+{
+  LOG_INFO("%p, JOIN TABLE: %s", join, relation_name);
+  join->relation_name = strdup(relation_name);
+}
+
+void join_append_conditions(Join *join, std::deque<Condition> conditions)
+{
+  for (size_t i = 0; i < conditions.size(); i++) {
+    join->conditions[i] = conditions[i];
+  }
+  join->condition_num = conditions.size();
+}
+
+void join_destroy(Join *join)
+{
+  free(join->relation_name);
+  join->relation_name = nullptr;
+
+  for (size_t i = 0; i < join->condition_num; i++) {
+    condition_destroy(&join->conditions[i]);
+  }
+  join->condition_num = 0;
+}
+
 void selects_init(Selects *selects, ...);
 void selects_append_attribute(Selects *selects, RelAttr *rel_attr)
 {
@@ -134,13 +160,21 @@ void selects_append_relation(Selects *selects, const char *relation_name)
   selects->relations[selects->relation_num++] = strdup(relation_name);
 }
 
-void selects_append_conditions(Selects *selects, Condition conditions[], size_t condition_num)
+void selects_append_conditions(Selects *selects, std::deque<Condition> conditions)
 {
-  assert(condition_num <= sizeof(selects->conditions) / sizeof(selects->conditions[0]));
-  for (size_t i = 0; i < condition_num; i++) {
+  assert(conditions.size() <= sizeof(selects->conditions) / sizeof(selects->conditions[0]));
+  for (size_t i = 0; i < conditions.size(); i++) {
     selects->conditions[i] = conditions[i];
   }
-  selects->condition_num = condition_num;
+  selects->condition_num = conditions.size();
+}
+
+void selects_append_joins(Selects *selects, std::deque<Join> joins)
+{
+  for (size_t i = 0; i < joins.size(); i++) {
+    selects->join[i] = joins[i];
+  }
+  selects->join_num = joins.size();
 }
 
 void selects_destroy(Selects *selects)
@@ -160,15 +194,20 @@ void selects_destroy(Selects *selects)
     condition_destroy(&selects->conditions[i]);
   }
   selects->condition_num = 0;
+
+  for (size_t i = 0; i < selects->join_num; i++) {
+    join_destroy(&selects->join[i]);
+  }
+  selects->join_num = 0;
 }
 
 
-void insert_row_init(Rows *rows, Value values[], size_t value_num)
+void inserts_row_init(Rows *rows, std::deque<Value> values)
 {
-  for (size_t i = 0; i < value_num; i++) {
+  for (size_t i = 0; i < values.size(); i++) {
     rows->values[i] = values[i];
   }
-  rows->value_num = value_num;
+  rows->value_num = values.size();
 }
 
 void inserts_init(Inserts *inserts, const char *relation_name) {
@@ -197,13 +236,13 @@ void deletes_init_relation(Deletes *deletes, const char *relation_name)
   deletes->relation_name = strdup(relation_name);
 }
 
-void deletes_set_conditions(Deletes *deletes, Condition conditions[], size_t condition_num)
+void deletes_set_conditions(Deletes *deletes, std::deque<Condition> conditions)
 {
-  assert(condition_num <= sizeof(deletes->conditions) / sizeof(deletes->conditions[0]));
-  for (size_t i = 0; i < condition_num; i++) {
+  assert(conditions.size() <= sizeof(deletes->conditions) / sizeof(deletes->conditions[0]));
+  for (size_t i = 0; i < conditions.size(); i++) {
     deletes->conditions[i] = conditions[i];
   }
-  deletes->condition_num = condition_num;
+  deletes->condition_num = conditions.size();
 }
 void deletes_destroy(Deletes *deletes)
 {
@@ -216,17 +255,17 @@ void deletes_destroy(Deletes *deletes)
 }
 
 void updates_init(Updates *updates, const char *relation_name, const char *attribute_name, Value *value,
-    Condition conditions[], size_t condition_num)
+    std::deque<Condition> conditions)
 {
   updates->relation_name = strdup(relation_name);
   updates->attribute_name = strdup(attribute_name);
   updates->value = *value;
 
-  assert(condition_num <= sizeof(updates->conditions) / sizeof(updates->conditions[0]));
-  for (size_t i = 0; i < condition_num; i++) {
+  assert(conditions.size() <= sizeof(updates->conditions) / sizeof(updates->conditions[0]));
+  for (size_t i = 0; i < conditions.size(); i++) {
     updates->conditions[i] = conditions[i];
   }
-  updates->condition_num = condition_num;
+  updates->condition_num = conditions.size();
 }
 
 void updates_destroy(Updates *updates)
@@ -427,13 +466,13 @@ void query_destroy(Query *query)
   query_reset(query);
   free(query);
 }
-#ifdef __cplusplus
-}  // extern "C"
-#endif  // __cplusplus
+// #ifdef __cplusplus
+// }  // extern "C"
+// #endif  // __cplusplus
 
 ////////////////////////////////////////////////////////////////////////////////
 
-extern "C" int sql_parse(const char *st, Query *sqls);
+int sql_parse(const char *st, Query *sqls);
 
 RC parse(const char *st, Query *sqln)
 {
