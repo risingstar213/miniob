@@ -133,6 +133,7 @@ void join_set_relation(Join *join, const char *relation_name)
 
 void join_append_conditions(Join *join, std::deque<Condition> conditions)
 {
+  LOG_INFO("%p, JOIN CONDITION NUM: %d", join, conditions.size());
   for (size_t i = 0; i < conditions.size(); i++) {
     join->conditions[i] = conditions[i];
   }

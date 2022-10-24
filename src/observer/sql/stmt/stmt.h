@@ -22,6 +22,7 @@ class Db;
 enum class StmtType
 {
   SELECT,
+  JOIN,
   INSERT,
   UPDATE,
   DELETE,

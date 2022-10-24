@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/stmt/select_stmt.h"
 #include "sql/stmt/filter_stmt.h"
+#include "sql/stmt/join_stmt.h"
 #include "common/log/log.h"
 #include "common/lang/string.h"
 #include "storage/common/db.h"
@@ -25,6 +26,11 @@ SelectStmt::~SelectStmt()
     delete filter_stmt_;
     filter_stmt_ = nullptr;
   }
+
+  for (size_t i = 0; i < join_stmts_.size(); i++) {
+    delete join_stmts_[i];
+  }
+  join_stmts_.clear();
 }
 
 static void wildcard_fields(Table *table, std::vector<Field> &field_metas)
@@ -62,6 +68,17 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
 
     tables.push_back(table);
     table_map.insert(std::pair<std::string, Table*>(table_name, table));
+  }
+
+  std::vector<JoinStmt *> join_stmts;
+  for (int i = 0; i < select_sql.join_num; i++) {
+    JoinStmt *join;
+    RC rc = JoinStmt::create(db, &tables, &table_map, select_sql.join[i], join);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("cannot construct join stmt");
+      return rc;
+    }
+    join_stmts.push_back(join);
   }
   
   // collect query fields in `select` statement
@@ -144,6 +161,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
   SelectStmt *select_stmt = new SelectStmt();
   select_stmt->tables_.swap(tables);
   select_stmt->query_fields_.swap(query_fields);
+  select_stmt->join_stmts_.swap(join_stmts);
   select_stmt->filter_stmt_ = filter_stmt;
   stmt = select_stmt;
   return RC::SUCCESS;

@@ -34,12 +34,14 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/delete_operator.h"
 #include "sql/operator/update_operator.h"
 #include "sql/operator/project_operator.h"
+#include "sql/operator/join_operator.h"
 #include "sql/stmt/stmt.h"
 #include "sql/stmt/select_stmt.h"
 #include "sql/stmt/update_stmt.h"
 #include "sql/stmt/delete_stmt.h"
 #include "sql/stmt/insert_stmt.h"
 #include "sql/stmt/filter_stmt.h"
+#include "sql/stmt/join_stmt.h"
 #include "storage/common/table.h"
 #include "storage/common/field.h"
 #include "storage/index/index.h"
@@ -423,25 +425,47 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   //   rc = RC::UNIMPLENMENT;
   //   return rc;
   // }
-  Operator *scan_oper;
+  std::vector<Operator *> operator_queue;
+  Operator *top_oper;
   bool multi_tables = select_stmt->tables().size() > 1;
-  if (multi_tables) {
-    scan_oper = new TablesScanOperator();
+  std::vector<JoinStmt *> join_tables = select_stmt->join_stmts();
+  if (join_tables.size() > 0) {
+    LOG_INFO("join num: %d", join_tables.size());
+    Operator *left_operator = new TableScanOperator(select_stmt->tables()[0]);
+    operator_queue.push_back(left_operator);
+    TableScanOperator *right_operator;
+    JoinOperator *join_operator;
+    for (size_t i = 0; i < join_tables.size(); i++) {
+      right_operator = new TableScanOperator(join_tables[i]->table());
+      operator_queue.push_back(right_operator);
+      join_operator = new JoinOperator(left_operator, right_operator);
+      operator_queue.push_back(join_operator);
+      left_operator = new PredicateOperator(join_tables[i]->filter_stmt());
+      operator_queue.push_back(left_operator);
+      left_operator->add_child(join_operator);
+    }
+    top_oper = left_operator;
+  }
+  else if (multi_tables) {
+    top_oper = new TablesScanOperator();
+    operator_queue.push_back(top_oper);
     Operator *child_oper;
     for (uint i = 0; i < select_stmt->tables().size(); i++) {
       child_oper = new TableScanOperator(select_stmt->tables()[i]);
-      scan_oper->add_child(child_oper);
+      operator_queue.push_back(child_oper);
+      top_oper->add_child(child_oper);
     }
   } else {
-    scan_oper = try_to_create_index_scan_operator(select_stmt->filter_stmt());
-    if (nullptr == scan_oper) {
-      scan_oper = new TableScanOperator(select_stmt->tables()[0]);
+    top_oper = try_to_create_index_scan_operator(select_stmt->filter_stmt());
+    if (nullptr == top_oper) {
+      top_oper = new TableScanOperator(select_stmt->tables()[0]);
     }
+    operator_queue.push_back(top_oper);
   }
 
-  DEFER([&]() { delete scan_oper; });
+  DEFER([&]() { for (auto &iter : operator_queue) delete iter; });
   PredicateOperator pred_oper(select_stmt->filter_stmt());
-  pred_oper.add_child(scan_oper);
+  pred_oper.add_child(top_oper);
   ProjectOperator project_oper;
   project_oper.add_child(&pred_oper);
   for (const Field &field : select_stmt->query_fields()) {

@@ -22,6 +22,7 @@ See the Mulan PSL v2 for more details. */
 
 class FieldMeta;
 class FilterStmt;
+class JoinStmt;
 class Db;
 class Table;
 
@@ -40,10 +41,12 @@ public:
   const std::vector<Table *> &tables() const { return tables_; }
   const std::vector<Field> &query_fields() const { return query_fields_; }
   FilterStmt *filter_stmt() const { return filter_stmt_; }
+  std::vector<JoinStmt *> join_stmts() { return join_stmts_; }
 
 private:
   std::vector<Field> query_fields_;
   std::vector<Table *> tables_;
+  std::vector<JoinStmt *> join_stmts_;
   FilterStmt *filter_stmt_ = nullptr;
 };
 

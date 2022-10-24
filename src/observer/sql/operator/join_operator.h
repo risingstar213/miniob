@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details. */
 class JoinOperator : public Operator
 {
 public:
-  JoinOperator(Operator *left, Operator *right)
+  JoinOperator(Operator *left, Operator *right) : left_(left), right_(right)
   {}
 
   virtual ~JoinOperator() = default;
@@ -31,8 +31,13 @@ public:
   RC next() override;
   RC close() override;
 
+  std::vector<Tuple *> current_tuples() override;
 private:
-  Operator *left_ = nullptr;
-  Operator *right_ = nullptr;
-  bool round_done_ = true;
+  // filter / scan
+  Operator *left_;
+  // scan
+  Operator *right_;
+  bool start_ = true;
+  bool stop_ = true;
+  RC rc_;
 };
