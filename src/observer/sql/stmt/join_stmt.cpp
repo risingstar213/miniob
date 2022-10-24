@@ -41,6 +41,9 @@ RC JoinStmt::create(Db *db, std::vector<Table *>* tables,
   RC rc = FilterStmt::create(db, nullptr, table_map,
             join_sql.conditions, join_sql.condition_num, filter_stmt);
 
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
   // everything alright
   JoinStmt *join_stmt = new JoinStmt();
   join_stmt->table_ = table;
