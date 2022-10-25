@@ -14,9 +14,13 @@ See the Mulan PSL v2 for more details. */
 
 #include "storage/index/index.h"
 
-RC Index::init(const IndexMeta &index_meta, const FieldMeta &field_meta)
+RC Index::init(const IndexMeta &index_meta, std::vector<FieldMeta> &field_meta)
 {
   index_meta_ = index_meta;
-  field_meta_ = field_meta;
+  field_metas_ = field_meta;
+  sum_field_length_ = 0;
+  for (size_t i = 0; i < field_meta.size(); i++) {
+    sum_field_length_ += field_meta[i].len();
+  }
   return RC::SUCCESS;
 }

@@ -12,7 +12,7 @@
 
 typedef struct ParserContext {
   Query * ssql;
-	char id[MAX_NUM];
+  char id[MAX_NUM];
 } ParserContext;
 
 //获取子串
@@ -59,6 +59,7 @@ typedef struct _Join Join;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
+typedef std::deque<char *> IdList;
 // typedef std::string String;
 }
 
@@ -127,6 +128,7 @@ typedef std::deque<Join> JoinList;
   ValueList *values1;
   ConditionList *conditions1;
   JoinList *joins1;
+  IdList *ids1;
 }
 
 %token <string1> NUMBER
@@ -153,6 +155,7 @@ typedef std::deque<Join> JoinList;
 %type <conditions1> condition_list;
 %type <conditions1> join_condition_list;
 %type <joins1> join_list;
+%type <ids1> id_list;
 
 %%
 
@@ -236,10 +239,11 @@ desc_table:
     ;
 
 create_index:		/*create index 语句的语法解析树*/
-    CREATE INDEX ID ON ID LBRACE ID RBRACE SEMICOLON 
+    CREATE INDEX ID ON ID LBRACE id_list SEMICOLON 
 		{
 			CONTEXT->ssql->flag = SCF_CREATE_INDEX;//"create_index";
-			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, $7);
+			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, *$7);
+			delete $7;
 		}
     ;
 
@@ -297,6 +301,20 @@ attr_def:
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].length=4; // default attribute length
 		}
     ;
+
+id_list:
+	ID RBRACE
+	{
+		$$ = new IdList();
+		$$->push_front($1);
+	}
+	| ID COMMA id_list
+	{
+		$$ = $3;
+		$$->push_front($1);
+	}
+	;
+
 number:
 		NUMBER {$$ = atoi($1);}
 		;

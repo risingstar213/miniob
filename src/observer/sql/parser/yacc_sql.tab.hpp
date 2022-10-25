@@ -52,9 +52,10 @@ typedef struct _Join Join;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
+typedef std::deque<char *> IdList;
 // typedef std::string String;
 
-#line 58 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 59 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -124,7 +125,7 @@ typedef std::deque<Join> JoinList;
 
 union YYSTYPE
 {
-#line 117 "yacc_sql.y" /* yacc.c:1909  */
+#line 118 "yacc_sql.y" /* yacc.c:1909  */
 
   Attr *attr1;
   Condition *condition1;
@@ -138,8 +139,9 @@ union YYSTYPE
   ValueList *values1;
   ConditionList *conditions1;
   JoinList *joins1;
+  IdList *ids1;
 
-#line 143 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 145 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
