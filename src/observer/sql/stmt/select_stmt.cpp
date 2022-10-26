@@ -109,7 +109,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
   // collect query fields in `select` statement
   std::vector<Field> query_fields;
   std::vector<Aggregation> aggregations;
-  for (int i = select_sql.attr_num - 1; i >= 0; i--) {
+  for (size_t i = 0; i < select_sql.attr_num; i++) {
     const RelAttr &relation_attr = select_sql.attributes[i];
     aggregations.push_back(select_sql.attributes[i].agg);
     // STAR

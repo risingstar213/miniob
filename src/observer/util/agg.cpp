@@ -82,7 +82,7 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
             }
           } break;
           case DATES: {
-            if (compare_date(data->max.data, data_in) < 0) {
+            if (compare_date(data->max.data, data_in) > 0) {
               data->max.data = data_in;
             }
           } break;
