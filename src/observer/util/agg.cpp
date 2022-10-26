@@ -25,6 +25,8 @@ void AggFunc::init_data(Aggregation agg, AggData *data, AttrType type) {
       data->avg.data = (char *)calloc(1, sizeof(float));
       data->avg.count = 0;
     }
+    default:
+      break;
   }
 }
 
@@ -49,6 +51,13 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
               data->max.data = data_in;
             }
           } break;
+          case DATES: {
+            if (compare_date(data->max.data, data_in) < 0) {
+              data->max.data = data_in;
+            }
+          } break;
+          default:
+            break;
         }
       } else {
         data->max.data = data_in;
@@ -72,6 +81,13 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
               data->min.data = data_in;
             }
           } break;
+          case DATES: {
+            if (compare_date(data->max.data, data_in) < 0) {
+              data->max.data = data_in;
+            }
+          } break;
+          default:
+            break;
         }
       } else {
         data->min.data = data_in;
@@ -92,8 +108,9 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
         case CHARS: {
           *((float *)data->sum.data) += CastUnit::cast_string_to_float(data_in, length);
         } break;
+        default:
+          break;
       }
-      // NO CHARS !!!
     }
     case AGG_AVG: {
       // (TODO): resolve null
@@ -108,8 +125,12 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
         case CHARS: {
           *((float *)data->avg.data) += CastUnit::cast_string_to_float(data_in, length);
         } break;
+        default:
+          break;
       }
     }
+    default:
+      break;
   }
 }
 
@@ -127,6 +148,8 @@ void AggFunc::destroy_data(Aggregation agg, AggData *data, AttrType type)
     case AGG_AVG: {
       free(data->avg.data);
     } break;
+    default:
+      break;
   }
 }
 
@@ -150,6 +173,9 @@ AttrType AggFunc::get_attrtype(Aggregation agg, AttrType type)
     case AGG_AVG: {
       return FLOATS;
     } break;
+    default:
+      return UNDEFINED;
+      break;
   }
 }
 
@@ -174,6 +200,7 @@ char* AggFunc::get_data(Aggregation agg, AggData *data, AttrType type)
     return data->avg.data;
   } break;
   default:
+    return nullptr;
     break;
   }
 }
