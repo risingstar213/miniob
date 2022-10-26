@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/string.h"
 #include "storage/common/db.h"
 #include "storage/common/table.h"
+#include "storage/trx/trx.h"
 
 SelectStmt::~SelectStmt()
 {
@@ -44,6 +45,23 @@ static void wildcard_fields(Table *table, std::vector<Field> &field_metas)
 
 RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
 {
+  if (select_sql.is_valid == false) {
+    LOG_WARN("invalid argument. selection is invalid");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  bool isAgg = false;
+  for (int i = select_sql.attr_num - 1; i >= 0; i--) {
+    if (isAgg) {
+      if (select_sql.agg[i] == AGG_NONE) {
+        LOG_WARN("invalid argument. invalid aggregation");
+        return RC::INVALID_ARGUMENT;
+      }
+    } else if (select_sql.agg[i] != AGG_NONE) {
+      isAgg = true;
+    }
+  }
+
   if (nullptr == db) {
     LOG_WARN("invalid argument. db is null");
     return RC::INVALID_ARGUMENT;
@@ -83,13 +101,23 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
   
   // collect query fields in `select` statement
   std::vector<Field> query_fields;
+  std::vector<Aggregation> aggregations;
   for (int i = select_sql.attr_num - 1; i >= 0; i--) {
     const RelAttr &relation_attr = select_sql.attributes[i];
-
+    aggregations.push_back(select_sql.agg[i]);
     // STAR
     if (common::is_blank(relation_attr.relation_name) && 0 == strcmp(relation_attr.attribute_name, "*")) {
-      for (Table *table : tables) {
-        wildcard_fields(table, query_fields);
+      if (select_sql.agg[i] == AGG_NONE) {
+        for (Table *table : tables) {
+          wildcard_fields(table, query_fields);
+        }
+      } else if (select_sql.agg[i] == AGG_COUNT) {
+        Table *table = tables[0];
+        const TableMeta &table_meta = table->table_meta();
+        query_fields.push_back(Field(table, table->table_meta().field(Trx::trx_field_name())));
+      } else {
+        LOG_WARN("invalid argument. aggrevation * type error");
+        return RC::INVALID_ARGUMENT;
       }
 
     } else if (!common::is_blank(relation_attr.relation_name)) { // TODO
@@ -163,6 +191,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
   select_stmt->query_fields_.swap(query_fields);
   select_stmt->join_stmts_.swap(join_stmts);
   select_stmt->filter_stmt_ = filter_stmt;
+  select_stmt->aggregations_.swap(aggregations);
   stmt = select_stmt;
   return RC::SUCCESS;
 }

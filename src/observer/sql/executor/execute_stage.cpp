@@ -468,8 +468,11 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   pred_oper.add_child(top_oper);
   ProjectOperator project_oper;
   project_oper.add_child(&pred_oper);
-  for (const Field &field : select_stmt->query_fields()) {
-    project_oper.add_projection(multi_tables, field.table(), field.meta());
+  int n = select_stmt->query_fields().size();
+  for (int i = 0; i < n; i++) {
+    const Field &field = select_stmt->query_fields()[i];
+    const Aggregation &agg = select_stmt->aggregations()[i];
+    project_oper.add_projection(multi_tables, field.table(), field.meta(), agg);
   }
   rc = project_oper.open();
   if (rc != RC::SUCCESS) {
