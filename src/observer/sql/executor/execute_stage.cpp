@@ -444,6 +444,7 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
       operator_queue.push_back(right_operator);
       join_operator = new JoinOperator(left_operator, right_operator);
       operator_queue.push_back(join_operator);
+      LOG_INFO("join_stmt: %d", join_tables[i]->filter_stmt()->filter_units().size());
       left_operator = new PredicateOperator(join_tables[i]->filter_stmt());
       operator_queue.push_back(left_operator);
       left_operator->add_child(join_operator);

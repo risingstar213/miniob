@@ -23,7 +23,6 @@ RC JoinOperator::open()
 
 RC JoinOperator::next()
 {
-  LOG_INFO("join next");
   if (stop_) {
     return rc_;
   }
@@ -52,7 +51,6 @@ RC JoinOperator::close()
 
 std::vector<Tuple *> JoinOperator::current_tuples()
 {
-  LOG_INFO("join current_tuples");
   std::vector<Tuple *> left_tuples = left_->current_tuples();
   std::vector<Tuple *> right_tuples = right_->current_tuples();
   left_tuples.push_back(right_tuples[0]);

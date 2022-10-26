@@ -130,7 +130,6 @@ RC ProjectOperator::close()
 }
 std::vector<Tuple *> ProjectOperator::current_tuples()
 {
-  LOG_INFO("Project: current_tuples");
   if (!is_aggregation_) {
     tuple_.set_tuples(children_[0]->current_tuples());
   }

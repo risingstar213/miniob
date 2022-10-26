@@ -24,7 +24,7 @@ void AggFunc::init_data(Aggregation agg, AggData *data, AttrType type) {
     case AGG_AVG: {
       data->avg.data = (char *)calloc(1, sizeof(float));
       data->avg.count = 0;
-    }
+    } break;
     default:
       break;
   }
@@ -111,7 +111,7 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
         default:
           break;
       }
-    }
+    } break;
     case AGG_AVG: {
       // (TODO): resolve null
       data->avg.count += 1;
@@ -128,7 +128,7 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
         default:
           break;
       }
-    }
+    } break;
     default:
       break;
   }
@@ -191,7 +191,7 @@ char* AggFunc::get_data(Aggregation agg, AggData *data, AttrType type)
   } break;
   case AGG_COUNT: {
     return data->count.data;
-  }
+  } break;
   case AGG_SUM: {
     return data->sum.data;
   } break;
