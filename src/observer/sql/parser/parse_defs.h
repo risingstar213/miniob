@@ -88,7 +88,7 @@ struct _Join {
 
 // struct of select
 struct _Selects {
-  size_t attr_num;                // Length of attrs in Select clause
+  size_t attr_num;                // Length of attrs in Select clause and length of aggregations
   RelAttr attributes[MAX_NUM];    // attrs in Select clause
   size_t relation_num;            // Length of relations in Fro clause
   char *relations[MAX_NUM];       // relations in From clause
@@ -96,6 +96,8 @@ struct _Selects {
   Join join[MAX_NUM];
   size_t condition_num;           // Length of conditions in Where clause
   Condition conditions[MAX_NUM];  // conditions in Where clause
+  Aggregation agg[MAX_NUM];       // the types of aggrevation
+  bool is_valid;                  // if the selection is valid
 };
 
 // sturct of row in insert
@@ -210,6 +212,17 @@ enum SqlCommandFlag {
   SCF_HELP,
   SCF_EXIT
 };
+
+// the functions of aggregation
+enum Aggregation {
+  AGG_NONE,
+  AGG_MAX,
+  AGG_MIN,
+  AGG_COUNT,
+  AGG_AVG,
+  AGG_SUM
+};
+
 // struct of flag and sql_struct
 typedef struct Query {
   enum SqlCommandFlag flag;
@@ -241,7 +254,7 @@ void join_append_conditions(Join *join, std::deque<Condition> conditions);
 void join_destroy(Join *join);
 
 void selects_init(Selects *selects, ...);
-void selects_append_attribute(Selects *selects, RelAttr *rel_attr);
+void selects_append_attribute_and_aggrevation(Selects *selects, RelAttr *rel_attr, Aggregation agg);
 void selects_append_relation(Selects *selects, const char *relation_name);
 void selects_append_conditions(Selects *selects, std::deque<Condition> conditions);
 void selects_append_joins(Selects *selects, std::deque<Join> joins);

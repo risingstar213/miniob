@@ -27,7 +27,7 @@ public:
 
   virtual ~ProjectOperator() = default;
 
-  void add_projection(bool multi_tables, const Table *table, const FieldMeta *field);
+  void add_projection(bool multi_tables, const Table *table, const FieldMeta *field, const Aggregation agg);
 
   RC open() override;
   RC next() override;
@@ -43,4 +43,6 @@ public:
   std::vector<Tuple *> current_tuples() override;
 private:
   ProjectTuple tuple_;
+  std::vector<Aggregation> agg_; 
+  std::vector<Tuple> tuples_;
 };

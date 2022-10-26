@@ -152,9 +152,10 @@ void join_destroy(Join *join)
 }
 
 void selects_init(Selects *selects, ...);
-void selects_append_attribute(Selects *selects, RelAttr *rel_attr)
+void selects_append_attribute_and_aggrevation(Selects *selects, RelAttr *rel_attr, Aggregation agg)
 {
-  selects->attributes[selects->attr_num++] = *rel_attr;
+  selects->attributes[selects->attr_num] = *rel_attr;
+  selects->agg[selects->attr_num++] = agg;
 }
 void selects_append_relation(Selects *selects, const char *relation_name)
 {

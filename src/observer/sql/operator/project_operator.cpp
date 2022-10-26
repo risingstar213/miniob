@@ -16,6 +16,9 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/project_operator.h"
 #include "storage/record/record.h"
 #include "storage/common/table.h"
+#include "storage/trx/trx.h"
+#include "util/cast.h"
+#include "algorithm"
 
 RC ProjectOperator::open()
 {
@@ -36,7 +39,78 @@ RC ProjectOperator::open()
 
 RC ProjectOperator::next()
 {
-  return children_[0]->next();
+  if (agg_[0] == AGG_NONE) {
+    return children_[0]->next();
+  } else {
+    int n = tuples_.size();
+    std::vector<float> temp1(n,0);
+    std::vector<float> temp2(n,0);
+    std::vector<char*> temp3(n);
+    for (int i = 0; i < n; i++) {
+      if (agg_[i] == AGG_MIN) {
+        temp1[i] = __FLT_MAX__;
+      } else if (agg_[i] == AGG_MAX) {
+        temp1[i] = __FLT_MIN__;
+      }
+    }
+    while (children_[0]->next() == RC::SUCCESS) {
+      Tuple* tuple = children_[0]->current_tuples()[0];
+      for (int i = 0; i < n; i++) {
+        TupleCell cell;
+        Tuple* tuple = children_[0]->current_tuples()[0];
+        tuple->cell_at(i, cell);
+        AttrType type = cell.attr_type();
+
+        switch(agg_[i]) {
+          case AGG_COUNT:
+            temp1[i]++;
+            break;
+          case AGG_MIN:
+            if (type == CHARS) {
+              if (temp3[i] == "") {
+                temp3[i] = (char *)cell.data();
+              } else {
+                temp3[i] = strcmp(temp3[i], (char *)cell.data()) > 0 ? (char *)cell.data() : temp3[i];
+              }
+            } else {
+              temp1[i] = std::min(*(float *)cell.data(), temp1[i]);
+            }
+            break;
+          case AGG_MAX:
+            if (type == CHARS) {
+              if (temp3[i] == "") {
+                temp3[i] = (char *)cell.data();
+              } else {
+                temp3[i] = strcmp(temp3[i], (char *)cell.data()) < 0 ? (char *)cell.data() : temp3[i];
+              }
+            } else {
+              temp1[i] = std::max(*(float *)cell.data(), temp1[i]);
+            }
+            break;
+          case AGG_SUM:
+            if (type == CHARS) {
+              LOG_INFO("sum of strings");
+              return RC::INVALID_ARGUMENT;
+            } else {
+              temp1[i] += *(float *)cell.data();
+            }
+            break;
+          case AGG_AVG: 
+            temp1[i]++;
+            if (type == CHARS) {
+              temp2[i] += CastUnit::cast_string_to_float(const_cast<char *>(cell.data()), 0);
+            } else {
+              temp2[i] += *(float *)cell.data();
+            }
+            break;
+          default:
+            LOG_INFO("wrong aggregation");
+            return RC::INVALID_ARGUMENT;
+        }
+      }
+    }
+    
+  }
 }
 
 RC ProjectOperator::close()
@@ -53,7 +127,7 @@ std::vector<Tuple *> ProjectOperator::current_tuples()
   return tuples;
 }
 
-void ProjectOperator::add_projection(bool multi_tables, const Table *table, const FieldMeta *field_meta)
+void ProjectOperator::add_projection(bool multi_tables, const Table *table, const FieldMeta *field_meta, const Aggregation agg)
 {
   // 对单表来说，展示的(alias) 字段总是字段名称，
   // 对多表查询来说，展示的alias 需要带表名字
@@ -64,10 +138,39 @@ void ProjectOperator::add_projection(bool multi_tables, const Table *table, cons
     str += '.';
     str += field_meta->name();
     spec->set_alias(str);
-  } else {
+  } else if (agg == AGG_NONE) {
     spec->set_alias(field_meta->name());
+  } else {
+    std::string str;
+    switch(agg) {
+      case AGG_AVG:
+        str += "AVG(";
+        break;
+      case AGG_COUNT:
+        str += "COUNT(";
+        break;
+      case AGG_MAX:
+        str += "MAX(";
+        break;
+      case AGG_MIN:
+        str += "MIN(";
+        break;
+      case AGG_SUM:
+        str += "SUM(";
+        break;
+      default:
+        break;
+    }
+    if (field_meta->name() == Trx::trx_field_name()) {
+      str += "*";
+    } else {
+      str += field_meta->name();
+    }
+    str += ")";
+    spec->set_alias(str);
   }
   tuple_.add_cell_spec(spec);
+  agg_.push_back(agg);
 }
 
 RC ProjectOperator::tuple_cell_spec_at(int index, const TupleCellSpec *&spec) const
