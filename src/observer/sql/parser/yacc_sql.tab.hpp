@@ -44,18 +44,19 @@ extern int yydebug;
 
 #include <deque>
 #include <string>
-typedef struct _Attr Attr;
+typedef struct _RelAttr RelAttr;
 typedef struct _Selects Selects;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
+typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
 typedef std::deque<char *> IdList;
 // typedef std::string String;
 
-#line 59 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 60 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -102,21 +103,27 @@ typedef std::deque<char *> IdList;
     LOAD = 295,
     DATA = 296,
     INFILE = 297,
-    EQ = 298,
-    LT = 299,
-    GT = 300,
-    LE = 301,
-    GE = 302,
-    NE = 303,
-    NUMBER = 304,
-    FLOAT = 305,
-    DATE_DATA = 306,
-    ID = 307,
-    PATH = 308,
-    SSS = 309,
-    LIKE_SSS = 310,
-    STAR = 311,
-    STRING_V = 312
+    UNIQUE = 298,
+    MAX = 299,
+    MIN = 300,
+    SUM = 301,
+    COUNT = 302,
+    AVG = 303,
+    EQ = 304,
+    LT = 305,
+    GT = 306,
+    LE = 307,
+    GE = 308,
+    NE = 309,
+    NUMBER = 310,
+    FLOAT = 311,
+    DATE_DATA = 312,
+    ID = 313,
+    PATH = 314,
+    SSS = 315,
+    LIKE_SSS = 316,
+    STAR = 317,
+    STRING_V = 318
   };
 #endif
 
@@ -125,9 +132,9 @@ typedef std::deque<char *> IdList;
 
 union YYSTYPE
 {
-#line 118 "yacc_sql.y" /* yacc.c:1909  */
+#line 125 "yacc_sql.y" /* yacc.c:1909  */
 
-  Attr *attr1;
+  RelAttr *attr1;
   Condition *condition1;
   Value *value1;
   Join *join1;
@@ -140,8 +147,9 @@ union YYSTYPE
   ConditionList *conditions1;
   JoinList *joins1;
   IdList *ids1;
+  AttrList *attrs1;
 
-#line 145 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 153 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

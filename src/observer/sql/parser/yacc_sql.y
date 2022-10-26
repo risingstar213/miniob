@@ -51,11 +51,12 @@ extern double atof();
 %code requires{
 #include <deque>
 #include <string>
-typedef struct _Attr Attr;
+typedef struct _RelAttr RelAttr;
 typedef struct _Selects Selects;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
+typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
@@ -108,6 +109,12 @@ typedef std::deque<char *> IdList;
         LOAD
         DATA
         INFILE
+		UNIQUE
+		MAX
+		MIN
+		SUM
+		COUNT
+		AVG
         EQ
         LT
         GT
@@ -116,7 +123,7 @@ typedef std::deque<char *> IdList;
         NE
 
 %union {
-  Attr *attr1;
+  RelAttr *attr1;
   Condition *condition1;
   Value *value1;
   Join *join1;
@@ -129,6 +136,7 @@ typedef std::deque<char *> IdList;
   ConditionList *conditions1;
   JoinList *joins1;
   IdList *ids1;
+  AttrList *attrs1;
 }
 
 %token <string1> NUMBER
@@ -149,6 +157,7 @@ typedef std::deque<char *> IdList;
 %type <number1> number;
 %type <comp1> comOp;
 %type <comp1> like_comOp;
+%type <attr1> aggration_attr;
 
 %type <values1> value_list;
 %type <conditions1> where;
@@ -156,6 +165,8 @@ typedef std::deque<char *> IdList;
 %type <conditions1> join_condition_list;
 %type <joins1> join_list;
 %type <ids1> id_list;
+%type <attrs1> attr_list;
+%type <attrs1> select_attr;
 
 %%
 
@@ -242,7 +253,13 @@ create_index:		/*create index 语句的语法解析树*/
     CREATE INDEX ID ON ID LBRACE id_list SEMICOLON 
 		{
 			CONTEXT->ssql->flag = SCF_CREATE_INDEX;//"create_index";
-			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, *$7);
+			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, *$7, false);
+			delete $7;
+		}
+	| CREATE UNIQUE ID ON ID LBRACE id_list SEMICOLON
+		{
+			CONTEXT->ssql->flag = SCF_CREATE_INDEX;//"create_index";
+			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, *$7, true);
 			delete $7;
 		}
     ;
@@ -437,12 +454,15 @@ select:				/*  select 语句的语法解析树*/
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			selects_append_relation(&CONTEXT->ssql->sstr.selection, $4);
 
+			selects_append_attribute(&CONTEXT->ssql->sstr.selection, *$2);
+
             selects_append_joins(&CONTEXT->ssql->sstr.selection, JoinList());
 
 			selects_append_conditions(&CONTEXT->ssql->sstr.selection, *$6);
 
 			CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
+			delete $2;
 			delete $6;
 
 	}
@@ -450,12 +470,15 @@ select:				/*  select 语句的语法解析树*/
 		// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			selects_append_relation(&CONTEXT->ssql->sstr.selection, $4);
 
+			selects_append_attribute(&CONTEXT->ssql->sstr.selection, *$2);
+
             selects_append_joins(&CONTEXT->ssql->sstr.selection, *$5);
 
 			selects_append_conditions(&CONTEXT->ssql->sstr.selection, *$6);
 
 			CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
+			delete $2;
 			delete $5;
 			delete $6;
 	}
@@ -464,36 +487,130 @@ select:				/*  select 语句的语法解析树*/
 select_attr:
     STAR attr_list {  
 			RelAttr attr;
-			relation_attr_init(&attr, NULL, "*");
-			selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
+			relation_attr_init_with_aggregation(&attr, NULL, "*", AGG_NONE, true);
+			$2->push_front(attr);
+			$$ = $2;
 		}
     | ID attr_list {
 			RelAttr attr;
-			relation_attr_init(&attr, NULL, $1);
-			selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
+			relation_attr_init_with_aggregation(&attr, NULL, $1, AGG_NONE, true);
+			$2->push_front(attr);
+			$$ = $2;
 		}
   	| ID DOT ID attr_list {
 			RelAttr attr;
-			relation_attr_init(&attr, $1, $3);
-			selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
+			relation_attr_init_with_aggregation(&attr, $1, $3, AGG_NONE, true);
+			$4->push_front(attr);
+			$$ = $4;
 		}
+	| aggration_attr attr_list {
+		$2->push_front(*$1);
+		selects_append_attribute(&CONTEXT->ssql->sstr.selection, *$2);
+		delete($1);
+		$$ = $2;
+	}
 	;
+
+aggration_attr:
+	MAX LBRACE select_attr RBRACE {
+		$$ = new RelAttr();
+		if ($3->size() != 1) {
+			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+		} else {
+			RelAttr attr = (*$3)[0];
+			relation_attr_init_copy($$, attr, AGG_MAX);
+		}
+		delete $3;
+	}
+	| MIN LBRACE select_attr RBRACE {
+		$$ = new RelAttr();
+		if ($3->size() != 1) {
+			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+		} else {
+			RelAttr attr = (*$3)[0];
+			relation_attr_init_copy($$, attr, AGG_MIN);
+		}
+		delete $3;
+	}
+	| SUM LBRACE select_attr RBRACE {
+		$$ = new RelAttr();
+		if ($3->size() != 1) {
+			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+		} else {
+			RelAttr attr = (*$3)[0];
+			relation_attr_init_copy($$, attr, AGG_SUM);
+		}
+		delete $3;
+	}
+	| COUNT LBRACE select_attr RBRACE {
+		$$ = new RelAttr();
+		if ($3->size() != 1) {
+			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+		} else {
+			RelAttr attr = (*$3)[0];
+			relation_attr_init_copy($$, attr, AGG_COUNT);
+		}
+		delete $3;
+	}
+	| AVG LBRACE select_attr RBRACE {
+		$$ = new RelAttr();
+		if ($3->size() != 1) {
+			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+		} else {
+			RelAttr attr = (*$3)[0];
+			relation_attr_init_copy($$, attr, AGG_AVG);
+		}
+		delete $3;
+	}
+	| MAX LBRACE RBRACE {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+	}
+	| MIN LBRACE RBRACE {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+	}
+	| SUM LBRACE RBRACE {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+	}
+	| COUNT LBRACE RBRACE {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+	}
+	| AVG LBRACE RBRACE {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
+	}
+	;
+
 attr_list:
-    /* empty */
+    /* empty */ {
+		$$ = new AttrList();
+	}
     | COMMA ID attr_list {
 			RelAttr attr;
-			relation_attr_init(&attr, NULL, $2);
-			selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
+			relation_attr_init_with_aggregation(&attr, NULL, $2, AGG_NONE,true);
+			// selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
+			$$ = $3;
+			$$->push_front(attr);
      	  // CONTEXT->ssql->sstr.selection.attributes[CONTEXT->select_length].relation_name = NULL;
         // CONTEXT->ssql->sstr.selection.attributes[CONTEXT->select_length++].attribute_name=$2;
       }
     | COMMA ID DOT ID attr_list {
 			RelAttr attr;
-			relation_attr_init(&attr, $2, $4);
-			selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
+			relation_attr_init_with_aggregation(&attr, $2, $4, AGG_NONE,true);
+			// selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
+			$$ = $5;
+			$$->push_front(attr);
         // CONTEXT->ssql->sstr.selection.attributes[CONTEXT->select_length].attribute_name=$4;
         // CONTEXT->ssql->sstr.selection.attributes[CONTEXT->select_length++].relation_name=$2;
-  	  }
+  	}
+	| COMMA aggration_attr attr_list {
+		$$ = $3;
+		$$->push_front(*$2);
+		delete $2;
+	}
   	;
 
 rel_list:

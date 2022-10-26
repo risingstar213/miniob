@@ -33,6 +33,7 @@ public:
   virtual ~Expression() = default;
   
   virtual RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const = 0;
+  virtual AttrType get_valuetype() const = 0;
   virtual ExprType type() const = 0;
 };
 
@@ -71,6 +72,10 @@ public:
   }
 
   RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const override;
+
+  AttrType get_valuetype() const {
+    return field_.attr_type();
+  }
 private:
   Field field_;
 };
@@ -98,6 +103,10 @@ public:
   }
 
   RC get_value(const std::vector<Tuple *> tuples, TupleCell & cell) const override;
+
+  AttrType get_valuetype() const {
+    return tuple_cell_.attr_type();
+  }
 private:
   TupleCell tuple_cell_;
 };

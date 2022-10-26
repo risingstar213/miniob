@@ -43,6 +43,6 @@ public:
   std::vector<Tuple *> current_tuples() override;
 private:
   ProjectTuple tuple_;
-  std::vector<Aggregation> agg_; 
+  bool is_aggregation_ = false;
   std::vector<Tuple> tuples_;
 };

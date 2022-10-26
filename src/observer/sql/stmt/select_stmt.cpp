@@ -45,20 +45,26 @@ static void wildcard_fields(Table *table, std::vector<Field> &field_metas)
 
 RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
 {
+  LOG_INFO("SelectStmt::create");
   if (select_sql.is_valid == false) {
     LOG_WARN("invalid argument. selection is invalid");
     return RC::INVALID_ARGUMENT;
   }
 
+  // check aggretion
   bool isAgg = false;
   for (int i = select_sql.attr_num - 1; i >= 0; i--) {
-    if (isAgg) {
-      if (select_sql.agg[i] == AGG_NONE) {
-        LOG_WARN("invalid argument. invalid aggregation");
+    LOG_INFO("agg_type: %d", select_sql.attributes[i].agg);
+    if (select_sql.attributes[i].agg != AGG_NONE) {
+      isAgg = true;
+    }
+  }
+  if (isAgg) {
+    for (int i = select_sql.attr_num - 1; i >= 0; i--) {
+      if (select_sql.attributes[i].agg == AGG_NONE) {
+        LOG_INFO("not supported: aggregation and normal attribute exsit simultaneously!");
         return RC::INVALID_ARGUMENT;
       }
-    } else if (select_sql.agg[i] != AGG_NONE) {
-      isAgg = true;
     }
   }
 
@@ -104,14 +110,15 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
   std::vector<Aggregation> aggregations;
   for (int i = select_sql.attr_num - 1; i >= 0; i--) {
     const RelAttr &relation_attr = select_sql.attributes[i];
-    aggregations.push_back(select_sql.agg[i]);
+    aggregations.push_back(select_sql.attributes[i].agg);
     // STAR
     if (common::is_blank(relation_attr.relation_name) && 0 == strcmp(relation_attr.attribute_name, "*")) {
-      if (select_sql.agg[i] == AGG_NONE) {
+      if (select_sql.attributes[i].agg == AGG_NONE) {
         for (Table *table : tables) {
           wildcard_fields(table, query_fields);
         }
-      } else if (select_sql.agg[i] == AGG_COUNT) {
+      } else if (select_sql.attributes[i].agg == AGG_COUNT) {
+        LOG_INFO("count(*)");
         Table *table = tables[0];
         const TableMeta &table_meta = table->table_meta();
         query_fields.push_back(Field(table, table->table_meta().field(Trx::trx_field_name())));

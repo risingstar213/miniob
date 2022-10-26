@@ -17,8 +17,10 @@ See the Mulan PSL v2 for more details. */
 
 #include <stddef.h>
 #include <deque>
+#include "common/log/log.h"
 
 typedef struct _Selects Selects;
+typedef struct _RelAttr RelAttr;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
@@ -31,12 +33,6 @@ typedef std::deque<Join> JoinList;
 #define MAX_ATTR_NAME 20
 #define MAX_ERROR_MESSAGE 20
 #define MAX_DATA 50
-
-//属性结构体
-typedef struct {
-  char *relation_name;   // relation name (may be NULL) 表名
-  char *attribute_name;  // attribute name              属性名
-} RelAttr;
 
 typedef enum {
   EQUAL_TO,     //"="     0
@@ -59,6 +55,24 @@ typedef enum
   FLOATS,
   DATES
 } AttrType;
+
+// the functions of aggregation
+enum Aggregation {
+  AGG_NONE,
+  AGG_MAX,
+  AGG_MIN,
+  AGG_COUNT,
+  AGG_AVG,
+  AGG_SUM
+};
+
+//属性结构体
+struct _RelAttr {
+  Aggregation agg;
+  bool is_valid;
+  char *relation_name;   // relation name (may be NULL) 表名
+  char *attribute_name;  // attribute name              属性名
+};
 
 //属性值
 struct _Value {
@@ -96,7 +110,6 @@ struct _Selects {
   Join join[MAX_NUM];
   size_t condition_num;           // Length of conditions in Where clause
   Condition conditions[MAX_NUM];  // conditions in Where clause
-  Aggregation agg[MAX_NUM];       // the types of aggrevation
   bool is_valid;                  // if the selection is valid
 };
 
@@ -151,8 +164,9 @@ typedef struct {
 typedef struct {
   char *index_name;      // Index name
   char *relation_name;   // Relation name
-  size_t attribute_num;
+  size_t attribute_num;           // Attribute type
   char *attribute_name[MAX_NUM];  // Attribute name
+  bool is_unique;
 } CreateIndex;
 
 // struct of  drop_index
@@ -213,16 +227,6 @@ enum SqlCommandFlag {
   SCF_EXIT
 };
 
-// the functions of aggregation
-enum Aggregation {
-  AGG_NONE,
-  AGG_MAX,
-  AGG_MIN,
-  AGG_COUNT,
-  AGG_AVG,
-  AGG_SUM
-};
-
 // struct of flag and sql_struct
 typedef struct Query {
   enum SqlCommandFlag flag;
@@ -234,6 +238,8 @@ typedef struct Query {
 // #endif  // __cplusplus
 
 void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const char *attribute_name);
+void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *relation_name, const char *attribute_name, Aggregation agg, bool is_valid);
+void relation_attr_init_copy(RelAttr *relation_attr, RelAttr source, Aggregation agg);
 void relation_attr_destroy(RelAttr *relation_attr);
 
 void value_init_integer(Value *value, int v, const char *raw);
@@ -254,7 +260,7 @@ void join_append_conditions(Join *join, std::deque<Condition> conditions);
 void join_destroy(Join *join);
 
 void selects_init(Selects *selects, ...);
-void selects_append_attribute_and_aggrevation(Selects *selects, RelAttr *rel_attr, Aggregation agg);
+void selects_append_attribute(Selects *selects, std::deque<RelAttr> rel_attrs);
 void selects_append_relation(Selects *selects, const char *relation_name);
 void selects_append_conditions(Selects *selects, std::deque<Condition> conditions);
 void selects_append_joins(Selects *selects, std::deque<Join> joins);
@@ -281,7 +287,7 @@ void drop_table_init(DropTable *drop_table, const char *relation_name);
 void drop_table_destroy(DropTable *drop_table);
 
 void create_index_init(
-    CreateIndex *create_index, const char *index_name, const char *relation_name, std::deque<char *> attr_names);
+    CreateIndex *create_index, const char *index_name, const char *relation_name, std::deque<char *> attr_names, bool is_unique);
 void create_index_destroy(CreateIndex *create_index);
 
 void drop_index_init(DropIndex *drop_index, const char *index_name);

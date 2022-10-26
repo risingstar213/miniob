@@ -31,7 +31,36 @@ void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const
   } else {
     relation_attr->relation_name = nullptr;
   }
-  relation_attr->attribute_name = strdup(attribute_name);
+  if (attribute_name != nullptr) {
+    relation_attr->attribute_name = strdup(attribute_name);
+  } else {
+    relation_attr->attribute_name = nullptr;
+  }
+}
+void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *relation_name, const char *attribute_name, Aggregation agg, bool is_valid)
+{
+  LOG_INFO("relation_attr_init_with_aggregation");
+  if (relation_name != nullptr) {
+    relation_attr->relation_name = strdup(relation_name);
+  } else {
+    relation_attr->relation_name = nullptr;
+  }
+  if (attribute_name != nullptr) {
+    relation_attr->attribute_name = strdup(attribute_name);
+  } else {
+    relation_attr->attribute_name = nullptr;
+  }
+  relation_attr->agg = agg;
+  relation_attr->is_valid = is_valid;
+}
+
+void relation_attr_init_copy(RelAttr *relation_attr, RelAttr source, Aggregation agg)
+{
+  LOG_INFO("relation_attr_init_copy");
+  relation_attr->relation_name = source.relation_name;
+  relation_attr->attribute_name = source.attribute_name;
+  relation_attr->is_valid = source.is_valid;
+  relation_attr->agg = agg;
 }
 
 void relation_attr_destroy(RelAttr *relation_attr)
@@ -152,10 +181,17 @@ void join_destroy(Join *join)
 }
 
 void selects_init(Selects *selects, ...);
-void selects_append_attribute_and_aggrevation(Selects *selects, RelAttr *rel_attr, Aggregation agg)
+
+void selects_append_attribute(Selects *selects, std::deque<RelAttr> rel_attrs)
 {
-  selects->attributes[selects->attr_num] = *rel_attr;
-  selects->agg[selects->attr_num++] = agg;
+  selects->is_valid = true;
+  for (size_t i = 0; i < rel_attrs.size(); i++) {
+    selects->attributes[i] = rel_attrs[i];
+    if (rel_attrs[i].is_valid == false) {
+      selects->is_valid = false;
+    }
+  }
+  selects->attr_num = rel_attrs.size();
 }
 void selects_append_relation(Selects *selects, const char *relation_name)
 {
@@ -317,7 +353,7 @@ void drop_table_destroy(DropTable *drop_table)
 }
 
 void create_index_init(
-    CreateIndex *create_index, const char *index_name, const char *relation_name, std::deque<char *> attr_names)
+    CreateIndex *create_index, const char *index_name, const char *relation_name, std::deque<char *> attr_names, bool is_unique)
 {
   create_index->index_name = strdup(index_name);
   create_index->relation_name = strdup(relation_name);
@@ -325,6 +361,7 @@ void create_index_init(
     create_index->attribute_name[i] = strdup(attr_names[i]);
   }
   create_index->attribute_num = attr_names.size();
+  create_index->is_unique = is_unique;
 }
 
 void create_index_destroy(CreateIndex *create_index)
