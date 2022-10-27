@@ -136,8 +136,9 @@ typedef struct {
 // struct of update
 typedef struct {
   char *relation_name;            // Relation to update
-  char *attribute_name;           // Attribute to update
-  Value value;                    // update value
+  size_t attribute_num;
+  char *attribute_name[MAX_NUM];  // Attributes to update
+  Value value[MAX_NUM];           // updates value
   size_t condition_num;           // Length of conditions in Where clause
   Condition conditions[MAX_NUM];  // conditions in Where clause
 } Updates;
@@ -275,8 +276,9 @@ void deletes_init_relation(Deletes *deletes, const char *relation_name);
 void deletes_set_conditions(Deletes *deletes, std::deque<Condition> conditions);
 void deletes_destroy(Deletes *deletes);
 
-void updates_init(Updates *updates, const char *relation_name, const char *attribute_name, Value *value,
+void updates_init(Updates *updates, const char *relation_name,
     std::deque<Condition> conditions);
+void update_append_attribute(Updates *updates, const char *attribute_name, Value *value);
 void updates_destroy(Updates *updates);
 
 void create_table_append_attribute(CreateTable *create_table, AttrInfo *attr_info);

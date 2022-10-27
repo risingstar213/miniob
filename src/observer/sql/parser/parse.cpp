@@ -292,12 +292,9 @@ void deletes_destroy(Deletes *deletes)
   deletes->relation_name = nullptr;
 }
 
-void updates_init(Updates *updates, const char *relation_name, const char *attribute_name, Value *value,
-    std::deque<Condition> conditions)
+void updates_init(Updates *updates, const char *relation_name, std::deque<Condition> conditions)
 {
   updates->relation_name = strdup(relation_name);
-  updates->attribute_name = strdup(attribute_name);
-  updates->value = *value;
 
   assert(conditions.size() <= sizeof(updates->conditions) / sizeof(updates->conditions[0]));
   for (size_t i = 0; i < conditions.size(); i++) {
@@ -306,14 +303,24 @@ void updates_init(Updates *updates, const char *relation_name, const char *attri
   updates->condition_num = conditions.size();
 }
 
+void update_append_attribute(Updates *updates, const char *attribute_name, Value *value)
+{
+  LOG_INFO("update_append_attribute %s, %s", attribute_name, value->raw_data);
+  updates->attribute_name[updates->attribute_num] = strdup(attribute_name);
+  updates->value[updates->attribute_num] = *value;
+  updates->attribute_num += 1;
+}
+
 void updates_destroy(Updates *updates)
 {
   free(updates->relation_name);
-  free(updates->attribute_name);
   updates->relation_name = nullptr;
-  updates->attribute_name = nullptr;
-
-  value_destroy(&updates->value);
+  for (int i = 0; i < updates->attribute_num ; i++) {
+    free(updates->attribute_name[i]);
+    updates->attribute_name[i] = nullptr;
+    value_destroy(&updates->value[i]);
+  }
+  updates->attribute_num = 0;
 
   for (size_t i = 0; i < updates->condition_num; i++) {
     condition_destroy(&updates->conditions[i]);

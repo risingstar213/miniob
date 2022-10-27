@@ -108,6 +108,7 @@ private:
   IndexScanner *find_index_for_scan(const DefaultConditionFilter &filter);
   RC insert_record(Trx *trx, Record *record);
   RC resolve_unique_before_insert(Trx *trx, Record *record);
+  RC resolve_unique_before_update(Trx *trx, Record *old_record, Record *new_record);
 
 public:
   RC recover_insert_record(Record *record);

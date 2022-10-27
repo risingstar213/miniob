@@ -43,6 +43,11 @@ public:
     return index_meta_;
   }
 
+  std::vector<FieldMeta> field_metas() const
+  {
+    return field_metas_;
+  }
+
   virtual RC get_entry(const char *record, std::list<RID> &rids) = 0;
   virtual RC insert_entry(const char *record, const RID *rid) = 0;
   virtual RC delete_entry(const char *record, const RID *rid) = 0;

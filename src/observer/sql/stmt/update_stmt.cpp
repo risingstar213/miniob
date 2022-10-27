@@ -18,17 +18,17 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/filter_stmt.h"
 #include "storage/common/table.h"
 
-UpdateStmt::UpdateStmt(Table *table, const char * field_name, Value *values, int value_amount, FilterStmt *filter_stmt)
-    : table_(table), field_name_(field_name), values_(values), value_amount_(value_amount), filter_stmt_(filter_stmt)
+UpdateStmt::UpdateStmt(Table *table, std::vector<char *> field_name, std::vector<Value> values, FilterStmt *filter_stmt)
+    : table_(table), field_name_(field_name), values_(values), filter_stmt_(filter_stmt)
 {}
 
 RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
 {
   // TODO
   const char *table_name = update.relation_name;
-  const char *column_name = update.attribute_name;
-  if (nullptr == db || nullptr == table_name || nullptr == column_name) {
-    LOG_WARN("invalid argument. db=%p, table_name=%p, column_name=%p", db, table_name, column_name);
+  char **column_name = update.attribute_name;
+  if (nullptr == db || nullptr == table_name) {
+    LOG_WARN("invalid argument. db=%p, table_name=%p", db, table_name);
     return RC::INVALID_ARGUMENT;
   }
 
@@ -38,24 +38,30 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
     LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
+  
+  std::vector<char *> field_name;
+  std::vector<Value> value;
+  for (int i = 0; i < update.attribute_num; i++) {
+    // check whether the column exists
+    const FieldMeta *field_meta = table->table_meta().field(column_name[i]);
+    if (nullptr == field_meta) {
+      LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), column_name[i]);
+      return RC::SCHEMA_FIELD_MISSING;
+    }
 
-  // check whether the column exists
-  const FieldMeta *field_meta = table->table_meta().field(column_name);
-  if (nullptr == field_meta) {
-    LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), column_name);
-    return RC::SCHEMA_FIELD_MISSING;
-  }
-
-  // check whether the type of the value is correct
-  const AttrType field_type = field_meta->type();
-  const AttrType value_type = update.value.type;
-  if (field_type != value_type) {  // TODO try to convert the value type to field type
-    LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
-        table_name,
-        field_meta->name(),
-        field_type,
-        value_type);
-    return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+    // check whether the type of the value is correct
+    const AttrType field_type = field_meta->type();
+    const AttrType value_type = update.value[i].type;
+    if (field_type != value_type) {  // TODO try to convert the value type to field type
+      LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
+          table_name,
+          field_meta->name(),
+          field_type,
+          value_type);
+      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+    }
+    field_name.push_back(column_name[i]);
+    value.push_back(update.value[i]);
   }
 
   FilterStmt *filter_stmt = nullptr;
@@ -66,6 +72,6 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
   }
 
   // everything alright
-  stmt = new UpdateStmt(table, column_name, (Value *)&update.value, 1, filter_stmt);
+  stmt = new UpdateStmt(table, field_name, value, filter_stmt);
   return RC::SUCCESS;
 }

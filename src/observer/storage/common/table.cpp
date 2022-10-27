@@ -691,7 +691,7 @@ RC Table::show_index(Trx *trx, std::ostream &os)
   os << "Table | Non_unique | Key_name | Seq_in_index | Column_name" << std::endl;
   for (const auto &index : indexes_) {
     for (int i = 0; i < index->index_meta().fields().size(); i++) {
-      os << name() << "|" << 1 << "|" << index->index_meta().name() << "|" << i+1 << "|" << index->index_meta().fields()[i] << std::endl;
+      os << name() << "|" << !index->index_meta().is_unique() << "|" << index->index_meta().name() << "|" << i+1 << "|" << index->index_meta().fields()[i] << std::endl;
     }
   }
   return RC::SUCCESS;
@@ -1005,6 +1005,12 @@ RC Table::update_record(Trx *trx, Record *old_record, int cell_num, Value *value
   new_record.set_data(record_data);
   new_record.set_rid(old_record->rid());
 
+  rc = resolve_unique_before_update(trx, old_record, &new_record);
+  if (rc != RC::SUCCESS) {
+    LOG_INFO("cannot update the entry with a unique index");
+    return rc;
+  }
+
   rc = delete_entry_of_indexes(old_record->data(), old_record->rid(), false);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to delete indexes of record (rid=%d.%d). rc=%d:%s",
@@ -1060,6 +1066,50 @@ RC Table::resolve_unique_before_insert(Trx *trx, Record *record)
     if (indexes_[i]->index_meta().is_unique()) {
       std::list<RID> rids;
       RC rc = indexes_[i]->get_entry(record->data(), rids);
+      if (rc != RC::SUCCESS || rids.size() > 0) {
+        LOG_INFO("insert duplicate keys into unique index");
+        return RC::INVALID_ARGUMENT;
+      }
+    }
+  }
+  return RC::SUCCESS;
+}
+
+RC Table::resolve_unique_before_update(Trx *trx, Record *old_record, Record *new_record)
+{
+  LOG_INFO("resolve_unique_before_update");
+  for (size_t i = 0; i < indexes_.size(); i++) {
+    // is unique
+    if (indexes_[i]->index_meta().is_unique()) {
+      std::vector<FieldMeta> field_metas = indexes_[i]->field_metas();
+      bool equal = true;
+      for (size_t j = 0; j < field_metas.size() && equal; j++) {
+        switch (field_metas[j].type()) {
+          case INTS: {
+            equal = compare_int(old_record->data() + field_metas[j].offset(), 
+                          new_record->data() + field_metas[j].offset());
+          } break;
+          case FLOATS: {
+            equal = compare_float(old_record->data() + field_metas[j].offset(), 
+                          new_record->data() + field_metas[j].offset());
+          } break;
+          case CHARS: {
+            equal = compare_string(old_record->data() + field_metas[j].offset(), field_metas[j].len(),
+                          new_record->data() + field_metas[j].offset(),field_metas[j].len());
+          } break;
+          case DATES: {
+            equal = compare_date(old_record->data() + field_metas[j].offset(), 
+                          new_record->data() + field_metas[j].offset());
+          } break;
+          default:
+           break;
+        }
+      }
+      if (equal) {
+        continue;
+      } 
+      std::list<RID> rids;
+      RC rc = indexes_[i]->get_entry(new_record->data(), rids);
       if (rc != RC::SUCCESS || rids.size() > 0) {
         LOG_INFO("insert duplicate keys into unique index");
         return RC::INVALID_ARGUMENT;
