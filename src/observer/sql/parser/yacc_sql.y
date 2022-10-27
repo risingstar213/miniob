@@ -91,6 +91,8 @@ typedef std::deque<char *> IdList;
         INT_T
         STRING_T
         FLOAT_T
+		DATE_T
+		TEXT_T
         HELP
         EXIT
         DOT //QUOTE
@@ -102,7 +104,6 @@ typedef std::deque<char *> IdList;
         SET
         NOT
         LIKE
-        DATE_T
         INNER
         JOIN
         ON
@@ -306,10 +307,12 @@ attr_def:
     |ID_get type
 		{
 			AttrInfo attribute;
-			if ($2 != DATES) {
-				attr_info_init(&attribute, CONTEXT->id, AttrType($2), 4);
-			} else {
+			if ($2 == DATES) {
 				attr_info_init(&attribute, CONTEXT->id, AttrType($2), 12);
+			} else if ($2 == TEXTS) {
+				attr_info_init(&attribute, CONTEXT->id, AttrType($2), 4096);
+			} else {
+				attr_info_init(&attribute, CONTEXT->id, AttrType($2), 4);
 			}
 			create_table_append_attribute(&CONTEXT->ssql->sstr.create_table, &attribute);
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].name=(char*)malloc(sizeof(char));
@@ -340,6 +343,7 @@ type:
        | STRING_T { $$=CHARS; }
        | FLOAT_T { $$=FLOATS; }
 	   | DATE_T { $$=DATES; }
+	   | TEXT_T { $$=TEXTS; }
        ;
 ID_get:
 	ID 

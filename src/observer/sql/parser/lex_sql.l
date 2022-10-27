@@ -71,6 +71,7 @@ QUOTE            [\'\"]
 [Ii][Nn][Tt]                                         RETURN_TOKEN(INT_T);
 [Cc][Hh][Aa][Rr]                                     RETURN_TOKEN(STRING_T);
 [Ff][Ll][Oo][Aa][Tt]                                 RETURN_TOKEN(FLOAT_T);
+[Tt][Ee][Xx][Tt]                                     RETURN_TOKEN(TEXT_T);
 [Ll][Oo][Aa][Dd]                                     RETURN_TOKEN(LOAD);
 [Dd][Aa][Tt][Aa]                                     RETURN_TOKEN(DATA);
 [Ii][Nn][Ff][Ii][Ll][Ee]                             RETURN_TOKEN(INFILE);
@@ -92,7 +93,7 @@ QUOTE            [\'\"]
 "<"                                                  RETURN_TOKEN(LT);
 ">="                                                 RETURN_TOKEN(GE);
 ">"                                                  RETURN_TOKEN(GT);
-{QUOTE}[A-Za-z0-9_/\.\-]*{QUOTE}                     yylval->string1=strdup(yytext); RETURN_TOKEN(SSS);
+{QUOTE}[\ A-Za-z0-9_/\.\-]*{QUOTE}                   yylval->string1=strdup(yytext); RETURN_TOKEN(SSS);
 {QUOTE}[A-Za-z0-9_/\.\-\%]*{QUOTE}                   yylval->string1=strdup(yytext); RETURN_TOKEN(LIKE_SSS);
 
 .                                                    printf("Unknown character [%c]\n",yytext[0]); return yytext[0];

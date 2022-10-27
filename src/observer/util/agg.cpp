@@ -46,6 +46,7 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
               data->max.data = data_in;
             }
           } break;
+          case TEXTS:
           case CHARS: {
             if (compare_string(data->max.data, length, data_in, length) < 0) {
               data->max.data = data_in;
@@ -76,6 +77,7 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
               data->min.data = data_in;
             }
           } break;
+          case TEXTS:
           case CHARS: {
             if (compare_string(data->max.data, length, data_in, length) > 0) {
               data->min.data = data_in;
@@ -105,6 +107,7 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
         case FLOATS: {
           *((float *)data->sum.data) += *((float *)data_in);
         } break;
+        case TEXTS:
         case CHARS: {
           *((float *)data->sum.data) += CastUnit::cast_string_to_float(data_in, length);
         } break;
@@ -122,6 +125,7 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
         case FLOATS: {
           *((float *)data->avg.data) += *((float *)data_in);
         } break;
+        case TEXTS:
         case CHARS: {
           *((float *)data->avg.data) += CastUnit::cast_string_to_float(data_in, length);
         } break;

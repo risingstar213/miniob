@@ -60,6 +60,7 @@ public:
       case FLOATS: {
         result = compare_float((void *)n1, (void *)n2);
       } break;
+      case TEXTS:
       case CHARS: {
         result = compare_string((void *)n1, attr_length_[i], (void *)n2, attr_length_[i]);
       } break;
@@ -141,6 +142,7 @@ public:
       case FLOATS: {
         str1 += std::to_string(*(float*)n) + '@';
       }
+      case TEXTS:
       case CHARS: {
         std::string str;
         for (int i = 0; i < attr_length_[i]; i++) {

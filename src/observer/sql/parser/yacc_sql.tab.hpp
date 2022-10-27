@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.5.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,9 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+/* Undocumented macros, especially those whose name start with YY_,
+   are private implementation details.  Do not rely on them.  */
+
 #ifndef YY_YY_YACC_SQL_TAB_H_INCLUDED
 # define YY_YY_YACC_SQL_TAB_H_INCLUDED
 /* Debug traces.  */
@@ -40,7 +44,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 51 "yacc_sql.y" /* yacc.c:1909  */
+#line 51 "yacc_sql.y"
 
 #include <deque>
 #include <string>
@@ -56,7 +60,7 @@ typedef std::deque<Join> JoinList;
 typedef std::deque<char *> IdList;
 // typedef std::string String;
 
-#line 60 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 64 "yacc_sql.tab.h"
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -85,54 +89,54 @@ typedef std::deque<char *> IdList;
     INT_T = 277,
     STRING_T = 278,
     FLOAT_T = 279,
-    HELP = 280,
-    EXIT = 281,
-    DOT = 282,
-    INTO = 283,
-    VALUES = 284,
-    FROM = 285,
-    WHERE = 286,
-    AND = 287,
-    SET = 288,
-    NOT = 289,
-    LIKE = 290,
-    DATE_T = 291,
-    INNER = 292,
-    JOIN = 293,
-    ON = 294,
-    LOAD = 295,
-    DATA = 296,
-    INFILE = 297,
-    UNIQUE = 298,
-    MAX = 299,
-    MIN = 300,
-    SUM = 301,
-    COUNT = 302,
-    AVG = 303,
-    EQ = 304,
-    LT = 305,
-    GT = 306,
-    LE = 307,
-    GE = 308,
-    NE = 309,
-    NUMBER = 310,
-    FLOAT = 311,
-    DATE_DATA = 312,
-    ID = 313,
-    PATH = 314,
-    SSS = 315,
-    LIKE_SSS = 316,
-    STAR = 317,
-    STRING_V = 318
+    DATE_T = 280,
+    TEXT_T = 281,
+    HELP = 282,
+    EXIT = 283,
+    DOT = 284,
+    INTO = 285,
+    VALUES = 286,
+    FROM = 287,
+    WHERE = 288,
+    AND = 289,
+    SET = 290,
+    NOT = 291,
+    LIKE = 292,
+    INNER = 293,
+    JOIN = 294,
+    ON = 295,
+    LOAD = 296,
+    DATA = 297,
+    INFILE = 298,
+    UNIQUE = 299,
+    MAX = 300,
+    MIN = 301,
+    SUM = 302,
+    COUNT = 303,
+    AVG = 304,
+    EQ = 305,
+    LT = 306,
+    GT = 307,
+    LE = 308,
+    GE = 309,
+    NE = 310,
+    NUMBER = 311,
+    FLOAT = 312,
+    DATE_DATA = 313,
+    ID = 314,
+    PATH = 315,
+    SSS = 316,
+    LIKE_SSS = 317,
+    STAR = 318,
+    STRING_V = 319
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
 union YYSTYPE
 {
-#line 125 "yacc_sql.y" /* yacc.c:1909  */
+#line 126 "yacc_sql.y"
 
   RelAttr *attr1;
   Condition *condition1;
@@ -149,9 +153,9 @@ union YYSTYPE
   IdList *ids1;
   AttrList *attrs1;
 
-#line 153 "yacc_sql.tab.h" /* yacc.c:1909  */
-};
+#line 157 "yacc_sql.tab.h"
 
+};
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

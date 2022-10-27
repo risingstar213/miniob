@@ -17,6 +17,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/db.h"
 #include "sql/stmt/filter_stmt.h"
 #include "storage/common/table.h"
+#include "util/cast.h"
+#include "util/date.h"
 
 UpdateStmt::UpdateStmt(Table *table, std::vector<char *> field_name, std::vector<Value> values, FilterStmt *filter_stmt)
     : table_(table), field_name_(field_name), values_(values), filter_stmt_(filter_stmt)
@@ -25,6 +27,7 @@ UpdateStmt::UpdateStmt(Table *table, std::vector<char *> field_name, std::vector
 RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
 {
   // TODO
+  LOG_INFO("======enter update=====");
   const char *table_name = update.relation_name;
   char **column_name = update.attribute_name;
   if (nullptr == db || nullptr == table_name) {
@@ -52,7 +55,15 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
     // check whether the type of the value is correct
     const AttrType field_type = field_meta->type();
     const AttrType value_type = update.value[i].type;
-    if (field_type != value_type) {  // TODO try to convert the value type to field type
+    CastUnit::cast_to(update.value[i], field_type);
+    if (value_type == DATES) {
+      Date *d = (Date *)update.value[i].data;
+      if (!d->is_valid()) {
+         LOG_WARN("The date %s is not valid", d->toString().c_str());
+        return RC::SQL_SYNTAX;
+      }
+    }
+    if (field_type != update.value[i].type) {  // TODO try to convert the value type to field type
       LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
           table_name,
           field_meta->name(),

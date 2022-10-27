@@ -242,7 +242,7 @@ public:
       LOG_INFO("cell at aggregation");
       cell.set_data(AggFunc::get_data(agg_[index], values_[index], speces_[index]->expression()->get_valuetype()));
       cell.set_type(AggFunc::get_attrtype(agg_[index], speces_[index]->expression()->get_valuetype()));
-      if (cell.attr_type() == CHARS) {
+      if (cell.attr_type() == CHARS || cell.attr_type() == TEXTS) {
           TupleCell cell1;
           speces_[index]->expression()->get_value(tuples_, cell1);
           cell.set_length(cell1.length());

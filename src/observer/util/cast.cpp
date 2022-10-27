@@ -39,6 +39,9 @@ void CastUnit::cast_to(Value &value, AttrType type)
           }
           value.type = AttrType::INTS;
         } break;
+        case AttrType::TEXTS: {
+          value.type = AttrType::TEXTS;
+        } break;
         default:
           break;
       }
