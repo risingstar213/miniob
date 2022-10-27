@@ -1066,7 +1066,7 @@ RC Table::resolve_unique_before_insert(Trx *trx, Record *record)
     if (indexes_[i]->index_meta().is_unique()) {
       std::list<RID> rids;
       RC rc = indexes_[i]->get_entry(record->data(), rids);
-      if (rc != RC::SUCCESS || rids.size() > 0) {
+      if (rids.size() > 0) {
         LOG_INFO("insert duplicate keys into unique index");
         return RC::INVALID_ARGUMENT;
       }
@@ -1087,19 +1087,19 @@ RC Table::resolve_unique_before_update(Trx *trx, Record *old_record, Record *new
         switch (field_metas[j].type()) {
           case INTS: {
             equal = compare_int(old_record->data() + field_metas[j].offset(), 
-                          new_record->data() + field_metas[j].offset());
+                          new_record->data() + field_metas[j].offset()) == 0;
           } break;
           case FLOATS: {
             equal = compare_float(old_record->data() + field_metas[j].offset(), 
-                          new_record->data() + field_metas[j].offset());
+                          new_record->data() + field_metas[j].offset()) == 0;
           } break;
           case CHARS: {
             equal = compare_string(old_record->data() + field_metas[j].offset(), field_metas[j].len(),
-                          new_record->data() + field_metas[j].offset(),field_metas[j].len());
+                          new_record->data() + field_metas[j].offset(),field_metas[j].len()) == 0;
           } break;
           case DATES: {
             equal = compare_date(old_record->data() + field_metas[j].offset(), 
-                          new_record->data() + field_metas[j].offset());
+                          new_record->data() + field_metas[j].offset()) == 0;
           } break;
           default:
            break;
@@ -1107,10 +1107,11 @@ RC Table::resolve_unique_before_update(Trx *trx, Record *old_record, Record *new
       }
       if (equal) {
         continue;
-      } 
+      }
+      LOG_INFO("resolve_unique_before_update ask in b+tree");
       std::list<RID> rids;
       RC rc = indexes_[i]->get_entry(new_record->data(), rids);
-      if (rc != RC::SUCCESS || rids.size() > 0) {
+      if (rids.size() > 0) {
         LOG_INFO("insert duplicate keys into unique index");
         return RC::INVALID_ARGUMENT;
       }
