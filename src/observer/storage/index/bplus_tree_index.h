@@ -27,6 +27,7 @@ public:
   RC open(const char *file_name, const IndexMeta &index_meta, std::vector<FieldMeta> &field_metas);
   RC close();
 
+  RC get_entry(const char *record, std::list<RID> &rids) override;
   RC insert_entry(const char *record, const RID *rid) override;
   RC delete_entry(const char *record, const RID *rid) override;
 

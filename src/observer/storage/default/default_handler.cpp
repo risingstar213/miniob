@@ -166,7 +166,7 @@ RC DefaultHandler::create_index(
   // tricks for compiling.
   char *attribute_names[20];
   attribute_names[0] = attribute_name;
-  return table->create_index(trx, index_name, attribute_names, 1);
+  return table->create_index(trx, index_name, attribute_names, 1, false);
 }
 
 RC DefaultHandler::drop_index(Trx *trx, const char *dbname, const char *relation_name, const char *index_name)

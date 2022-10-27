@@ -256,11 +256,11 @@ create_index:		/*create index 语句的语法解析树*/
 			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, *$7, false);
 			delete $7;
 		}
-	| CREATE UNIQUE ID ON ID LBRACE id_list SEMICOLON
+	| CREATE UNIQUE INDEX ID ON ID LBRACE id_list SEMICOLON
 		{
 			CONTEXT->ssql->flag = SCF_CREATE_INDEX;//"create_index";
-			create_index_init(&CONTEXT->ssql->sstr.create_index, $3, $5, *$7, true);
-			delete $7;
+			create_index_init(&CONTEXT->ssql->sstr.create_index, $4, $6, *$8, true);
+			delete $8;
 		}
     ;
 

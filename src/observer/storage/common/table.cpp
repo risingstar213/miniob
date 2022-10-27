@@ -262,6 +262,12 @@ RC Table::insert_record(Trx *trx, Record *record)
   if (trx != nullptr) {
     trx->init_trx_info(this, *record);
   }
+
+  rc = resolve_unique_before_insert(trx, record);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+
   rc = record_handler_->insert_record(record->data(), table_meta_.record_size(), &record->rid());
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Insert record failed. table name=%s, rc=%d:%s", table_meta_.name(), rc, strrc(rc));
@@ -582,7 +588,7 @@ static RC insert_index_record_reader_adapter(Record *record, void *context)
   return inserter.insert_index(record);
 }
 
-RC Table::create_index(Trx *trx, const char *index_name, char *attribute_name[], int attribute_num)
+RC Table::create_index(Trx *trx, const char *index_name, char *attribute_name[], int attribute_num, bool is_unique)
 {
   LOG_INFO("create_index: index num %d", attribute_num);
   if (common::is_blank(index_name) || attribute_num == 0) {
@@ -601,7 +607,7 @@ RC Table::create_index(Trx *trx, const char *index_name, char *attribute_name[],
   }
 
   std::vector<FieldMeta> field_metas;
-  for (size_t i = 0; i < attribute_num; i++) {
+  for (int i = 0; i < attribute_num; i++) {
     const FieldMeta *field_meta = table_meta_.field(attribute_name[i]);
     if (!field_meta) {
       LOG_INFO("Invalid input arguments, there is no field of %s in table:%s.", attribute_name[i], name());
@@ -611,7 +617,7 @@ RC Table::create_index(Trx *trx, const char *index_name, char *attribute_name[],
   }
 
   IndexMeta new_index_meta;
-  RC rc = new_index_meta.init(index_name, field_metas);
+  RC rc = new_index_meta.init(index_name, field_metas, is_unique);
   if (rc != RC::SUCCESS) {
     LOG_INFO("Failed to init IndexMeta in table:%s, index_name:%s", name(), index_name);
     return rc;
@@ -1008,18 +1014,20 @@ RC Table::update_record(Trx *trx, Record *old_record, int cell_num, Value *value
         strrc(rc));
     return rc;
   }
-  rc = insert_entry_of_indexes((&new_record)->data(), (&new_record)->rid());
+
+  rc = record_handler_->update_record(&new_record);
   if (rc != RC::SUCCESS) {
-    LOG_ERROR("Failed to insert indexes of record (rid=%d.%d). rc=%d:%s",
+    LOG_ERROR("Failed to update record (rid=%d.%d). rc=%d:%s",
         new_record.rid().page_num,
         new_record.rid().slot_num,
         rc,
         strrc(rc));
     return rc;
   }
-  rc = record_handler_->update_record(&new_record);
+
+  rc = insert_entry_of_indexes((&new_record)->data(), (&new_record)->rid());
   if (rc != RC::SUCCESS) {
-    LOG_ERROR("Failed to update record (rid=%d.%d). rc=%d:%s",
+    LOG_ERROR("Failed to insert indexes of record (rid=%d.%d). rc=%d:%s",
         new_record.rid().page_num,
         new_record.rid().slot_num,
         rc,
@@ -1043,4 +1051,20 @@ RC Table::update_record(Trx *trx, Record *old_record, int cell_num, Value *value
   }
 
   return rc;
+}
+
+RC Table::resolve_unique_before_insert(Trx *trx, Record *record)
+{
+  for (size_t i = 0; i < indexes_.size(); i++) {
+    // is unique
+    if (indexes_[i]->index_meta().is_unique()) {
+      std::list<RID> rids;
+      RC rc = indexes_[i]->get_entry(record->data(), rids);
+      if (rc != RC::SUCCESS || rids.size() > 0) {
+        LOG_INFO("insert duplicate keys into unique index");
+        return RC::INVALID_ARGUMENT;
+      }
+    }
+  }
+  return RC::SUCCESS;
 }
