@@ -72,14 +72,6 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
       // check whether the type of the value is correct
       const AttrType field_type = field_meta->type();
       AttrType value_type = update.update_value[i].value.value.type;
-      if (field_type != value_type) {  // TODO try to convert the value type to field type
-        LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
-            table_name,
-            field_meta->name(),
-            field_type,
-            value_type);
-        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
-      }
       update_value.value.value = update.update_value[i].value.value;
     } else {
       // select
