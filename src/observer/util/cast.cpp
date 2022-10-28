@@ -136,7 +136,6 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
           value.data = malloc(sizeof(int));
           *(int *)(value.data) = cast_float_to_int(*old_data);
           value.type = AttrType::INTS;
-          free(old_data);
         } break;
         default:
           value.data = malloc(sizeof(float));
@@ -158,7 +157,6 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
           value.data = malloc(sizeof(float));
           *(float *)(value.data) = *old_data;
           value.type = AttrType::FLOATS;
-          free(old_data);
         } break;
         default:
           value.data = malloc(sizeof(int));

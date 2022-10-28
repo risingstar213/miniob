@@ -82,9 +82,12 @@ RC UpdateOperator::open()
       LOG_WARN("failed to delete record: %s", strrc(rc));
       return rc;
     }
-    delete (values);
+    delete[] values;
   }
   for (auto &oper : operator_queue) delete oper;
+  for (size_t i = 0; i < true_values.size(); i++) {
+    free(true_values[i].data);
+  }
   return RC::SUCCESS;
 }
 
