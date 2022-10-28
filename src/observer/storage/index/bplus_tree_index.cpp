@@ -104,7 +104,7 @@ RC BplusTreeIndex::get_entry(const char *record, std::list<RID> &rids)
     length += field_metas_[i].len();
   }
   RC rc = index_handler_.get_entry(data_pool, length, rids);
-  delete data_pool;
+  delete[] data_pool;
   return rc;
 }
 
@@ -117,7 +117,7 @@ RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
     p += field_metas_[i].len();
   }
   RC rc = index_handler_.insert_entry(data_pool, rid);
-  delete data_pool;
+  delete[] data_pool;
   return rc;
 }
 
@@ -131,7 +131,7 @@ RC BplusTreeIndex::delete_entry(const char *record, const RID *rid)
   }
 
   RC rc = index_handler_.delete_entry(data_pool, rid);
-  delete data_pool;
+  delete[] data_pool;
   return rc;
 }
 

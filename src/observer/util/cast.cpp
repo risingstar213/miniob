@@ -165,6 +165,7 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
       }
     } break;
     default:
+      value.data = strdup((const char *)value.data);
       break;
   }
   // return RC::SUCCESS;
