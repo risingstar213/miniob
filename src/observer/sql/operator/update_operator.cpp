@@ -3,6 +3,7 @@
 #include "storage/common/table.h"
 #include "common/log/log.h"
 #include "rc.h"
+#include "util/operator_helper.h"
 
 RC UpdateOperator::open()
 {
@@ -16,6 +17,36 @@ RC UpdateOperator::open()
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to open child operator: %s", strrc(rc));
     return rc;
+  }
+
+  auto update_values = update_stmt_->values();
+  std::vector<Operator *> operator_queue;
+  std::vector<Value> true_values;
+  for (size_t i = 0; i < update_values.size(); i++) {
+    if (update_values[i].is_select) {
+      Operator *oper = get_select_operator(update_values[i].value.select);
+      operator_queue.push_back(oper);
+      TupleCell cell;
+      int count = 0;
+      if ((rc = oper->open()) != RC::SUCCESS) {
+        for (auto &oper : operator_queue) delete oper;
+        return rc;
+      }
+      while (oper->next() == RC::SUCCESS) {
+        count += 1;
+        oper->current_tuples()[0]->cell_at(0, cell);
+      }
+      if (count != 1) {
+        for (auto &oper : operator_queue) delete oper;
+        return RC::INVALID_ARGUMENT;
+      }
+      Value value;
+      value.data = const_cast<char *>(cell.data());
+      value.type = cell.attr_type();
+      true_values.push_back(value);
+    } else {
+      true_values.push_back(update_values[i].value.value);
+    }
   }
 
   Table *table = update_stmt_->table();
@@ -37,7 +68,7 @@ RC UpdateOperator::open()
 
     for (size_t i = 0; i < update_stmt_->field_name().size(); i++) {
       int offset = update_stmt_->table()->table_meta().field_index(update_stmt_->field_name()[i]);
-      values[offset] = update_stmt_->values()[i];
+      values[offset] = true_values[i];
     }
     // LOG_INFO("offset: %d", update_stmt_->field().meta()->offset());
     Record &old_record = row_tuple->record();
@@ -48,6 +79,7 @@ RC UpdateOperator::open()
     }
     delete (values);
   }
+  for (auto &oper : operator_queue) delete oper;
   return RC::SUCCESS;
 }
 

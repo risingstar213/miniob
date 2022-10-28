@@ -49,14 +49,16 @@ typedef struct _Selects Selects;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
+typedef struct _UpdateValue UpdateValue;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
+typedef std::deque<UpdateValue> UpdateValueList;
 typedef std::deque<char *> IdList;
 // typedef std::string String;
 
-#line 60 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 62 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -132,12 +134,14 @@ typedef std::deque<char *> IdList;
 
 union YYSTYPE
 {
-#line 125 "yacc_sql.y" /* yacc.c:1909  */
+#line 127 "yacc_sql.y" /* yacc.c:1909  */
 
   RelAttr *attr1;
   Condition *condition1;
   Value *value1;
   Join *join1;
+  Selects *select1;
+  UpdateValue *updatevalue1;
   char *string1;
   int number1;
   float floats1;
@@ -148,8 +152,9 @@ union YYSTYPE
   JoinList *joins1;
   IdList *ids1;
   AttrList *attrs1;
+  UpdateValueList *updatevaluelist1;
 
-#line 153 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 158 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

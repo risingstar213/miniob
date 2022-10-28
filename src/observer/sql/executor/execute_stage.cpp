@@ -429,35 +429,28 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   //   rc = RC::UNIMPLENMENT;
   //   return rc;
   // }
-  std::vector<Operator *> operator_queue;
   Operator *top_oper;
   bool multi_tables = select_stmt->tables().size() > 1;
   std::vector<JoinStmt *> join_tables = select_stmt->join_stmts();
   if (join_tables.size() > 0) {
     LOG_INFO("join num: %d", join_tables.size());
     Operator *left_operator = new TableScanOperator(select_stmt->tables()[0]);
-    operator_queue.push_back(left_operator);
     TableScanOperator *right_operator;
     JoinOperator *join_operator;
     for (size_t i = 0; i < join_tables.size(); i++) {
       right_operator = new TableScanOperator(join_tables[i]->table());
-      operator_queue.push_back(right_operator);
       join_operator = new JoinOperator(left_operator, right_operator);
-      operator_queue.push_back(join_operator);
       LOG_INFO("join_stmt: %d", join_tables[i]->filter_stmt()->filter_units().size());
       left_operator = new PredicateOperator(join_tables[i]->filter_stmt());
-      operator_queue.push_back(left_operator);
       left_operator->add_child(join_operator);
     }
     top_oper = left_operator;
   }
   else if (multi_tables) {
     top_oper = new TablesScanOperator();
-    operator_queue.push_back(top_oper);
     Operator *child_oper;
     for (uint i = 0; i < select_stmt->tables().size(); i++) {
       child_oper = new TableScanOperator(select_stmt->tables()[i]);
-      operator_queue.push_back(child_oper);
       top_oper->add_child(child_oper);
     }
   } else {
@@ -465,14 +458,12 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
     if (nullptr == top_oper) {
       top_oper = new TableScanOperator(select_stmt->tables()[0]);
     }
-    operator_queue.push_back(top_oper);
   }
 
-  DEFER([&]() { for (auto &iter : operator_queue) delete iter; });
-  PredicateOperator pred_oper(select_stmt->filter_stmt());
-  pred_oper.add_child(top_oper);
+  PredicateOperator *pred_oper = new PredicateOperator(select_stmt->filter_stmt());
+  pred_oper->add_child(top_oper);
   ProjectOperator project_oper;
-  project_oper.add_child(&pred_oper);
+  project_oper.add_child(pred_oper);
   int n = select_stmt->query_fields().size();
   for (int i = 0; i < n; i++) {
     const Field &field = select_stmt->query_fields()[i];
@@ -691,11 +682,11 @@ RC ExecuteStage::do_update(SQLStageEvent *sql_event)
   }
 
   UpdateStmt *update_stmt = (UpdateStmt *)stmt;
-  TableScanOperator scan_oper(update_stmt->table());
-  PredicateOperator pred_oper(update_stmt->filter_stmt());
-  pred_oper.add_child(&scan_oper);
+  TableScanOperator *scan_oper = new TableScanOperator(update_stmt->table());
+  PredicateOperator *pred_oper = new PredicateOperator(update_stmt->filter_stmt());
+  pred_oper->add_child(scan_oper);
   UpdateOperator update_oper(update_stmt, trx);
-  update_oper.add_child(&pred_oper);
+  update_oper.add_child(pred_oper);
 
   RC rc = update_oper.open();
   if (rc != RC::SUCCESS) {
@@ -738,11 +729,11 @@ RC ExecuteStage::do_delete(SQLStageEvent *sql_event)
   }
 
   DeleteStmt *delete_stmt = (DeleteStmt *)stmt;
-  TableScanOperator scan_oper(delete_stmt->table());
-  PredicateOperator pred_oper(delete_stmt->filter_stmt());
-  pred_oper.add_child(&scan_oper);
+  TableScanOperator *scan_oper = new TableScanOperator(delete_stmt->table());
+  PredicateOperator *pred_oper = new PredicateOperator(delete_stmt->filter_stmt());
+  pred_oper->add_child(scan_oper);
   DeleteOperator delete_oper(delete_stmt, trx);
-  delete_oper.add_child(&pred_oper);
+  delete_oper.add_child(pred_oper);
 
   RC rc = delete_oper.open();
   if (rc != RC::SUCCESS) {

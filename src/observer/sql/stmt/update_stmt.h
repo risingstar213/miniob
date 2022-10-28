@@ -20,12 +20,22 @@ See the Mulan PSL v2 for more details. */
 
 class Table;
 class FilterStmt;
+class SelectStmt;
+
+struct UpdateValueStmt {
+  bool is_select;
+  union {
+    Value value;
+    SelectStmt *select;
+  } value;
+};
 
 class UpdateStmt : public Stmt {
 public:
   UpdateStmt() = default;
-  UpdateStmt(Table *table, std::vector<char*> field_name, std::vector<Value> values, FilterStmt *filter_stmt);
+  UpdateStmt(Table *table, std::vector<char*> field_name, std::vector<UpdateValueStmt> update_values, FilterStmt *filter_stmt);
 
+  ~UpdateStmt() override;
   StmtType type() const override
   {
     return StmtType::UPDATE;
@@ -47,14 +57,14 @@ public:
   {
     return filter_stmt_;
   }
-  std::vector<Value> values() const
+  std::vector<UpdateValueStmt> values() const
   {
-    return values_;
+    return update_values_;
   }
 
 private:
   Table *table_ = nullptr;
   std::vector<char *> field_name_;
-  std::vector<Value> values_;
+  std::vector<UpdateValueStmt> update_values_;
   FilterStmt *filter_stmt_ = nullptr;
 };

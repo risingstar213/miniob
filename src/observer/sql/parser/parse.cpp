@@ -91,6 +91,14 @@ void value_init_string(Value *value, const char *v)
   value->data = strdup(v);
   value->raw_data = strdup(v);
 }
+void value_init_date(Value *value, const char *v) {
+  value->type = DATES;
+  string s(v);
+  value->data = malloc(sizeof(Date));
+  ((Date *)value->data)->set_date(s);
+  LOG_INFO("%s", ((Date *)value->data)->toString().c_str());
+  value->raw_data = strdup(v);
+}
 void value_destroy(Value *value)
 {
   value->type = UNDEFINED;
@@ -100,13 +108,23 @@ void value_destroy(Value *value)
   value->raw_data = nullptr;
 }
 
-void value_init_date(Value *value, const char *v) {
-  value->type = DATES;
-  string s(v);
-  value->data = malloc(sizeof(Date));
-  ((Date *)value->data)->set_date(s);
-  LOG_INFO("%s", ((Date *)value->data)->toString().c_str());
-  value->raw_data = strdup(v);
+void updatevalue_init_value(UpdateValue *update_value, Value *value) {
+  update_value->is_select = false;
+  update_value->value.value = *value;
+}
+
+void updatevalue_init_select(UpdateValue *update_value, Selects *select) {
+  LOG_INFO("updatevalue_init_select");
+  update_value->is_select = true;
+  update_value->value.select = *select;
+}
+void updatevalue_destroy(UpdateValue *update_value) {
+  if (update_value->is_select) {
+    selects_destroy(&update_value->value.select);
+  } else {
+    value_destroy(&update_value->value.value);
+  }
+  update_value->is_select = false;
 }
 
 void condition_init(Condition *condition, CompOp comp, int left_is_attr, RelAttr *left_attr, Value *left_value,
@@ -294,6 +312,7 @@ void deletes_destroy(Deletes *deletes)
 
 void updates_init(Updates *updates, const char *relation_name, std::deque<Condition> conditions)
 {
+  LOG_INFO("updates_init");
   updates->relation_name = strdup(relation_name);
 
   assert(conditions.size() <= sizeof(updates->conditions) / sizeof(updates->conditions[0]));
@@ -303,11 +322,18 @@ void updates_init(Updates *updates, const char *relation_name, std::deque<Condit
   updates->condition_num = conditions.size();
 }
 
-void update_append_attribute(Updates *updates, const char *attribute_name, Value *value)
+void update_append_attribute(Updates *updates, const char *attribute_name, UpdateValue *update_value)
 {
-  LOG_INFO("update_append_attribute %s, %s", attribute_name, value->raw_data);
+  // LOG_INFO("update_append_attribute %s, %s", attribute_name, value->raw_data);
+  LOG_INFO("update_append_attribute");
+  if (attribute_name == nullptr) {
+    LOG_INFO("nullptr");
+  } else {
+    LOG_INFO("%d,%s, %p", updates->attribute_num, attribute_name, update_value);
+  }
   updates->attribute_name[updates->attribute_num] = strdup(attribute_name);
-  updates->value[updates->attribute_num] = *value;
+  LOG_INFO("update_append_attribute");
+  updates->update_value[updates->attribute_num] = *update_value;
   updates->attribute_num += 1;
 }
 
@@ -318,7 +344,7 @@ void updates_destroy(Updates *updates)
   for (int i = 0; i < updates->attribute_num ; i++) {
     free(updates->attribute_name[i]);
     updates->attribute_name[i] = nullptr;
-    value_destroy(&updates->value[i]);
+    updatevalue_destroy(&updates->update_value[i]);
   }
   updates->attribute_num = 0;
 

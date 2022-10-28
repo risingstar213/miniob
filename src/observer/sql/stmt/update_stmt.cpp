@@ -12,19 +12,35 @@ See the Mulan PSL v2 for more details. */
 // Created by Wangyunlai on 2022/5/22.
 //
 
-#include "sql/stmt/update_stmt.h"
 #include "common/log/log.h"
 #include "storage/common/db.h"
-#include "sql/stmt/filter_stmt.h"
 #include "storage/common/table.h"
+#include "sql/stmt/update_stmt.h"
+#include "sql/stmt/filter_stmt.h"
+#include "sql/stmt/select_stmt.h"
 
-UpdateStmt::UpdateStmt(Table *table, std::vector<char *> field_name, std::vector<Value> values, FilterStmt *filter_stmt)
-    : table_(table), field_name_(field_name), values_(values), filter_stmt_(filter_stmt)
+UpdateStmt::UpdateStmt(Table *table, std::vector<char *> field_name, std::vector<UpdateValueStmt> update_values, FilterStmt *filter_stmt)
+    : table_(table), field_name_(field_name), update_values_(update_values), filter_stmt_(filter_stmt)
 {}
+
+UpdateStmt::~UpdateStmt()
+{
+  if (nullptr != filter_stmt_) {
+    delete filter_stmt_;
+    filter_stmt_ = nullptr;
+  }
+
+  for (size_t i = 0; i < update_values_.size(); i++) {
+    if (update_values_[i].is_select) {
+      delete update_values_[i].value.select;
+    }
+  }
+  update_values_.clear();
+}
 
 RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
 {
-  // TODO
+  LOG_INFO("UpdateStmt");
   const char *table_name = update.relation_name;
   char **column_name = update.attribute_name;
   if (nullptr == db || nullptr == table_name) {
@@ -40,7 +56,7 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
   }
   
   std::vector<char *> field_name;
-  std::vector<Value> value;
+  std::vector<UpdateValueStmt> update_values;
   for (int i = 0; i < update.attribute_num; i++) {
     // check whether the column exists
     const FieldMeta *field_meta = table->table_meta().field(column_name[i]);
@@ -49,19 +65,34 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
       return RC::SCHEMA_FIELD_MISSING;
     }
 
-    // check whether the type of the value is correct
-    const AttrType field_type = field_meta->type();
-    const AttrType value_type = update.value[i].type;
-    if (field_type != value_type) {  // TODO try to convert the value type to field type
-      LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
-          table_name,
-          field_meta->name(),
-          field_type,
-          value_type);
-      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+    UpdateValueStmt update_value;
+    update_value.is_select = update.update_value[i].is_select;
+
+    if (!update.update_value[i].is_select) {
+      // check whether the type of the value is correct
+      const AttrType field_type = field_meta->type();
+      AttrType value_type = update.update_value[i].value.value.type;
+      if (field_type != value_type) {  // TODO try to convert the value type to field type
+        LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
+            table_name,
+            field_meta->name(),
+            field_type,
+            value_type);
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
+      update_value.value.value = update.update_value[i].value.value;
+    } else {
+      // select
+      Stmt *stmt;
+      RC rc = SelectStmt::create(db, update.update_value[i].value.select, stmt);
+      update_value.value.select = static_cast<SelectStmt *>(stmt);
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("cannot create sub select stmt for update");
+        return rc;
+      }
     }
     field_name.push_back(column_name[i]);
-    value.push_back(update.value[i]);
+    update_values.push_back(update_value);
   }
 
   FilterStmt *filter_stmt = nullptr;
@@ -72,6 +103,6 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
   }
 
   // everything alright
-  stmt = new UpdateStmt(table, field_name, value, filter_stmt);
+  stmt = new UpdateStmt(table, field_name, update_values, filter_stmt);
   return RC::SUCCESS;
 }

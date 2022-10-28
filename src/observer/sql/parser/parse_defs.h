@@ -24,6 +24,7 @@ typedef struct _RelAttr RelAttr;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
+typedef struct _UpdateValue UpdateValue;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
@@ -113,6 +114,14 @@ struct _Selects {
   bool is_valid;                  // if the selection is valid
 };
 
+struct _UpdateValue {
+  bool is_select;
+  union {
+    Selects select;
+    Value value;
+  } value;
+};
+
 // sturct of row in insert
 typedef struct {
   size_t value_num;       // Length of values
@@ -138,7 +147,7 @@ typedef struct {
   char *relation_name;            // Relation to update
   size_t attribute_num;
   char *attribute_name[MAX_NUM];  // Attributes to update
-  Value value[MAX_NUM];           // updates value
+  UpdateValue update_value[MAX_NUM];           // updates value
   size_t condition_num;           // Length of conditions in Where clause
   Condition conditions[MAX_NUM];  // conditions in Where clause
 } Updates;
@@ -249,6 +258,10 @@ void value_init_string(Value *value, const char *v);
 void value_destroy(Value *value);
 void value_init_date(Value *value, const char *v);
 
+void updatevalue_init_value(UpdateValue *update_value, Value *value);
+void updatevalue_init_select(UpdateValue *update_value, Selects *select);
+void updatevalue_destroy(UpdateValue *update_value);
+
 void condition_init(Condition *condition, CompOp comp, int left_is_attr, RelAttr *left_attr, Value *left_value,
     int right_is_attr, RelAttr *right_attr, Value *right_value);
 void condition_destroy(Condition *condition);
@@ -278,7 +291,7 @@ void deletes_destroy(Deletes *deletes);
 
 void updates_init(Updates *updates, const char *relation_name,
     std::deque<Condition> conditions);
-void update_append_attribute(Updates *updates, const char *attribute_name, Value *value);
+void update_append_attribute(Updates *updates, const char *attribute_name, UpdateValue *update_value);
 void updates_destroy(Updates *updates);
 
 void create_table_append_attribute(CreateTable *create_table, AttrInfo *attr_info);

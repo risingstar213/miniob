@@ -56,10 +56,12 @@ typedef struct _Selects Selects;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
+typedef struct _UpdateValue UpdateValue;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
+typedef std::deque<UpdateValue> UpdateValueList;
 typedef std::deque<char *> IdList;
 // typedef std::string String;
 }
@@ -127,6 +129,8 @@ typedef std::deque<char *> IdList;
   Condition *condition1;
   Value *value1;
   Join *join1;
+  Selects *select1;
+  UpdateValue *updatevalue1;
   char *string1;
   int number1;
   float floats1;
@@ -137,6 +141,7 @@ typedef std::deque<char *> IdList;
   JoinList *joins1;
   IdList *ids1;
   AttrList *attrs1;
+  UpdateValueList *updatevaluelist1;
 }
 
 %token <string1> NUMBER
@@ -158,6 +163,8 @@ typedef std::deque<char *> IdList;
 %type <comp1> comOp;
 %type <comp1> like_comOp;
 %type <attr1> aggration_attr;
+%type <select1> select;
+%type <updatevalue1> update_value;
 
 %type <values1> value_list;
 %type <conditions1> where;
@@ -176,7 +183,11 @@ commands:		//commands or sqls. parser starts here.
     ;
 
 command:
-	  select  
+	  select SEMICOLON {
+		CONTEXT->ssql->flag=SCF_SELECT;//"select";
+		CONTEXT->ssql->sstr.selection = *$1;
+		delete $1;
+	  }
 	| insert
 	| update
 	| delete
@@ -447,46 +458,62 @@ update:			/*  update 语句的语法解析树*/
     ;
 
 update_list:
-	SET ID EQ value
+	SET ID EQ update_value
 		{
 			update_append_attribute(&CONTEXT->ssql->sstr.update, $2, $4);
 			delete $4;
 		}
-	| update_list COMMA ID EQ value
+	| update_list COMMA ID EQ update_value
 		{
 			update_append_attribute(&CONTEXT->ssql->sstr.update, $3, $5);
 			delete $5;
 		}
 	;
+
+update_value:
+	value {
+		$$ = new UpdateValue();
+		updatevalue_init_value($$, $1);
+		delete $1;
+	}
+	| LBRACE select RBRACE {
+		$$ = new UpdateValue();
+		updatevalue_init_select($$, $2);
+		delete $2;
+	}
+	;
+
 select:				/*  select 语句的语法解析树*/
-    SELECT select_attr FROM ID rel_list where SEMICOLON
+    SELECT select_attr FROM ID rel_list where
 		{
+			$$ = new Selects();
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
-			selects_append_relation(&CONTEXT->ssql->sstr.selection, $4);
+			selects_append_relation($$, $4);
 
-			selects_append_attribute(&CONTEXT->ssql->sstr.selection, *$2);
+			selects_append_attribute($$, *$2);
 
-            selects_append_joins(&CONTEXT->ssql->sstr.selection, JoinList());
+            selects_append_joins($$, JoinList());
 
-			selects_append_conditions(&CONTEXT->ssql->sstr.selection, *$6);
+			selects_append_conditions($$, *$6);
 
-			CONTEXT->ssql->flag=SCF_SELECT;//"select";
+			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
 			delete $2;
 			delete $6;
 
 	}
-	| SELECT select_attr FROM ID join_list where SEMICOLON {
+	| SELECT select_attr FROM ID join_list where {
 		// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
-			selects_append_relation(&CONTEXT->ssql->sstr.selection, $4);
+			$$ = new Selects();
+			selects_append_relation($$, $4);
 
-			selects_append_attribute(&CONTEXT->ssql->sstr.selection, *$2);
+			selects_append_attribute($$, *$2);
 
-            selects_append_joins(&CONTEXT->ssql->sstr.selection, *$5);
+            selects_append_joins($$, *$5);
 
-			selects_append_conditions(&CONTEXT->ssql->sstr.selection, *$6);
+			selects_append_conditions($$, *$6);
 
-			CONTEXT->ssql->flag=SCF_SELECT;//"select";
+			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
 			delete $2;
 			delete $5;
@@ -515,7 +542,7 @@ select_attr:
 		}
 	| aggration_attr attr_list {
 		$2->push_front(*$1);
-		selects_append_attribute(&CONTEXT->ssql->sstr.selection, *$2);
+		// selects_append_attribute(&CONTEXT->ssql->sstr.selection, *$2);
 		delete($1);
 		$$ = $2;
 	}

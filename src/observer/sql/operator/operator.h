@@ -27,7 +27,12 @@ public:
   Operator()
   {}
 
-  virtual ~Operator() = default;
+  virtual ~Operator() {
+    for (size_t i = 0; i < children_.size(); i++) {
+      delete children_[i];
+    }
+    children_.clear();
+  }
 
   virtual RC open() = 0;
   virtual RC next() = 0;
