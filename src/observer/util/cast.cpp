@@ -1,5 +1,6 @@
 
 #include "util/cast.h"
+#include "util/date.h"
 #include "common/log/log.h"
 
 static int cast_float_to_int(float f)
@@ -164,9 +165,14 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
           break;
       }
     } break;
+    case AttrType::DATES: {
+      if (type == AttrType::DATES) {
+        Date *old_data = (Date *)value.data;
+        value.data = (Date *)malloc(sizeof(Date));
+        memcpy(value.data, old_data, sizeof(Date));
+      }
+    }
     default:
-      value.data = strdup((const char *)value.data);
-      break;
   }
   // return RC::SUCCESS;
 }
