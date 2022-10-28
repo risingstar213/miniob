@@ -121,6 +121,10 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
           }
           value.type = AttrType::INTS;
         } break;
+        case AttrType::TEXTS: {
+          value.data = strdup(old_data);
+          value.type = AttrType::TEXTS;
+        } break;
         default:
           value.data = strdup(old_data);
           break;
