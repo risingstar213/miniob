@@ -4,6 +4,7 @@
 #include "common/log/log.h"
 #include "rc.h"
 #include "util/operator_helper.h"
+#include "util/cast.h"
 
 RC UpdateOperator::open()
 {
@@ -23,6 +24,7 @@ RC UpdateOperator::open()
   std::vector<Operator *> operator_queue;
   std::vector<Value> true_values;
   for (size_t i = 0; i < update_values.size(); i++) {
+    AttrType type = update_stmt_->table()->table_meta().field(update_stmt_->field_name()[i])->type();
     if (update_values[i].is_select) {
       Operator *oper = get_select_operator(update_values[i].value.select);
       operator_queue.push_back(oper);
@@ -43,9 +45,12 @@ RC UpdateOperator::open()
       Value value;
       value.data = const_cast<char *>(cell.data());
       value.type = cell.attr_type();
+      CastUnit::cast_to_with_new_alloc(value, type);
       true_values.push_back(value);
     } else {
-      true_values.push_back(update_values[i].value.value);
+      Value value = update_values[i].value.value;
+      CastUnit::cast_to_with_new_alloc(value, type);
+      true_values.push_back(value);
     }
   }
 

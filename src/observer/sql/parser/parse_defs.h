@@ -275,7 +275,7 @@ void join_destroy(Join *join);
 
 void selects_init(Selects *selects, ...);
 void selects_append_attribute(Selects *selects, std::deque<RelAttr> rel_attrs);
-void selects_append_relation(Selects *selects, const char *relation_name);
+void selects_append_relation(Selects *selects, std::deque<char *> relation_names);
 void selects_append_conditions(Selects *selects, std::deque<Condition> conditions);
 void selects_append_joins(Selects *selects, std::deque<Join> joins);
 void selects_destroy(Selects *selects);

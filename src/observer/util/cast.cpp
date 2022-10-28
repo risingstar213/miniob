@@ -90,6 +90,89 @@ void CastUnit::cast_to(Value &value, AttrType type)
   // return RC::SUCCESS;
 }
 
+void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
+{
+  bool convert = false;
+  switch (value.type) {
+    case AttrType::CHARS: {
+      char *old_data = (char *)value.data;
+      switch (type) {
+        case AttrType::FLOATS: {
+          convert = true;
+          value.data = malloc(sizeof(float));
+          if (old_data[0] <'0' || old_data[0] > '9') {
+            *(float *)(value.data) = 0;
+          } else {
+            sscanf(old_data, "%f", (float *)value.data);
+          }
+          value.type = AttrType::FLOATS;
+        } break;
+        case AttrType::INTS: {
+          convert = true;
+          value.data = malloc(sizeof(int));
+          if (old_data[0] <'0' || old_data[0] > '9') {
+            *(int *)(value.data) = 0;
+          } else {
+            sscanf(old_data, "%d", (int *)value.data);
+          }
+          value.type = AttrType::INTS;
+        } break;
+        default:
+          value.data = strdup(old_data);
+          break;
+      }
+    } break;
+    case AttrType::FLOATS: {
+      float *old_data = (float *)value.data;
+      switch (type) {
+        case AttrType::CHARS: {
+          convert = true;
+          value.data = malloc(15 * sizeof(char));
+          sprintf((char *)value.data, "%f", *old_data);
+          value.type = AttrType::CHARS;
+        } break;
+        case AttrType::INTS: {
+          convert = true;
+          value.data = malloc(sizeof(int));
+          *(int *)(value.data) = cast_float_to_int(*old_data);
+          value.type = AttrType::INTS;
+          free(old_data);
+        } break;
+        default:
+          value.data = malloc(sizeof(float));
+          *(float *)value.data = *old_data;
+          break;
+      }
+    } break;
+    case AttrType::INTS: {
+      int *old_data = (int *)value.data;
+      switch (type) {
+        case AttrType::CHARS: {
+          convert = true;
+          value.data = malloc(15 * sizeof(char));
+          sprintf((char *)value.data, "%d", *old_data);
+          value.type = AttrType::CHARS;
+        } break;
+        case AttrType::FLOATS: {
+          convert = true;
+          value.data = malloc(sizeof(float));
+          *(float *)(value.data) = *old_data;
+          value.type = AttrType::FLOATS;
+          free(old_data);
+        } break;
+        default:
+          value.data = malloc(sizeof(int));
+          *(int *)value.data = *old_data;
+          break;
+      }
+    } break;
+    default:
+      break;
+  }
+  // return RC::SUCCESS;
+}
+
+
 
 float CastUnit::cast_string_to_float(char * data, int length) {
   float f;

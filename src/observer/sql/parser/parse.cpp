@@ -211,9 +211,12 @@ void selects_append_attribute(Selects *selects, std::deque<RelAttr> rel_attrs)
   }
   selects->attr_num = rel_attrs.size();
 }
-void selects_append_relation(Selects *selects, const char *relation_name)
+void selects_append_relation(Selects *selects, std::deque<char *> relation_names)
 {
-  selects->relations[selects->relation_num++] = strdup(relation_name);
+  for (size_t i = 0; i < relation_names.size(); i++) {
+    selects->relations[selects->relation_num++] = strdup(relation_names[i]);
+  }
+  selects->relation_num = relation_names.size();
 }
 
 void selects_append_conditions(Selects *selects, std::deque<Condition> conditions)

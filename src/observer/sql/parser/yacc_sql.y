@@ -172,6 +172,7 @@ typedef std::deque<char *> IdList;
 %type <conditions1> join_condition_list;
 %type <joins1> join_list;
 %type <ids1> id_list;
+%type <ids1> rel_list;
 %type <attrs1> attr_list;
 %type <attrs1> select_attr;
 
@@ -488,7 +489,8 @@ select:				/*  select 语句的语法解析树*/
 		{
 			$$ = new Selects();
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
-			selects_append_relation($$, $4);
+			$5->push_back($4);
+			selects_append_relation($$, *$5);
 
 			selects_append_attribute($$, *$2);
 
@@ -500,12 +502,15 @@ select:				/*  select 语句的语法解析树*/
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
 			delete $2;
 			delete $6;
+			delete $5;
 
 	}
 	| SELECT select_attr FROM ID join_list where {
 		// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			$$ = new Selects();
-			selects_append_relation($$, $4);
+			IdList relation_list;
+			relation_list.push_back($4);
+			selects_append_relation($$, relation_list);
 
 			selects_append_attribute($$, *$2);
 
@@ -651,10 +656,13 @@ attr_list:
   	;
 
 rel_list:
-    /* empty */
+    /* empty */ {
+		$$ = new IdList();
+	}
     | COMMA ID rel_list {	
-				selects_append_relation(&CONTEXT->ssql->sstr.selection, $2);
-		  }
+		$$ = $3;
+		$$->push_back($2);
+	}
     ;
 
 join_list:
