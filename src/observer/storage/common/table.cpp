@@ -401,7 +401,7 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
     size_t copy_len = field->len();
-    if (field->type() == CHARS) {
+    if (field->type() == CHARS || field->type() == TEXTS) {
       const size_t data_len = strlen((const char *)value.data);
       if (copy_len > data_len) {
         copy_len = data_len + 1;
@@ -941,7 +941,7 @@ IndexScanner *Table::find_index_for_scan(const DefaultConditionFilter &filter)
     }
   }
 
-  if (filter.attr_type() == CHARS) {
+  if (filter.attr_type() == CHARS || filter.attr_type() == TEXTS) {
     left_len = left_key != nullptr ? strlen(left_key) : 0;
     right_len = right_key != nullptr ? strlen(right_key) : 0;
   }
@@ -1093,6 +1093,7 @@ RC Table::resolve_unique_before_update(Trx *trx, Record *old_record, Record *new
             equal = compare_float(old_record->data() + field_metas[j].offset(), 
                           new_record->data() + field_metas[j].offset()) == 0;
           } break;
+          case TEXTS:
           case CHARS: {
             equal = compare_string(old_record->data() + field_metas[j].offset(), field_metas[j].len(),
                           new_record->data() + field_metas[j].offset(),field_metas[j].len()) == 0;

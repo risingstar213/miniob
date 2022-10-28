@@ -221,7 +221,7 @@ RC insert_record_from_file(
     const FieldMeta *field = table->table_meta().field(i + sys_field_num);
 
     std::string &file_value = file_values[i];
-    if (field->type() != CHARS) {
+    if (field->type() != CHARS && field->type() != TEXTS) {
       common::strip(file_value);
     }
 
@@ -255,6 +255,7 @@ RC insert_record_from_file(
           value_init_float(&record_values[i], float_value, file_value.c_str());
         }
       } break;
+      case TEXTS:
       case CHARS: {
         value_init_string(&record_values[i], file_value.c_str());
       } break;

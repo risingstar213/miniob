@@ -54,7 +54,8 @@ typedef enum
   CHARS,
   INTS,
   FLOATS,
-  DATES
+  DATES,
+  TEXTS
 } AttrType;
 
 // the functions of aggregation

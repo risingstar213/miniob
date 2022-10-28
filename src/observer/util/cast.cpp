@@ -40,6 +40,9 @@ void CastUnit::cast_to(Value &value, AttrType type)
           }
           value.type = AttrType::INTS;
         } break;
+        case AttrType::TEXTS: {
+          value.type = AttrType::TEXTS;
+        } break;
         default:
           break;
       }
@@ -171,8 +174,9 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
         value.data = (Date *)malloc(sizeof(Date));
         memcpy(value.data, old_data, sizeof(Date));
       }
-    }
+    } break;
     default:
+      break;
   }
   // return RC::SUCCESS;
 }
