@@ -12,13 +12,15 @@ See the Mulan PSL v2 for more details. */
 // Created by WangYunlai on 2022/07/01.
 //
 
+#include "sql/parser/parse_defs.h"
 #include "common/log/log.h"
 #include "sql/operator/project_operator.h"
 #include "storage/record/record.h"
 #include "storage/common/table.h"
 #include "storage/trx/trx.h"
 #include "util/cast.h"
-#include "algorithm"
+#include "util/expression_helpers.h"
+#include <algorithm>
 
 RC ProjectOperator::open()
 {
@@ -40,7 +42,11 @@ RC ProjectOperator::open()
 RC ProjectOperator::next()
 {
   if (!is_aggregation_) {
-    return children_[0]->next();
+    RC rc =  children_[0]->next();
+    if (rc == RC::SUCCESS) {
+      tuple_.set_tuples(children_[0]->current_tuples());
+    }
+    return rc;
   } else {
     bool start = true;
     while (children_[0]->next() == RC::SUCCESS) {
@@ -130,59 +136,58 @@ RC ProjectOperator::close()
 }
 std::vector<Tuple *> ProjectOperator::current_tuples()
 {
-  // if (!is_aggregation_) {
-  //   tuple_.set_tuples(children_[0]->current_tuples());
-  // }
   std::vector<Tuple *> tuples;
   tuples.push_back(&tuple_);
   return tuples;
 }
 
-void ProjectOperator::add_projection(bool multi_tables, const Table *table, const FieldMeta *field_meta, const Aggregation agg)
+void ProjectOperator::add_projection(bool multi_tables, SelectExpr *expr, bool is_aggregation)
 {
   // 对单表来说，展示的(alias) 字段总是字段名称，
   // 对多表查询来说，展示的alias 需要带表名字
-  LOG_INFO("add projection:%s agg:%d", field_meta->name(), agg);
-  TupleCellSpec *spec = new TupleCellSpec(new FieldExpr(table, field_meta, agg));
-  if (multi_tables) {
-    std::string str;
-    str = table->name();
-    str += '.';
-    str += field_meta->name();
-    spec->set_alias(str);
-  } else if (agg == AGG_NONE) {
-    spec->set_alias(field_meta->name());
-  } else {
-    is_aggregation_ = is_aggregation_ || true;
-    std::string str;
-    switch(agg) {
-      case AGG_AVG:
-        str += "AVG(";
-        break;
-      case AGG_COUNT:
-        str += "COUNT(";
-        break;
-      case AGG_MAX:
-        str += "MAX(";
-        break;
-      case AGG_MIN:
-        str += "MIN(";
-        break;
-      case AGG_SUM:
-        str += "SUM(";
-        break;
-      default:
-        break;
-    }
-    if (strcmp(field_meta->name(), Trx::trx_field_name()) == 0) {
-      str += "*";
-    } else {
-      str += field_meta->name();
-    }
-    str += ")";
-    spec->set_alias(str);
-  }
-  tuple_.add_cell_spec(spec, agg);
+  // LOG_INFO("add projection:%s agg:%d", field_meta->name(), agg);
+  TupleCellSpec *spec = new TupleCellSpec(generate_expression(expr));
+  spec->set_alias(generate_alias(multi_tables, expr));
+  is_aggregation_ = is_aggregation;
+  // if (multi_tables) {
+  //   std::string str;
+  //   str = table->name();
+  //   str += '.';
+  //   str += field_meta->name();
+  //   spec->set_alias(str);
+  // } else if (agg == AGG_NONE) {
+  //   spec->set_alias(field_meta->name());
+  // } else {
+  //   is_aggregation_ = is_aggregation_ || true;
+  //   std::string str;
+  //   switch(agg) {
+  //     case AGG_AVG:
+  //       str += "AVG(";
+  //       break;
+  //     case AGG_COUNT:
+  //       str += "COUNT(";
+  //       break;
+  //     case AGG_MAX:
+  //       str += "MAX(";
+  //       break;
+  //     case AGG_MIN:
+  //       str += "MIN(";
+  //       break;
+  //     case AGG_SUM:
+  //       str += "SUM(";
+  //       break;
+  //     default:
+  //       break;
+  //   }
+  //   if (strcmp(field_meta->name(), Trx::trx_field_name()) == 0) {
+  //     str += "*";
+  //   } else {
+  //     str += field_meta->name();
+  //   }
+  //   str += ")";
+  //   spec->set_alias(str);
+  // }
+  tuple_.add_cell_spec(spec);
 }
 
 RC ProjectOperator::tuple_cell_spec_at(int index, const TupleCellSpec *&spec) const

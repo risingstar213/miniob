@@ -53,3 +53,48 @@ RC ValueExpr::get_value(const std::vector<Tuple *> tuples, TupleCell & cell) con
   cell = tuple_cell_;
   return RC::SUCCESS;
 }
+
+RC ComplexExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
+{
+  TupleCell left_cell, right_cell;
+  float left_value, right_value;
+  if (left_ != nullptr) {
+    left_->get_value(tuples, left_cell);
+    if (left_cell.attr_type() == INTS) {
+      left_value = *(int *)left_cell.data();
+    } else if (left_cell.attr_type() == FLOATS) {
+      left_value = *(float *)left_cell.data();
+    }
+  }
+  if (right_ != nullptr) {
+    right_->get_value(tuples, right_cell);
+    if (right_cell.attr_type() == INTS) {
+      right_value = *(int *)right_cell.data();
+    } else if (right_cell.attr_type() == FLOATS) {
+      right_value = *(float *)right_cell.data();
+    }
+  }
+  switch (expr_->arithOp) {
+    case ARITH_ADD: {
+      *(float *)data_ = left_value + right_value;
+    } break;
+    case ARITH_SUB: {
+      *(float *)data_ = left_value - right_value;
+    } break;
+    case ARITH_MUL: {
+      *(float *)data_ = left_value * right_value;
+    } break;
+    case ARITH_DIV: {
+      *(float *)data_ = left_value / right_value;
+    } break;
+    case ARITH_NEG: {
+      *(float *)data_ = - right_value;
+    } break;
+    default:
+      break;
+  }
+  cell.set_data(data_);
+  cell.set_type(FLOATS);
+  cell.set_length(4);
+  return RC::SUCCESS;
+}

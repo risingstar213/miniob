@@ -13,7 +13,8 @@ See the Mulan PSL v2 for more details. */
 //
 
 #pragma once
-
+#ifndef _FIELD_H_
+#define _FIELD_H_
 #include "storage/common/table.h"
 #include "storage/common/field_meta.h"
 
@@ -47,3 +48,4 @@ private:
   const Table *table_ = nullptr;
   const FieldMeta *field_ = nullptr;
 };
+#endif

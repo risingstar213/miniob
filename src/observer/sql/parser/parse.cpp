@@ -24,6 +24,83 @@ RC parse(char *st, Query *sqln);
 // #ifdef __cplusplus
 // extern "C" {
 // #endif  // __cplusplus
+void select_attr_init(SelectExpr *expr, RelAttr *attr)
+{
+  LOG_INFO("select_attr_init: %s", attr->attribute_name);
+  expr->attr = attr;
+  expr->is_attr = true;
+
+  expr->is_value = false;
+  expr->arithOp = ARITH_NONE;
+  expr->value = nullptr;
+  expr->left = nullptr;
+  expr->right = nullptr;
+  expr->type = UNDEFINED;
+  expr->is_brace = false;
+}
+
+void select_value_init(SelectExpr *expr, Value *value)
+{
+  LOG_INFO("select_value_init: %s", value->raw_data);
+  expr->value = value;
+  expr->is_value = true;
+
+  expr->is_attr = false;
+  expr->arithOp = ARITH_NONE;
+  expr->attr = nullptr;
+  expr->left = nullptr;
+  expr->right = nullptr;
+  expr->type = UNDEFINED;
+  expr->is_brace = false;
+}
+
+void select_subexpr_init(SelectExpr *expr, SelectExpr *left, SelectExpr *right,
+          ArithOp op) {
+  expr->left = left;
+  expr->right = right;
+  expr->arithOp = op;
+
+  expr->is_attr = false;
+  expr->is_value = false;
+  expr->attr = nullptr;
+  expr->value = nullptr;
+  expr->type = UNDEFINED;
+  expr->is_brace = false;
+}
+
+void select_expr_destroy(SelectExpr *expr)
+{
+  if (expr->is_value) {
+    value_destroy(expr->value);
+    delete expr->value;
+    expr->is_value = false;
+    expr->value = nullptr;
+  }
+  if (expr->is_attr) {
+    relation_attr_destroy(expr->attr);
+    delete expr->attr;
+    expr->is_attr = false;
+    expr->attr = nullptr;
+  }
+  if (expr->left != nullptr) {
+    select_expr_destroy(expr->left);
+    delete expr->left;
+    expr->left = nullptr;
+  }
+  if (expr->right != nullptr) {
+    select_expr_destroy(expr->right);
+    delete expr->right;
+    expr->right = nullptr;
+  }
+  expr->aggregation_num = 0;
+  expr->attr_num = 0;
+  if (expr->field != nullptr) {
+    delete expr->field;
+    expr->field = nullptr;
+  }
+  expr->is_brace = false;
+}
+
 void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const char *attribute_name)
 {
   if (relation_name != nullptr) {
@@ -127,36 +204,17 @@ void updatevalue_destroy(UpdateValue *update_value) {
   update_value->is_select = false;
 }
 
-void condition_init(Condition *condition, CompOp comp, int left_is_attr, RelAttr *left_attr, Value *left_value,
-    int right_is_attr, RelAttr *right_attr, Value *right_value)
+void condition_init(Condition *condition, CompOp comp, SelectExpr *left_expr,
+    SelectExpr *right_expr)
 {
   condition->comp = comp;
-  condition->left_is_attr = left_is_attr;
-  if (left_is_attr) {
-    condition->left_attr = *left_attr;
-  } else {
-    condition->left_value = *left_value;
-  }
-
-  condition->right_is_attr = right_is_attr;
-  if (right_is_attr) {
-    condition->right_attr = *right_attr;
-  } else {
-    condition->right_value = *right_value;
-  }
+  condition->left_expr = *left_expr;
+  condition->right_expr = *right_expr;
 }
 void condition_destroy(Condition *condition)
 {
-  if (condition->left_is_attr) {
-    relation_attr_destroy(&condition->left_attr);
-  } else {
-    value_destroy(&condition->left_value);
-  }
-  if (condition->right_is_attr) {
-    relation_attr_destroy(&condition->right_attr);
-  } else {
-    value_destroy(&condition->right_value);
-  }
+  select_expr_destroy(&condition->left_expr);
+  select_expr_destroy(&condition->right_expr);
 }
 
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length)
@@ -200,16 +258,12 @@ void join_destroy(Join *join)
 
 void selects_init(Selects *selects, ...);
 
-void selects_append_attribute(Selects *selects, std::deque<RelAttr> rel_attrs)
+void selects_append_select_exprs(Selects *selects, std::deque<SelectExpr> select_exprs)
 {
-  selects->is_valid = true;
-  for (size_t i = 0; i < rel_attrs.size(); i++) {
-    selects->attributes[i] = rel_attrs[i];
-    if (rel_attrs[i].is_valid == false) {
-      selects->is_valid = false;
-    }
+  for (size_t i = 0; i < select_exprs.size(); i++) {
+    selects->select_expr[i] = select_exprs[i];
   }
-  selects->attr_num = rel_attrs.size();
+  selects->select_expr_num = select_exprs.size();
 }
 void selects_append_relation(Selects *selects, std::deque<char *> relation_names)
 {
@@ -238,10 +292,10 @@ void selects_append_joins(Selects *selects, std::deque<Join> joins)
 
 void selects_destroy(Selects *selects)
 {
-  for (size_t i = 0; i < selects->attr_num; i++) {
-    relation_attr_destroy(&selects->attributes[i]);
+  for (size_t i = 0; i < selects->select_expr_num; i++) {
+    select_expr_destroy(&selects->select_expr[i]);
   }
-  selects->attr_num = 0;
+  selects->select_expr_num = 0;
 
   for (size_t i = 0; i < selects->relation_num; i++) {
     free(selects->relations[i]);

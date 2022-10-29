@@ -50,15 +50,19 @@ typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
 typedef struct _UpdateValue UpdateValue;
+typedef struct _SelectExpr SelectExpr;
+typedef struct _ConditionExpr ConditionExpr;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
 typedef std::deque<UpdateValue> UpdateValueList;
+typedef std::deque<SelectExpr> SelectExprList;
+typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
 // typedef std::string String;
 
-#line 62 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 66 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -112,21 +116,25 @@ typedef std::deque<char *> IdList;
     SUM = 302,
     COUNT = 303,
     AVG = 304,
-    EQ = 305,
-    LT = 306,
-    GT = 307,
-    LE = 308,
-    GE = 309,
-    NE = 310,
-    NUMBER = 311,
-    FLOAT = 312,
-    DATE_DATA = 313,
-    ID = 314,
-    PATH = 315,
-    SSS = 316,
-    LIKE_SSS = 317,
-    STAR = 318,
-    STRING_V = 319
+    ADD_OP = 305,
+    SUB_OP = 306,
+    DIV_OP = 307,
+    EQ = 308,
+    LT = 309,
+    GT = 310,
+    LE = 311,
+    GE = 312,
+    NE = 313,
+    NUMBER = 314,
+    FLOAT = 315,
+    DATE_DATA = 316,
+    ID = 317,
+    PATH = 318,
+    SSS = 319,
+    LIKE_SSS = 320,
+    STAR = 321,
+    STRING_V = 322,
+    UNARYMINUS = 323
   };
 #endif
 
@@ -135,7 +143,7 @@ typedef std::deque<char *> IdList;
 
 union YYSTYPE
 {
-#line 128 "yacc_sql.y" /* yacc.c:1909  */
+#line 135 "yacc_sql.y" /* yacc.c:1909  */
 
   RelAttr *attr1;
   Condition *condition1;
@@ -143,6 +151,8 @@ union YYSTYPE
   Join *join1;
   Selects *select1;
   UpdateValue *updatevalue1;
+  SelectExpr *selectexpr1;
+  ConditionExpr *conditionexpr1;
   char *string1;
   int number1;
   float floats1;
@@ -154,8 +164,10 @@ union YYSTYPE
   IdList *ids1;
   AttrList *attrs1;
   UpdateValueList *updatevaluelist1;
+  SelectExprList *selectexprs1;
+  ConditionExprList *conditionexprs1;
 
-#line 159 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 171 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

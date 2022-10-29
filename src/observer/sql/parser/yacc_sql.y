@@ -57,11 +57,15 @@ typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
 typedef struct _UpdateValue UpdateValue;
+typedef struct _SelectExpr SelectExpr;
+typedef struct _ConditionExpr ConditionExpr;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
 typedef std::deque<UpdateValue> UpdateValueList;
+typedef std::deque<SelectExpr> SelectExprList;
+typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
 // typedef std::string String;
 }
@@ -118,6 +122,9 @@ typedef std::deque<char *> IdList;
 		SUM
 		COUNT
 		AVG
+		ADD_OP
+		SUB_OP
+		DIV_OP
         EQ
         LT
         GT
@@ -132,6 +139,8 @@ typedef std::deque<char *> IdList;
   Join *join1;
   Selects *select1;
   UpdateValue *updatevalue1;
+  SelectExpr *selectexpr1;
+  ConditionExpr *conditionexpr1;
   char *string1;
   int number1;
   float floats1;
@@ -143,6 +152,8 @@ typedef std::deque<char *> IdList;
   IdList *ids1;
   AttrList *attrs1;
   UpdateValueList *updatevaluelist1;
+  SelectExprList *selectexprs1;
+  ConditionExprList *conditionexprs1;
 }
 
 %token <string1> NUMBER
@@ -164,8 +175,10 @@ typedef std::deque<char *> IdList;
 %type <comp1> comOp;
 %type <comp1> like_comOp;
 %type <attr1> aggration_attr;
+%type <attr1> rel_attr;
 %type <select1> select;
 %type <updatevalue1> update_value;
+%type <selectexpr1> select_arith_expr;
 
 %type <values1> value_list;
 %type <conditions1> where;
@@ -176,6 +189,13 @@ typedef std::deque<char *> IdList;
 %type <ids1> rel_list;
 %type <attrs1> attr_list;
 %type <attrs1> select_attr;
+%type <selectexprs1> select_expr_list;
+
+// 运算符优先级结合型定义
+// 从上向下依次增高
+%left ADD_OP SUB_OP
+%left STAR DIV_OP
+%left UNARYMINUS  // important !!!
 
 %%
 
@@ -489,14 +509,14 @@ update_value:
 	;
 
 select:				/*  select 语句的语法解析树*/
-    SELECT select_attr FROM ID rel_list where
+    SELECT select_expr_list FROM ID rel_list where
 		{
 			$$ = new Selects();
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			$5->push_back($4);
 			selects_append_relation($$, *$5);
 
-			selects_append_attribute($$, *$2);
+			selects_append_select_exprs($$, *$2);
 
             selects_append_joins($$, JoinList());
 
@@ -509,14 +529,14 @@ select:				/*  select 语句的语法解析树*/
 			delete $5;
 
 	}
-	| SELECT select_attr FROM ID join_list where {
+	| SELECT select_expr_list FROM ID join_list where {
 		// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			$$ = new Selects();
 			IdList relation_list;
 			relation_list.push_back($4);
 			selects_append_relation($$, relation_list);
 
-			selects_append_attribute($$, *$2);
+			selects_append_select_exprs($$, *$2);
 
             selects_append_joins($$, *$5);
 
@@ -530,6 +550,63 @@ select:				/*  select 语句的语法解析树*/
 	}
 	;
 
+
+select_arith_expr:
+	select_arith_expr ADD_OP select_arith_expr {
+		$$ = new SelectExpr();
+		select_subexpr_init($$, $1, $3, ARITH_ADD);
+	}
+	| select_arith_expr SUB_OP select_arith_expr {
+		$$ = new SelectExpr();
+		select_subexpr_init($$, $1, $3, ARITH_SUB);
+	}
+	| select_arith_expr STAR select_arith_expr {
+		$$ = new SelectExpr();
+		select_subexpr_init($$, $1, $3, ARITH_MUL);
+	}
+	| select_arith_expr DIV_OP select_arith_expr {
+		$$ = new SelectExpr();
+		select_subexpr_init($$, $1, $3, ARITH_DIV);
+	}
+	| rel_attr {
+		$$ = new SelectExpr();
+		select_attr_init($$, $1);
+	}
+	| value {
+		$$ = new SelectExpr();
+		select_value_init($$, $1);
+	}
+	| LBRACE select_arith_expr RBRACE {
+		$$ = $2;
+		$$->is_brace = true;
+	}
+	| SUB_OP select_arith_expr %prec UNARYMINUS {
+		$$ = new SelectExpr();
+		select_subexpr_init($$, nullptr, $2, ARITH_NEG);
+	}
+	;
+
+select_expr_list:
+	STAR {
+		RelAttr *attr = new RelAttr();
+		relation_attr_init_with_aggregation(attr, NULL, "*", AGG_NONE, true);
+		SelectExpr expr;
+		select_attr_init(&expr, attr);
+		$$ = new SelectExprList();
+		$$->push_back(expr);
+	}
+	| select_arith_expr {
+		$$ = new SelectExprList();
+		$$->push_back(*$1);
+		delete $1;
+	}
+	| select_expr_list COMMA select_arith_expr {
+		$$ = $1;
+		$$->push_back(*$3);
+		delete $3;
+	}
+	;
+
 select_attr:
     STAR attr_list {  
 			RelAttr attr;
@@ -537,19 +614,7 @@ select_attr:
 			$2->push_front(attr);
 			$$ = $2;
 		}
-    | ID attr_list {
-			RelAttr attr;
-			relation_attr_init_with_aggregation(&attr, NULL, $1, AGG_NONE, true);
-			$2->push_front(attr);
-			$$ = $2;
-		}
-  	| ID DOT ID attr_list {
-			RelAttr attr;
-			relation_attr_init_with_aggregation(&attr, $1, $3, AGG_NONE, true);
-			$4->push_front(attr);
-			$$ = $4;
-		}
-	| aggration_attr attr_list {
+	| rel_attr attr_list {
 		$2->push_front(*$1);
 		// selects_append_attribute(&CONTEXT->ssql->sstr.selection, *$2);
 		delete($1);
@@ -630,29 +695,25 @@ aggration_attr:
 	}
 	;
 
+rel_attr:
+	ID {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, NULL, $1, AGG_NONE,true);
+	}
+	| ID DOT ID {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, $1, $3, AGG_NONE,true);
+	}
+	| aggration_attr {
+		$$ = $1;
+	}
+	;
+
 attr_list:
     /* empty */ {
 		$$ = new AttrList();
 	}
-    | COMMA ID attr_list {
-			RelAttr attr;
-			relation_attr_init_with_aggregation(&attr, NULL, $2, AGG_NONE,true);
-			// selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-			$$ = $3;
-			$$->push_front(attr);
-     	  // CONTEXT->ssql->sstr.selection.attributes[CONTEXT->select_length].relation_name = NULL;
-        // CONTEXT->ssql->sstr.selection.attributes[CONTEXT->select_length++].attribute_name=$2;
-      }
-    | COMMA ID DOT ID attr_list {
-			RelAttr attr;
-			relation_attr_init_with_aggregation(&attr, $2, $4, AGG_NONE,true);
-			// selects_append_attribute(&CONTEXT->ssql->sstr.selection, &attr);
-			$$ = $5;
-			$$->push_front(attr);
-        // CONTEXT->ssql->sstr.selection.attributes[CONTEXT->select_length].attribute_name=$4;
-        // CONTEXT->ssql->sstr.selection.attributes[CONTEXT->select_length++].relation_name=$2;
-  	}
-	| COMMA aggration_attr attr_list {
+	| COMMA rel_attr attr_list {
 		$$ = $3;
 		$$->push_front(*$2);
 		delete $2;
@@ -720,185 +781,54 @@ condition_list:
 	}
     ;
 condition:
-    ID comOp value 
-		{
-			RelAttr left_attr;
-			relation_attr_init(&left_attr, NULL, $1);
-
-			Value *right_value = $3;
-
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 1, &left_attr, NULL, 0, NULL, right_value);
-
-			delete $3;
-			// $$ = ( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 1;
-			// $$->left_attr.relation_name = NULL;
-			// $$->left_attr.attribute_name= $1;
-			// $$->comp = CONTEXT->comp;
-			// $$->right_is_attr = 0;
-			// $$->right_attr.relation_name = NULL;
-			// $$->right_attr.attribute_name = NULL;
-			// $$->right_value = *$3;
-
-		}
-		|value comOp value 
-		{
-			Value *left_value = $1;
-			Value *right_value = $3;
-
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 0, NULL, left_value, 0, NULL, right_value);
-
-			delete $1;
-			delete $3;
-			// $$ = ( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 0;
-			// $$->left_attr.relation_name=NULL;
-			// $$->left_attr.attribute_name=NULL;
-			// $$->left_value = *$1;
-			// $$->comp = CONTEXT->comp;
-			// $$->right_is_attr = 0;
-			// $$->right_attr.relation_name = NULL;
-			// $$->right_attr.attribute_name = NULL;
-			// $$->right_value = *$3;
-
-		}
-		|ID comOp ID 
-		{
-			RelAttr left_attr;
-			relation_attr_init(&left_attr, NULL, $1);
-			RelAttr right_attr;
-			relation_attr_init(&right_attr, NULL, $3);
-
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 1, &left_attr, NULL, 1, &right_attr, NULL);
-			// $$=( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 1;
-			// $$->left_attr.relation_name=NULL;
-			// $$->left_attr.attribute_name=$1;
-			// $$->comp = CONTEXT->comp;
-			// $$->right_is_attr = 1;
-			// $$->right_attr.relation_name=NULL;
-			// $$->right_attr.attribute_name=$3;
-
-		}
-    |value comOp ID
-		{
-			Value *left_value = $1;
-			RelAttr right_attr;
-			relation_attr_init(&right_attr, NULL, $3);
-
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 0, NULL, left_value, 1, &right_attr, NULL);
-
-			delete $1;
-
-			// $$=( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 0;
-			// $$->left_attr.relation_name=NULL;
-			// $$->left_attr.attribute_name=NULL;
-			// $$->left_value = *$1;
-			// $$->comp=CONTEXT->comp;
-			
-			// $$->right_is_attr = 1;
-			// $$->right_attr.relation_name=NULL;
-			// $$->right_attr.attribute_name=$3;
-		
-		}
-    |ID DOT ID comOp value
-		{
-			RelAttr left_attr;
-			relation_attr_init(&left_attr, $1, $3);
-			Value *right_value = $5;
-
-			$$ = new Condition();
-			condition_init($$, CompOp($4), 1, &left_attr, NULL, 0, NULL, right_value);
-
-			delete $5;
-
-			// $$=( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 1;
-			// $$->left_attr.relation_name=$1;
-			// $$->left_attr.attribute_name=$3;
-			// $$->comp=CONTEXT->comp;
-			// $$->right_is_attr = 0;   //属性值
-			// $$->right_attr.relation_name=NULL;
-			// $$->right_attr.attribute_name=NULL;
-			// $$->right_value =*$5;			
-							
-    }
-    |value comOp ID DOT ID
-		{
-			Value *left_value = $1;
-
-			RelAttr right_attr;
-			relation_attr_init(&right_attr, $3, $5);
-
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 0, NULL, left_value, 1, &right_attr, NULL);
-
-			delete $1;
-			// $$=( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 0;//属性值
-			// $$->left_attr.relation_name=NULL;
-			// $$->left_attr.attribute_name=NULL;
-			// $$->left_value = *$1;
-			// $$->comp =CONTEXT->comp;
-			// $$->right_is_attr = 1;//属性
-			// $$->right_attr.relation_name = $3;
-			// $$->right_attr.attribute_name = $5;
-									
-    }
-    |ID DOT ID comOp ID DOT ID
-		{
-			RelAttr left_attr;
-			relation_attr_init(&left_attr, $1, $3);
-			RelAttr right_attr;
-			relation_attr_init(&right_attr, $5, $7);
-
-			$$ = new Condition();
-			condition_init($$, CompOp($4), 1, &left_attr, NULL, 1, &right_attr, NULL);
-			// $$=( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 1;		//属性
-			// $$->left_attr.relation_name=$1;
-			// $$->left_attr.attribute_name=$3;
-			// $$->comp =CONTEXT->comp;
-			// $$->right_is_attr = 1;		//属性
-			// $$->right_attr.relation_name=$5;
-			// $$->right_attr.attribute_name=$7;
-    }
+    select_arith_expr comOp select_arith_expr
+	{
+		$$ = new Condition();
+		condition_init($$, CompOp($2), $1, $3);
+		delete $1;
+		delete $3;
+	}
 	|ID like_comOp like_value
-		{
-			RelAttr left_attr;
-			relation_attr_init(&left_attr, NULL, $1);
+	{
+		RelAttr *left_attr = new RelAttr();
+		relation_attr_init(left_attr, NULL, $1);
+		SelectExpr *left_expr = new SelectExpr();
+		select_attr_init(left_expr, left_attr);
 
-			Value *right_value = $3;
+		Value *right_value = $3;
+		SelectExpr *right_expr = new SelectExpr();
+		select_value_init(right_expr, right_value);
 
-			$$ = new Condition();
-			condition_init($$, CompOp($2), 1, &left_attr, NULL, 0, NULL, right_value);
+		$$ = new Condition();
+		condition_init($$, CompOp($2), left_expr, right_expr);
+		delete left_expr;
+		delete right_expr;
 
-			delete $3;
-			// $$ = ( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 1;
-			// $$->left_attr.relation_name = NULL;
-			// $$->left_attr.attribute_name= $1;
-			// $$->comp = CONTEXT->comp;
-			// $$->right_is_attr = 0;
-			// $$->right_attr.relation_name = NULL;
-			// $$->right_attr.attribute_name = NULL;
-			// $$->right_value = *$3;
+		// $$ = ( Condition *)malloc(sizeof( Condition));
+		// $$->left_is_attr = 1;
+		// $$->left_attr.relation_name = NULL;
+		// $$->left_attr.attribute_name= $1;
+		// $$->comp = CONTEXT->comp;
+		// $$->right_is_attr = 0;
+		// $$->right_attr.relation_name = NULL;
+		// $$->right_attr.attribute_name = NULL;
+		// $$->right_value = *$3;
 	}
 	|ID DOT ID like_comOp like_value
 		{
-			RelAttr left_attr;
-			relation_attr_init(&left_attr, $1, $3);
+			RelAttr *left_attr = new RelAttr();
+			relation_attr_init(left_attr, $1, $3);
+			SelectExpr *left_expr = new SelectExpr();
+			select_attr_init(left_expr, left_attr);
+
 			Value *right_value = $5;
+			SelectExpr *right_expr = new SelectExpr();
+			select_value_init(right_expr, right_value);
 
 			$$ = new Condition();
-			condition_init($$, CompOp($4), 1, &left_attr, NULL, 0, NULL, right_value);
-
-			delete $5;
+			condition_init($$, CompOp($4), left_expr, right_expr);
+			delete left_expr;
+			delete right_expr;
 
 			// $$=( Condition *)malloc(sizeof( Condition));
 			// $$->left_is_attr = 1;

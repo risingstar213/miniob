@@ -39,15 +39,19 @@ public:
 
 public:
   const std::vector<Table *> &tables() const { return tables_; }
-  const std::vector<Field> &query_fields() const { return query_fields_; }
-  const std::vector<Aggregation> &aggregations() const { return aggregations_; }
+  // const std::vector<Field> &query_fields() const { return query_fields_; }
+  // const std::vector<Aggregation> &aggregations() const { return aggregations_; }
+  std::vector<SelectExpr> &select_exprs() { return select_exprs_; }
   FilterStmt *filter_stmt() const { return filter_stmt_; }
   std::vector<JoinStmt *> join_stmts() { return join_stmts_; }
+  bool is_aggregations() { return is_aggregations_; }
 
 private:
-  std::vector<Field> query_fields_;
-  std::vector<Aggregation> aggregations_;
+  // std::vector<Field> query_fields_;
+  // std::vector<Aggregation> aggregations_;
+  bool is_aggregations_;
   std::vector<Table *> tables_;
+  std::vector<SelectExpr> select_exprs_;
   std::vector<JoinStmt *> join_stmts_;
   FilterStmt *filter_stmt_ = nullptr;
 };

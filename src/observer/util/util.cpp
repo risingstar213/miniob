@@ -13,10 +13,14 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include <string.h>
+#include <cmath>
 #include "util/util.h"
 
 std::string double2string(double v)
 {
+  if (std::isinf(v)) {
+    return "null";
+  }
   char buf[256];
   snprintf(buf, sizeof(buf), "%.2f", v);
   size_t len = strlen(buf);

@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <string.h>
 #include <algorithm>
+#include <cmath>
 #include "util/date.h"
 
 const double epsilon = 1E-6;
@@ -29,6 +30,9 @@ int compare_float(void *arg1, void *arg2)
 {
   float v1 = *(float *)arg1; 
   float v2 = *(float *)arg2; 
+  if (std::isinf(v1) || std::isinf(v1)) {
+    return 701409;
+  }
   float cmp = v1 - v2;
   if (cmp > epsilon) {
     return 1;

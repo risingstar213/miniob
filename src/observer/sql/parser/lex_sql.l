@@ -33,8 +33,8 @@ QUOTE            [\'\"]
 {WHITE_SAPCE}                                        // ignore whitespace
 \n                                                   ;
 {QUOTE}{DIGIT}\-{DIGIT}\-{DIGIT}{QUOTE}              yylval->string1 = strdup(yytext); RETURN_TOKEN(DATE_DATA);
-[\-]?{DIGIT}+                                        yylval->string1=strdup(yytext); RETURN_TOKEN(NUMBER);
-[\-]?{DIGIT}+{DOT}{DIGIT}+                           yylval->string1=strdup(yytext); RETURN_TOKEN(FLOAT);
+{DIGIT}+                                        yylval->string1=strdup(yytext); RETURN_TOKEN(NUMBER);
+{DIGIT}+{DOT}{DIGIT}+                           yylval->string1=strdup(yytext); RETURN_TOKEN(FLOAT);
 
 ";"                                                  RETURN_TOKEN(SEMICOLON);
 {DOT}                                                RETURN_TOKEN(DOT);
@@ -84,7 +84,9 @@ QUOTE            [\'\"]
 {ID}                                                 yylval->string1=strdup(yytext); RETURN_TOKEN(ID);
 "("                                                  RETURN_TOKEN(LBRACE);
 ")"                                                  RETURN_TOKEN(RBRACE);
-
+"+"                                                  RETURN_TOKEN(ADD_OP);
+"-"                                                  RETURN_TOKEN(SUB_OP);
+"/"                                                  RETURN_TOKEN(DIV_OP);
 ","                                                  RETURN_TOKEN(COMMA);
 "="                                                  RETURN_TOKEN(EQ);
 "<="                                                 RETURN_TOKEN(LE);

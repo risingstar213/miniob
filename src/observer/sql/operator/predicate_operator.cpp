@@ -78,6 +78,9 @@ bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
     int compare;
     if (comp <= GREAT_THAN) {
       compare = left_cell.compare(right_cell);
+      if (compare == 701409) {
+        return false;
+      }
     }
     bool filter_result = false;
     switch (comp) {

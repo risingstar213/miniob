@@ -304,6 +304,8 @@ IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
       continue;
     } else if (comp > GREAT_THAN) {
       continue;
+    } else if (left->type() == ExprType::COMPLEX || right->type() == ExprType::COMPLEX) {
+      return nullptr;
     }
     FieldExpr &left_field_expr = *(FieldExpr *)left;
     const Field &field = left_field_expr.field();
@@ -464,12 +466,13 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   pred_oper->add_child(top_oper);
   ProjectOperator project_oper;
   project_oper.add_child(pred_oper);
-  int n = select_stmt->query_fields().size();
+
+  int n = select_stmt->select_exprs().size();
+  std::vector<SelectExpr> expressions = select_stmt->select_exprs();
   for (int i = 0; i < n; i++) {
-    const Field &field = select_stmt->query_fields()[i];
-    const Aggregation &agg = select_stmt->aggregations()[i];
-    project_oper.add_projection(multi_tables, field.table(), field.meta(), agg);
+    project_oper.add_projection(multi_tables, &expressions[i], select_stmt->is_aggregations());
   }
+
   rc = project_oper.open();
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to open operator");

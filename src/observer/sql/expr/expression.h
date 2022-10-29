@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <string.h>
 #include <vector>
 #include "storage/common/field.h"
+#include "sql/parser/parse_defs.h"
 #include "sql/expr/tuple_cell.h"
 //#include "sql/expr/tuple.h"
 #include "util/agg.h"
@@ -27,6 +28,7 @@ enum class ExprType {
   NONE,
   FIELD,
   VALUE,
+  COMPLEX
 };
 
 class Expression
@@ -128,12 +130,47 @@ private:
   TupleCell tuple_cell_;
 };
 
-// class ComplexExpr : public Expression
-// {
-// public:
-//   ComplexExpr() = default;
-//   ~ComplexExpr() {
-
-//   }
-// private:
-// };
+class ComplexExpr : public Expression
+{
+public:
+  ComplexExpr() = default;
+  ComplexExpr(SelectExpr *expr, Expression *left, Expression *right)
+    : expr_(expr), left_(left), right_(right)
+  {
+    data_ = (char *)new float;
+  }
+  ~ComplexExpr() {
+    if (left_ != nullptr) {
+      delete left_;
+      left_ = nullptr;
+    }
+    if (right_ != nullptr) {
+      delete right_;
+      right_ = nullptr;
+    }
+    if (data_ != nullptr) {
+      delete (float *)data_;
+      data_ = nullptr;
+    }
+  }
+  RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const override;
+  AttrType get_valuetype() const {
+    return FLOATS;
+  }
+  ExprType type() const {
+    return ExprType::COMPLEX;
+  }
+  void update_value(const std::vector<Tuple *> tuples) {
+    if (left_ != nullptr) {
+      left_->update_value(tuples);
+    }
+    if (right_ != nullptr) {
+      right_->update_value(tuples);
+    }
+  }
+private:
+  SelectExpr *expr_;
+  Expression *left_ = nullptr;
+  Expression *right_ = nullptr;
+  char *data_ = nullptr;
+};

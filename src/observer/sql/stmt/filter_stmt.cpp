@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/db.h"
 #include "storage/common/table.h"
 #include "util/date.h"
+#include "util/expression_helpers.h"
 
 FilterStmt::~FilterStmt()
 {
@@ -97,55 +98,73 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   AttrType left_type = UNDEFINED;
   AttrType right_type = UNDEFINED;
 
-  if (condition.left_is_attr) {
-    Table *table = nullptr;
-    const FieldMeta *field = nullptr;
-    rc = get_table_and_field(db, default_table, tables, condition.left_attr, table, field);  
-    if (rc != RC::SUCCESS) {
-      LOG_WARN("cannot find attr");
-      return rc;
-    }
-    left = new FieldExpr(table, field);
-    left_type = field->type();
-  } else {
-    left_type = condition.left_value.type;
-    // check
-    LOG_INFO("CHECK DATES: %s", condition.left_value.raw_data);
-    if (left_type == DATES) {
-      Date *d = (Date *)condition.left_value.data;
-      if (!d->is_valid()) {
-        LOG_WARN("The date %s is not valid", d->toString().c_str());
-        return RC::SQL_SYNTAX;
-      }
-    }
-    left = new ValueExpr(condition.left_value);
+  std::vector<Table *> table;
+  table.push_back(default_table);
+  rc = check_select_expression_valid(&condition.left_expr, 0, &table, tables);
+  if (rc != RC::SUCCESS) {
+    LOG_INFO("condition not valid");
+    return rc;
   }
 
-  if (condition.right_is_attr) {
-    Table *table = nullptr;
-    const FieldMeta *field = nullptr;
-    rc = get_table_and_field(db, default_table, tables, condition.right_attr, table, field);  
-    if (rc != RC::SUCCESS) {
-      LOG_WARN("cannot find attr");
-      delete left;
-      return rc;
-    }
-    right = new FieldExpr(table, field);
-    right_type = field->type();
-  } else {
-    right_type = condition.right_value.type;
-    // check
-    LOG_INFO("CHECK DATES %s", condition.right_value.raw_data);
-    if (right_type == DATES) {
-      Date *d = (Date *)condition.right_value.data;
-      if (!d->is_valid()) {
-        delete left;
-        LOG_WARN("The date %s is not valid", d->toString().c_str());
-        return RC::SQL_SYNTAX;
-      }
-    }
-    right = new ValueExpr(condition.right_value);
+  rc = check_select_expression_valid(&condition.right_expr, 0, &table, tables);
+  if (rc != RC::SUCCESS) {
+    LOG_INFO("condition not valid");
+    return rc;
   }
+
+  left = generate_expression(&condition.left_expr);
+  left_type = left->get_valuetype();
+  right = generate_expression(&condition.right_expr);
+  right_type = right->get_valuetype();
+  // if (condition.left_is_attr) {
+  //   Table *table = nullptr;
+  //   const FieldMeta *field = nullptr;
+  //   rc = get_table_and_field(db, default_table, tables, condition.left_attr, table, field);  
+  //   if (rc != RC::SUCCESS) {
+  //     LOG_WARN("cannot find attr");
+  //     return rc;
+  //   }
+  //   left = new FieldExpr(table, field);
+  //   left_type = field->type();
+  // } else {
+  //   left_type = condition.left_value.type;
+  //   // check
+  //   LOG_INFO("CHECK DATES: %s", condition.left_value.raw_data);
+  //   if (left_type == DATES) {
+  //     Date *d = (Date *)condition.left_value.data;
+  //     if (!d->is_valid()) {
+  //       LOG_WARN("The date %s is not valid", d->toString().c_str());
+  //       return RC::SQL_SYNTAX;
+  //     }
+  //   }
+  //   left = new ValueExpr(condition.left_value);
+  // }
+
+  // if (condition.right_is_attr) {
+  //   Table *table = nullptr;
+  //   const FieldMeta *field = nullptr;
+  //   rc = get_table_and_field(db, default_table, tables, condition.right_attr, table, field);  
+  //   if (rc != RC::SUCCESS) {
+  //     LOG_WARN("cannot find attr");
+  //     delete left;
+  //     return rc;
+  //   }
+  //   right = new FieldExpr(table, field);
+  //   right_type = field->type();
+  // } else {
+  //   right_type = condition.right_value.type;
+  //   // check
+  //   LOG_INFO("CHECK DATES %s", condition.right_value.raw_data);
+  //   if (right_type == DATES) {
+  //     Date *d = (Date *)condition.right_value.data;
+  //     if (!d->is_valid()) {
+  //       delete left;
+  //       LOG_WARN("The date %s is not valid", d->toString().c_str());
+  //       return RC::SQL_SYNTAX;
+  //     }
+  //   }
+  //   right = new ValueExpr(condition.right_value);
+  // }
 
   bool can_compare = true;
   bool left_cast = left_type == CHARS || left_type == INTS || left_type == FLOATS;
@@ -167,7 +186,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
 
   // Check whether like comparator is valid
   if (comp == LIKE_SCH || comp == UNLIKE_SCH) {
-    if (!condition.left_is_attr || right_type != CHARS) {
+    if (!condition.left_expr.is_attr || right_type != CHARS) {
       delete left;
       delete right;
       LOG_WARN("not supported");

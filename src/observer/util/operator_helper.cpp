@@ -51,11 +51,10 @@ Operator*  get_select_operator(SelectStmt *select_stmt)
   pred_oper->add_child(top_oper);
   ProjectOperator *project_oper = new ProjectOperator;
   project_oper->add_child(pred_oper);
-  int n = select_stmt->query_fields().size();
+  
+  int n = select_stmt->select_exprs().size();
   for (int i = 0; i < n; i++) {
-    const Field &field = select_stmt->query_fields()[i];
-    const Aggregation &agg = select_stmt->aggregations()[i];
-    project_oper->add_projection(multi_tables, field.table(), field.meta(), agg);
+    project_oper->add_projection(multi_tables, &select_stmt->select_exprs()[i], select_stmt->is_aggregations());
   }
   return project_oper;
 }

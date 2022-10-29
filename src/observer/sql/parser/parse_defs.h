@@ -19,12 +19,16 @@ See the Mulan PSL v2 for more details. */
 #include <deque>
 #include "common/log/log.h"
 
+class Field;
+
 typedef struct _Selects Selects;
 typedef struct _RelAttr RelAttr;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
 typedef struct _UpdateValue UpdateValue;
+typedef struct _SelectExpr SelectExpr;
+typedef struct _ConditionExpr ConditionExpr;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
@@ -72,13 +76,15 @@ enum ArithOp {
   ARITH_ADD,
   ARITH_SUB,
   ARITH_MUL,
-  ARITH_DIV
+  ARITH_DIV,
+  ARITH_NEG,
+  ARITH_NONE
 };
 
 //属性结构体
 struct _RelAttr {
   Aggregation agg;
-  bool is_valid;
+  bool is_valid;         // if is valid
   char *relation_name;   // relation name (may be NULL) 表名
   char *attribute_name;  // attribute name              属性名
 };
@@ -90,16 +96,42 @@ struct _Value {
   void *raw_data; // raw vlaue
 };
 
+// struct select expression
+struct _SelectExpr {
+  ArithOp arithOp;
+  SelectExpr *left;
+  SelectExpr *right;
+  // Aggregation agg;  no aggregation in expression
+  // 叶子节点 == RelAttr / Value
+  bool is_attr;
+  bool is_value;
+  Value *value;
+  RelAttr *attr;
+  // additional infomation
+  AttrType type;
+  Field *field;
+  int aggregation_num;
+  int attr_num;
+  bool is_brace;
+};
+
 struct _Condition {
-  int left_is_attr;    // TRUE if left-hand side is an attribute
-                       // 1时，操作符左边是属性名，0时，是属性值
-  Value left_value;    // left-hand side value if left_is_attr = FALSE
-  RelAttr left_attr;   // left-hand side attribute
+  // int left_is_attr;    // TRUE if left-hand side is an attribute
+  //                      // 1时，操作符左边是属性名，0时，是属性值
+  // Value left_value;    // left-hand side value if left_is_attr = FALSE
+  // RelAttr left_attr;   // left-hand side attribute
+  SelectExpr left_expr;// left-hand expr
   CompOp comp;         // comparison operator
-  int right_is_attr;   // TRUE if right-hand side is an attribute
-                       // 1时，操作符右边是属性名，0时，是属性值
-  RelAttr right_attr;  // right-hand side attribute if right_is_attr = TRUE 右边的属性
-  Value right_value;   // right-hand side value if right_is_attr = FALSE
+  // int right_is_attr;   // TRUE if right-hand side is an attribute
+  //                      // 1时，操作符右边是属性名，0时，是属性值
+  // RelAttr right_attr;  // right-hand side attribute if right_is_attr = TRUE 右边的属性
+  // Value right_value;   // right-hand side value if right_is_attr = FALSE
+  SelectExpr right_expr; // right expr
+};
+
+// struct condiation expression
+struct _ConditionExpr {
+
 };
 
 // struct of join
@@ -111,15 +143,14 @@ struct _Join {
 
 // struct of select
 struct _Selects {
-  size_t attr_num;                // Length of attrs in Select clause and length of aggregations
-  RelAttr attributes[MAX_NUM];    // attrs in Select clause
+  size_t select_expr_num;                // Length of attrs in Select clause and length of aggregations
+  SelectExpr select_expr[MAX_NUM];    // attrs in Select clause
   size_t relation_num;            // Length of relations in Fro clause
   char *relations[MAX_NUM];       // relations in From clause
   size_t join_num;                // Length of joins in join clause
   Join join[MAX_NUM];
   size_t condition_num;           // Length of conditions in Where clause
   Condition conditions[MAX_NUM];  // conditions in Where clause
-  bool is_valid;                  // if the selection is valid
 };
 
 struct _UpdateValue {
@@ -266,12 +297,16 @@ void value_init_string(Value *value, const char *v);
 void value_destroy(Value *value);
 void value_init_date(Value *value, const char *v);
 
+void select_attr_init(SelectExpr *expr, RelAttr *attr);
+void select_value_init(SelectExpr *expr, Value *value);
+void select_subexpr_init(SelectExpr *expr, SelectExpr *left, SelectExpr *right, ArithOp op);
+void select_expr_destroy(SelectExpr *expr);
+
 void updatevalue_init_value(UpdateValue *update_value, Value *value);
 void updatevalue_init_select(UpdateValue *update_value, Selects *select);
 void updatevalue_destroy(UpdateValue *update_value);
 
-void condition_init(Condition *condition, CompOp comp, int left_is_attr, RelAttr *left_attr, Value *left_value,
-    int right_is_attr, RelAttr *right_attr, Value *right_value);
+void condition_init(Condition *condition, CompOp comp, SelectExpr *left_expr, SelectExpr *right_expr);
 void condition_destroy(Condition *condition);
 
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length);
@@ -282,7 +317,7 @@ void join_append_conditions(Join *join, std::deque<Condition> conditions);
 void join_destroy(Join *join);
 
 void selects_init(Selects *selects, ...);
-void selects_append_attribute(Selects *selects, std::deque<RelAttr> rel_attrs);
+void selects_append_select_exprs(Selects *selects, std::deque<SelectExpr> select_exprs);
 void selects_append_relation(Selects *selects, std::deque<char *> relation_names);
 void selects_append_conditions(Selects *selects, std::deque<Condition> conditions);
 void selects_append_joins(Selects *selects, std::deque<Join> joins);

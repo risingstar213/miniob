@@ -196,7 +196,7 @@ public:
     this->tuples_ = tuples;
   }
 
-  void add_cell_spec(TupleCellSpec *spec, Aggregation agg)
+  void add_cell_spec(TupleCellSpec *spec)
   {
     speces_.push_back(spec);
   }
