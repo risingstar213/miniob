@@ -68,6 +68,13 @@ enum Aggregation {
   AGG_SUM
 };
 
+enum ArithOp {
+  ARITH_ADD,
+  ARITH_SUB,
+  ARITH_MUL,
+  ARITH_DIV
+};
+
 //属性结构体
 struct _RelAttr {
   Aggregation agg;

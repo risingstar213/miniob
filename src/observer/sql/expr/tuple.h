@@ -182,14 +182,6 @@ public:
   ProjectTuple() = default;
   virtual ~ProjectTuple()
   {
-    for (size_t i = 0; i < agg_.size(); i++) {
-      if (agg_[i] != AGG_NONE) {
-        AggFunc::destroy_data(agg_[i], values_[i],speces_[i]->expression()->get_valuetype());
-        delete values_[i];
-      }
-    }
-    agg_.clear();
-    values_.clear();
     for (TupleCellSpec *spec : speces_) {
       delete spec;
     }
@@ -198,14 +190,8 @@ public:
 
   void set_tuples(std::vector<Tuple *> tuples)
   {
-    if (is_aggregation_) {
-      for (size_t i = 0; i < speces_.size(); i++) {
-        if (agg_[i] != AGG_NONE) {
-          TupleCell cell;
-          speces_[i]->expression()->get_value(tuples, cell);
-          AggFunc::add_data(agg_[i], values_[i], cell.attr_type(), (char *)cell.data(), cell.length());
-        }
-      }
+    for (size_t i = 0; i < speces_.size(); i++) {
+      speces_[i]->expression()->update_value(tuples);
     }
     this->tuples_ = tuples;
   }
@@ -213,15 +199,6 @@ public:
   void add_cell_spec(TupleCellSpec *spec, Aggregation agg)
   {
     speces_.push_back(spec);
-    agg_.push_back(agg);
-    if (agg != Aggregation::AGG_NONE) {
-      is_aggregation_ = is_aggregation_ || true;
-      AggData *d = new AggData;
-      AggFunc::init_data(agg, d, spec->expression()->get_valuetype());
-      values_.push_back(d);
-    } else {
-      values_.push_back(nullptr);
-    }
   }
   int cell_num() const override
   {
@@ -238,21 +215,7 @@ public:
     }
 
     const TupleCellSpec *spec = speces_[index];
-    if (agg_[index] != AGG_NONE) {
-      LOG_INFO("cell at aggregation");
-      cell.set_data(AggFunc::get_data(agg_[index], values_[index], speces_[index]->expression()->get_valuetype()));
-      cell.set_type(AggFunc::get_attrtype(agg_[index], speces_[index]->expression()->get_valuetype()));
-      if (cell.attr_type() == CHARS || cell.attr_type() == TEXTS) {
-          TupleCell cell1;
-          speces_[index]->expression()->get_value(tuples_, cell1);
-          cell.set_length(cell1.length());
-      } else {
-        cell.set_length(4);
-      }
-      return RC::SUCCESS;
-    } else {
-      return spec->expression()->get_value(tuples_, cell);
-    }
+    return spec->expression()->get_value(tuples_, cell);
   }
 
   RC find_cell(const Field &field, TupleCell &cell) const override
@@ -275,8 +238,8 @@ public:
   }
 private:
   std::vector<TupleCellSpec *> speces_;
-  std::vector<Aggregation> agg_;
-  std::vector<AggData *> values_;
+  // std::vector<Aggregation> agg_;
+  // std::vector<AggData *> values_;
   std::vector<Tuple *> tuples_;
-  bool is_aggregation_ = false;
+  // bool is_aggregation_ = false;
 };

@@ -130,9 +130,9 @@ RC ProjectOperator::close()
 }
 std::vector<Tuple *> ProjectOperator::current_tuples()
 {
-  if (!is_aggregation_) {
-    tuple_.set_tuples(children_[0]->current_tuples());
-  }
+  // if (!is_aggregation_) {
+  //   tuple_.set_tuples(children_[0]->current_tuples());
+  // }
   std::vector<Tuple *> tuples;
   tuples.push_back(&tuple_);
   return tuples;
@@ -143,7 +143,7 @@ void ProjectOperator::add_projection(bool multi_tables, const Table *table, cons
   // 对单表来说，展示的(alias) 字段总是字段名称，
   // 对多表查询来说，展示的alias 需要带表名字
   LOG_INFO("add projection:%s agg:%d", field_meta->name(), agg);
-  TupleCellSpec *spec = new TupleCellSpec(new FieldExpr(table, field_meta));
+  TupleCellSpec *spec = new TupleCellSpec(new FieldExpr(table, field_meta, agg));
   if (multi_tables) {
     std::string str;
     str = table->name();

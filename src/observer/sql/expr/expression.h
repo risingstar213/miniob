@@ -15,8 +15,11 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include <string.h>
+#include <vector>
 #include "storage/common/field.h"
 #include "sql/expr/tuple_cell.h"
+//#include "sql/expr/tuple.h"
+#include "util/agg.h"
 
 class Tuple;
 
@@ -35,16 +38,24 @@ public:
   virtual RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const = 0;
   virtual AttrType get_valuetype() const = 0;
   virtual ExprType type() const = 0;
+  virtual void update_value(const std::vector<Tuple *> tuples) = 0;
 };
 
 class FieldExpr : public Expression
 {
 public:
   FieldExpr() = default;
-  FieldExpr(const Table *table, const FieldMeta *field) : field_(table, field)
-  {}
+  FieldExpr(const Table *table, const FieldMeta *field, Aggregation agg = AGG_NONE) : field_(table, field), agg_(agg)
+  {
+    if (agg_ != AGG_NONE) {
+      data_ = new AggData;
+      AggFunc::init_data(agg, data_, field_.attr_type());
+    }
+  }
 
-  virtual ~FieldExpr() = default;
+  ~FieldExpr() {
+    AggFunc::destroy_data(agg_, data_, field_.attr_type());
+  };
 
   ExprType type() const override
   {
@@ -76,8 +87,13 @@ public:
   AttrType get_valuetype() const {
     return field_.attr_type();
   }
+
+  void update_value(const std::vector<Tuple *> tuples) override;
 private:
   Field field_;
+  TupleCell cell_;
+  Aggregation agg_;
+  AggData *data_;
 };
 
 class ValueExpr : public Expression
@@ -107,6 +123,17 @@ public:
   AttrType get_valuetype() const {
     return tuple_cell_.attr_type();
   }
+  void update_value(const std::vector<Tuple *> tuples) {};
 private:
   TupleCell tuple_cell_;
 };
+
+// class ComplexExpr : public Expression
+// {
+// public:
+//   ComplexExpr() = default;
+//   ~ComplexExpr() {
+
+//   }
+// private:
+// };

@@ -17,13 +17,35 @@ See the Mulan PSL v2 for more details. */
 
 RC FieldExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
 {
+  if (agg_ ==AGG_NONE) {
+    for (uint i = 0; i < tuples.size(); i++) {
+      if (tuples[i]->find_cell(field_, cell) == RC::SUCCESS) {
+        return RC::SUCCESS;
+      }
+    }
+  } else {
+    cell.set_data(AggFunc::get_data(agg_, data_, field_.attr_type()));
+    cell.set_type(AggFunc::get_attrtype(agg_, field_.attr_type()));
+    if (cell.attr_type() == CHARS || cell.attr_type() == TEXTS) {
+        cell.set_length(cell_.length());
+    } else {
+      cell.set_length(4);
+    }
+    return RC::SUCCESS;
+  }
+  return RC::NOTFOUND;
+}
+
+void FieldExpr::update_value(const std::vector<Tuple *> tuples)
+{
   for (uint i = 0; i < tuples.size(); i++) {
-    if (tuples[i]->find_cell(field_, cell) == RC::SUCCESS) {
-      return RC::SUCCESS;
+    if (tuples[i]->find_cell(field_, cell_) == RC::SUCCESS) {
+      break;
     }
   }
-
-  return RC::NOTFOUND;
+  if (agg_ != AGG_NONE) {
+    AggFunc::add_data(agg_, data_, cell_.attr_type(), (char *)cell_.data(), cell_.length());
+  }
 }
 
 RC ValueExpr::get_value(const std::vector<Tuple *> tuples, TupleCell & cell) const
