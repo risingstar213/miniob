@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "clog.h"
 
 #define CLOG_INS_REC_NODATA_SIZE (sizeof(CLogInsertRecord) - sizeof(char *))
-#define CLOG_UPD_REC_NODATA_SIZE (sizeof(CLogInsertRecord) - sizeof(char *))
+#define CLOG_UPD_REC_NODATA_SIZE (sizeof(CLogUpdateRecord) - sizeof(char *))
 const char *CLOG_FILE_NAME = "clog";
 
 int _align8(int size)
@@ -68,13 +68,14 @@ CLogRecord::CLogRecord(CLogType flag, int32_t trx_id, const char *table_name /* 
     case REDO_UPDATE: {
       if (!rec || !rec->data()) {
         LOG_ERROR("Record is null");
+      } else {
         log_record_.upd.hdr_.trx_id_ = trx_id;
         log_record_.upd.hdr_.type_ = flag;
         strcpy(log_record_.upd.table_name_, table_name);
         log_record_.upd.rid_ = rec->rid();
         log_record_.upd.data_len_ = data_len;
-        log_record_.upd.hdr_.logrec_len_ = _align8(CLOG_INS_REC_NODATA_SIZE + data_len);
-        log_record_.upd.data_ = new char[log_record_.upd.hdr_.logrec_len_ - CLOG_INS_REC_NODATA_SIZE];
+        log_record_.upd.hdr_.logrec_len_ = _align8(CLOG_UPD_REC_NODATA_SIZE + data_len);
+        log_record_.upd.data_ = new char[log_record_.upd.hdr_.logrec_len_ - CLOG_UPD_REC_NODATA_SIZE];
         memcpy(log_record_.upd.data_, rec->data(), data_len);
         log_record_.upd.hdr_.lsn_ = CLogManager::get_next_lsn(log_record_.upd.hdr_.logrec_len_);
       }
@@ -123,6 +124,7 @@ CLogRecord::CLogRecord(char *data)
       log_record_.upd.data_len_ = *(int *)data;
       data += sizeof(int);
       log_record_.upd.data_ = new char[log_record_.upd.hdr_.logrec_len_ - CLOG_UPD_REC_NODATA_SIZE];
+      memcpy(log_record_.upd.data_, data, log_record_.upd.data_len_);
     } break;
     default:
       LOG_ERROR("flag is error");

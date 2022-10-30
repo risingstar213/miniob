@@ -92,7 +92,7 @@ struct CLogUpdateRecord {
   bool operator==(const CLogUpdateRecord &other) const
   {
     return hdr_ == other.hdr_ && strcmp(table_name_, other.table_name_) == 0 && (rid_ == other.rid_) &&
-            (data_len_ == other.data_len_) && (memcmp(data_, other.data_, data_len_));
+            (data_len_ == other.data_len_) && (memcmp(data_, other.data_, data_len_) == 0);
   }
 };
 

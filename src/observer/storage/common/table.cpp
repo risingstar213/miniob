@@ -792,6 +792,13 @@ RC Table::recover_delete_record(Record *record)
   return rc;
 }
 
+RC Table::recover_update_record(Record *record)
+{
+  RC rc = RC::SUCCESS;
+  rc = record_handler_->update_record(record);
+  return rc;
+}
+
 RC Table::commit_delete(Trx *trx, const RID &rid)
 {
   RC rc = RC::SUCCESS;
@@ -1042,11 +1049,11 @@ RC Table::update_record(Trx *trx, Record *old_record, int cell_num, Value *value
   }
 
   if (trx != nullptr) {
-    rc = trx->update_record(this, old_record);
+    rc = trx->update_record(this, &new_record);
 
     CLogRecord *clog_record = nullptr;
     rc = clog_manager_->clog_gen_record(
-      CLogType::REDO_DELETE, trx->get_current_id(), clog_record, name(), 0, &new_record); 
+      CLogType::REDO_UPDATE, trx->get_current_id(), clog_record, name(), table_meta_.record_size(), &new_record); 
     if (rc != RC::SUCCESS) {
       LOG_ERROR("Failed to create a clog record. rc=%d:%s", rc, strrc(rc));
       return rc;

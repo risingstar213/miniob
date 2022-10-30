@@ -79,7 +79,7 @@ RC UpdateOperator::open()
     Record &old_record = row_tuple->record();
     rc = table->update_record(trx_, &old_record, row_tuple->cell_num(), values);
     if (rc != RC::SUCCESS) {
-      LOG_WARN("failed to delete record: %s", strrc(rc));
+      LOG_WARN("failed to update record: %s", strrc(rc));
       return rc;
     }
     delete[] values;
