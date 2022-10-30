@@ -211,6 +211,13 @@ RC Trx::commit()
                 "Failed to commit delete operation. rid=%d.%d, rc=%d:%s", rid.page_num, rid.slot_num, rc, strrc(rc));
           }
         } break;
+        case Operation::Type::UPDATE: {
+          rc = table->commit_update(this, rid);
+          if (rc != RC::SUCCESS) {
+            LOG_ERROR(
+                "Failed to commit update operation. rid=%d.%d, rc=%d:%s", rid.page_num, rid.slot_num, rc, strrc(rc));
+          }
+        } break;
         default: {
           LOG_PANIC("Unknown operation. type=%d", (int)operation.type());
         } break;

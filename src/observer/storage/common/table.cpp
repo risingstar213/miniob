@@ -792,13 +792,6 @@ RC Table::recover_delete_record(Record *record)
   return rc;
 }
 
-RC Table::recover_update_record(Record *record)
-{
-  RC rc = RC::SUCCESS;
-  rc = record_handler_->update_record(record);
-  return rc;
-}
-
 RC Table::commit_delete(Trx *trx, const RID &rid)
 {
   RC rc = RC::SUCCESS;
@@ -834,6 +827,24 @@ RC Table::rollback_delete(Trx *trx, const RID &rid)
   }
 
   return trx->rollback_delete(this, record);  // update record in place
+}
+
+RC Table::commit_update(Trx *trx, const RID &rid)
+{
+  Record record;
+  RC rc = record_handler_->get_record(&rid, &record);
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Failed to get record %s: %s", this->name(), rid.to_string().c_str());
+    return rc;
+  }
+  return trx->commit_insert(this, record); // same with commit
+}
+
+RC Table::recover_update_record(Record *record)
+{
+  RC rc = RC::SUCCESS;
+  rc = record_handler_->update_record(record);
+  return rc;
 }
 
 RC Table::insert_entry_of_indexes(const char *record, const RID &rid)
