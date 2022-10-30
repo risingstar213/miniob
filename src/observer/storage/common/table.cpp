@@ -1042,18 +1042,19 @@ RC Table::update_record(Trx *trx, Record *old_record, int cell_num, Value *value
   }
 
   if (trx != nullptr) {
-    // rc = trx->update_record(this, record);
+    rc = trx->update_record(this, old_record);
 
-    // CLogRecord *clog_record = nullptr;
-    // rc = clog_manager_->clog_gen_record(CLogType::REDO_DELETE, trx->get_current_id(), clog_record, name(), 0,
-    // record); if (rc != RC::SUCCESS) {
-    //   LOG_ERROR("Failed to create a clog record. rc=%d:%s", rc, strrc(rc));
-    //   return rc;
-    // }
-    // rc = clog_manager_->clog_append_record(clog_record);
-    // if (rc != RC::SUCCESS) {
-    //   return rc;
-    // }
+    CLogRecord *clog_record = nullptr;
+    rc = clog_manager_->clog_gen_record(
+      CLogType::REDO_DELETE, trx->get_current_id(), clog_record, name(), 0, &new_record); 
+    if (rc != RC::SUCCESS) {
+      LOG_ERROR("Failed to create a clog record. rc=%d:%s", rc, strrc(rc));
+      return rc;
+    }
+    rc = clog_manager_->clog_append_record(clog_record);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
   }
 
   return rc;

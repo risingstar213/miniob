@@ -198,12 +198,10 @@ void ExecuteStage::handle_request(common::StageEvent *event)
     } break;
     case SCF_COMMIT: {
       do_commit(sql_event);
-      /*
       Trx *trx = session->current_trx();
       RC rc = trx->commit();
       session->set_trx_multi_operation_mode(false);
       session_event->set_response(strrc(rc));
-      */
     } break;
     case SCF_CLOG_SYNC: {
       do_clog_sync(sql_event);

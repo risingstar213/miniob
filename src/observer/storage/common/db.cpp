@@ -222,6 +222,9 @@ RC Db::recover()
           record.set_rid(clog_record->log_record_.del.rid_);
           rc = table->recover_delete_record(&record);
         } break;
+        case CLogType::REDO_UPDATE: {
+
+        } break;
         default: {
           rc = RC::SUCCESS;
         }
