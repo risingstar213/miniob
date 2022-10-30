@@ -192,7 +192,7 @@ protected:
 #define CLOG_BLOCK_SIZE (1 << 9)
 #define CLOG_BLOCK_DATA_SIZE (CLOG_BLOCK_SIZE - sizeof(CLogBlockHeader))
 #define CLOG_BLOCK_HDR_SIZE (sizeof(CLogBlockHeader))
-#define CLOG_REDO_BUFFER_SIZE 16 * CLOG_BLOCK_SIZE
+#define CLOG_REDO_BUFFER_SIZE 8 * CLOG_BLOCK_SIZE
 
 struct CLogRecordBuf {
   int32_t write_offset_;
