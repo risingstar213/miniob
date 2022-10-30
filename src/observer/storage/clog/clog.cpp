@@ -137,6 +137,9 @@ CLogRecord::~CLogRecord()
   if (REDO_INSERT == flag_) {
     delete[] log_record_.ins.data_;
   }
+  if (REDO_UPDATE == flag_) {
+    delete[] log_record_.upd.data_;
+  }
 }
 
 RC CLogRecord::copy_record(void *dest, int start_off, int copy_len)

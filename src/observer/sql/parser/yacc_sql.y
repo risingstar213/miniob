@@ -125,6 +125,7 @@ typedef std::deque<char *> IdList;
 		ADD_OP
 		SUB_OP
 		DIV_OP
+		IN
         EQ
         LT
         GT
