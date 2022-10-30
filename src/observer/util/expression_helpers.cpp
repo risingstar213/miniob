@@ -42,6 +42,7 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
         expr->field = new Field(table, table->table_meta().field(Trx::trx_field_name()));
         return RC::SUCCESS;
       } else {
+        LOG_WARN("agg(*) expcept count is not supported.");
         return RC::INVALID_ARGUMENT;
       }
     }
@@ -82,6 +83,7 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
       return rc;
     }
     if (expr->left->type == DATES || expr->left->type == CHARS || expr->left->type == TEXTS) {
+      LOG_WARN("the type %d in complex expression is not supported.", expr->left->type);
       return RC::INVALID_ARGUMENT;
     }
     expr->attr_num += expr->left->attr_num;
@@ -92,6 +94,7 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
     return rc;
   }
   if (expr->right->type == DATES || expr->right->type == CHARS || expr->right->type == TEXTS) {
+      LOG_WARN("the type %d in complex expression is not supported.", expr->right->type);
       return RC::INVALID_ARGUMENT;
   }
   expr->attr_num += expr->right->attr_num;

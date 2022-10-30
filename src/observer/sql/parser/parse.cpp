@@ -37,6 +37,9 @@ void select_attr_init(SelectExpr *expr, RelAttr *attr)
   expr->right = nullptr;
   expr->type = UNDEFINED;
   expr->is_brace = false;
+  expr->field = nullptr;
+  expr->attr_num = 0;
+  expr->aggregation_num = 0;
 }
 
 void select_value_init(SelectExpr *expr, Value *value)
@@ -52,6 +55,9 @@ void select_value_init(SelectExpr *expr, Value *value)
   expr->right = nullptr;
   expr->type = UNDEFINED;
   expr->is_brace = false;
+  expr->field = nullptr;
+  expr->attr_num = 0;
+  expr->aggregation_num = 0;
 }
 
 void select_subexpr_init(SelectExpr *expr, SelectExpr *left, SelectExpr *right,
@@ -66,6 +72,9 @@ void select_subexpr_init(SelectExpr *expr, SelectExpr *left, SelectExpr *right,
   expr->value = nullptr;
   expr->type = UNDEFINED;
   expr->is_brace = false;
+  expr->field = nullptr;
+  expr->attr_num = 0;
+  expr->aggregation_num = 0;
 }
 
 void select_expr_destroy(SelectExpr *expr)

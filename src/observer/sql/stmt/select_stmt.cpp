@@ -190,6 +190,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
     aggregation_num += select_sql.select_expr[i].aggregation_num;
   }
   if (aggregation_num != attr_num && aggregation_num != 0) {
+    LOG_WARN("NOT MATCH aggregation_num %d, attr_num %d", aggregation_num, attr_num);
     return RC::INVALID_ARGUMENT;
   }
 
