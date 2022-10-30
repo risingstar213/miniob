@@ -29,6 +29,7 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
       expr->aggregation_num += 1;
     }
     if (!expr->attr->is_valid) {
+      LOG_INFO("attr is not valid");
       return RC::INVALID_ARGUMENT;
     }
     // select * / count(*)

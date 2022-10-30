@@ -102,13 +102,13 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   table.push_back(default_table);
   rc = check_select_expression_valid(&condition.left_expr, 0, &table, tables);
   if (rc != RC::SUCCESS) {
-    LOG_INFO("condition not valid");
+    LOG_INFO("left condition not valid: %s", strrc(rc));
     return rc;
   }
 
   rc = check_select_expression_valid(&condition.right_expr, 0, &table, tables);
   if (rc != RC::SUCCESS) {
-    LOG_INFO("condition not valid");
+    LOG_INFO("right condition not valid: %s", strrc(rc));
     return rc;
   }
 

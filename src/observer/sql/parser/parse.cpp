@@ -122,6 +122,7 @@ void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const
   } else {
     relation_attr->attribute_name = nullptr;
   }
+  relation_attr->is_valid = true;
 }
 void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *relation_name, const char *attribute_name, Aggregation agg, bool is_valid)
 {

@@ -170,6 +170,7 @@ typedef std::deque<char *> IdList;
 %type <number1> type;
 %type <condition1> condition;
 %type <value1> value;
+%type <value1> insert_value;
 %type <value1> like_value;
 %type <number1> number;
 %type <comp1> comOp;
@@ -421,7 +422,7 @@ value_list:
     /* empty */ {
 		$$ = new ValueList();
 	}
-    | COMMA value value_list  { 
+    | COMMA insert_value value_list  { 
   		// CONTEXT->values[CONTEXT->value_length++] = *$2;
 		$$ = $3;
 		$$->push_front(*$2);
@@ -449,6 +450,16 @@ value:
 		value_init_date($$, $1);
 	}
     ;
+
+insert_value:
+	value {
+		$$ = $1;
+	}
+	| SUB_OP NUMBER {	
+  		$$ = new Value();
+		value_init_integer($$, -atoi($2), $2);
+	}
+	;
 
 like_value:
 	LIKE_SSS {
