@@ -126,6 +126,7 @@ typedef std::deque<char *> IdList;
 		SUB_OP
 		DIV_OP
 		IN
+		EXISTS
         EQ
         LT
         GT
@@ -176,6 +177,7 @@ typedef std::deque<char *> IdList;
 %type <number1> number;
 %type <comp1> comOp;
 %type <comp1> like_comOp;
+%type <comp1> sq_comOp;
 %type <attr1> aggration_attr;
 %type <attr1> rel_attr;
 %type <select1> select;
@@ -853,6 +855,9 @@ condition:
 			// $$->right_value =*$5;			
 							
     }
+	| ID sq_comOp LBRACE select RBRACE  {
+
+	}
     ;
 
 comOp:
@@ -868,6 +873,13 @@ like_comOp:
 	  NOT LIKE { $$ = UNLIKE_SCH; }
 	| LIKE { $$ = LIKE_SCH; }
     ;
+
+sq_comOp:
+	IN { $$ = IN_SQ; }
+	| NOT IN { $$ = NOT_IN_SQ; }
+	| EXISTS { $$ = EXISTS_SQ; }
+	| NOT EXISTS { $$ = NOT_EXISTS_SQ; }
+	;
 
 load_data:
 		LOAD DATA INFILE SSS INTO TABLE ID SEMICOLON

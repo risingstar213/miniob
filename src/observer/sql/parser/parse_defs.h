@@ -48,6 +48,10 @@ typedef enum {
   GREAT_THAN,   //">"     5
   LIKE_SCH,     // LIKE   6
   UNLIKE_SCH,   // UNLIKE 7
+  IN_SQ,        // in     8
+  NOT_IN_SQ,    // not in 9
+  EXISTS_SQ,    // exsits 10
+  NOT_EXSITS_SQ,// not exists 11
   NO_OP
 } CompOp;
 
