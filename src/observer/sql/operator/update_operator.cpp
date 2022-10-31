@@ -59,9 +59,6 @@ RC UpdateOperator::open()
         if (nullable == false) {
           LOG_WARN("nullable is not permitted");
           return RC::INVALID_ARGUMENT;
-        } else {
-          value.type = type;
-          continue;
         } 
       }
       CastUnit::cast_to_with_new_alloc(value, type);
