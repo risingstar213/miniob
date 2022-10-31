@@ -269,7 +269,12 @@ void tuple_to_string(std::ostream &os, const Tuple &tuple)
     } else {
       first_field = false;
     }
-    cell.to_string(os);
+    if (cell.data() == nullptr || *((int*)cell.data()) == 1 << 31) {
+      LOG_INFO("this value is null");
+      os << "null";
+    } else {
+      cell.to_string(os);
+    }
   }
 }
 

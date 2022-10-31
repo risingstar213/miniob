@@ -25,6 +25,7 @@ RC UpdateOperator::open()
   std::vector<Value> true_values;
   for (size_t i = 0; i < update_values.size(); i++) {
     AttrType type = update_stmt_->table()->table_meta().field(update_stmt_->field_name()[i])->type();
+    bool nullable = update_stmt_->table()->table_meta().field(update_stmt_->field_name()[i])->nullable();
     if (update_values[i].is_select) {
       Operator *oper = get_select_operator(update_values[i].value.select);
       operator_queue.push_back(oper);
@@ -42,6 +43,10 @@ RC UpdateOperator::open()
         for (auto &oper : operator_queue) delete oper;
         return RC::INVALID_ARGUMENT;
       }
+      if (*((int*)cell.data()) == 1 << 31 && nullable == false) {
+        LOG_WARN("nullable is not permitted");
+        return RC::INVALID_ARGUMENT;
+      }
       Value value;
       value.data = const_cast<char *>(cell.data());
       value.type = cell.attr_type();
@@ -49,6 +54,15 @@ RC UpdateOperator::open()
       true_values.push_back(value);
     } else {
       Value value = update_values[i].value.value;
+      if (value.type == INTS && *((int*)value.data) == 1<<31) {
+        if (nullable == false) {
+          LOG_WARN("nullable is not permitted");
+          return RC::INVALID_ARGUMENT;
+        } else {
+          value.type = type;
+          continue;
+        } 
+      }
       CastUnit::cast_to_with_new_alloc(value, type);
       true_values.push_back(value);
     }

@@ -62,6 +62,16 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
       LOG_INFO("CHECK FIELD VALUE %d", i);
       const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
       const AttrType field_type = field_meta->type();
+      if (values[i].type == INTS && *((int*)values[i].data) == 1 << 31) { // check if null is permitted
+        if (field_meta->nullable() == false) {
+          LOG_WARN("NULL is not permitted");
+          return RC::INVALID_ARGUMENT;
+        } else {
+          values[i].type = field_type;
+          LOG_INFO("%s", values);
+          continue;
+        }
+      } 
       CastUnit::cast_to(values[i], field_type);
       const AttrType value_type = values[i].type;
       if (values[i].type == DATES) {

@@ -32,8 +32,14 @@ void AggFunc::init_data(Aggregation agg, AggData *data, AttrType type) {
 
 void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data_in, int length = 0)
 {
+  if (*((int *)data_in) == 1 << 31) {
+    return;
+  }
   switch (agg) {
     case AGG_MAX: {
+      // if (*((int *)data_in) == 1 << 31) {
+      //   return;
+      // }
       if (data->max.data != nullptr) {
         switch (type) {
           case INTS: {
@@ -65,6 +71,9 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
       }
     } break;
     case AGG_MIN: {
+      // if (*((int *)data_in) == 1 << 31) {
+      //   return;
+      // }
       if (data->min.data != nullptr) {
         switch (type) {
           case INTS: {
@@ -97,9 +106,15 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
     } break;
     case AGG_COUNT: {
       // (TODO): resolve null
+      // if (*((int *)data_in) == 1 << 31) {
+      //   return;
+      // }
       *((int *)data->count.data) += 1;
     } break;
     case AGG_SUM: {
+      // if (*((int *)data_in) == 1 << 31) {
+      //   return;
+      // }
       switch (type) {
         case INTS:{
           *((int *)data->sum.data) += *((int *)data_in);
@@ -116,7 +131,9 @@ void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data
       }
     } break;
     case AGG_AVG: {
-      // (TODO): resolve null
+      // if (*((int *)data_in) == 1 << 31) {
+      //   return;
+      // }
       data->avg.count += 1;
       switch (type) {
         case INTS:{
@@ -200,6 +217,10 @@ char* AggFunc::get_data(Aggregation agg, AggData *data, AttrType type)
     return data->sum.data;
   } break;
   case AGG_AVG: {
+    if (data->avg.count == 0) {
+     *(int *)data->avg.data = 1<<31;
+      return data->avg.data;
+    }
     *((float *)data->sum.data) /= data->avg.count;
     return data->avg.data;
   } break;

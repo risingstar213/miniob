@@ -75,7 +75,10 @@ typedef std::deque<char *> IdList;
 %parse-param { void *scanner }
 
 //标识tokens
-%token  SEMICOLON
+%token  IS
+		NULL_
+		NULLABLE
+		SEMICOLON
         CREATE
         DROP
         TABLE
@@ -176,6 +179,7 @@ typedef std::deque<char *> IdList;
 %type <number1> number;
 %type <comp1> comOp;
 %type <comp1> like_comOp;
+%type <comp1> is_null_comOp;
 %type <attr1> aggration_attr;
 %type <attr1> rel_attr;
 %type <select1> select;
@@ -354,6 +358,12 @@ attr_def:
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].type=$2;  
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].length=4; // default attribute length
 		}
+	|attr_def NOT NULL_
+		{}
+	|attr_def NULLABLE
+		{
+			CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->ssql->sstr.create_table.attribute_count-1].nullable = true;
+		}
     ;
 
 id_list:
@@ -445,6 +455,10 @@ value:
 		$$ = new Value();
   		value_init_string($$, $1);
 		}
+	|NULL_ {
+		$$ = new Value();
+		value_init_null($$);
+	}
 	|DATE_DATA {
 		$1 = substr($1,1,strlen($1)-2);
 		$$ = new Value();
@@ -853,6 +867,66 @@ condition:
 			// $$->right_value =*$5;			
 							
     }
+	ID is_null_comOp NULL_ {
+		RelAttr *left_attr = new RelAttr();
+		relation_attr_init(left_attr, NULL, $1);
+		SelectExpr *left_expr = new SelectExpr();
+		select_attr_init(left_expr, left_attr);
+
+		Value *right_value = $3;
+		SelectExpr *right_expr = new SelectExpr();
+		select_value_init(right_expr, right_value);
+
+		$$ = new Condition();
+		condition_init($$, CompOp($2), left_expr, right_expr);
+		delete left_expr;
+		delete right_expr;
+	}
+	ID DOT ID is_null_comOp NULL_ {
+		RelAttr *left_attr = new RelAttr();
+		relation_attr_init(left_attr, $1, $3);
+		SelectExpr *left_expr = new SelectExpr();
+		select_attr_init(left_expr, left_attr);
+
+		Value *right_value = $5;
+		SelectExpr *right_expr = new SelectExpr();
+		select_value_init(right_expr, right_value);
+
+		$$ = new Condition();
+		condition_init($$, CompOp($4), left_expr, right_expr);
+		delete left_expr;
+		delete right_expr;
+	}
+	NULL_ is_null_comOp ID { // 左右操作数互换
+		RelAttr *left_attr = new RelAttr();
+		relation_attr_init(left_attr, NULL, $3);
+		SelectExpr *left_expr = new SelectExpr();
+		select_attr_init(left_expr, left_attr);
+
+		Value *right_value = $1;
+		SelectExpr *right_expr = new SelectExpr();
+		select_value_init(right_expr, right_value);
+
+		$$ = new Condition();
+		condition_init($$, CompOp($2), left_expr, right_expr);
+		delete left_expr;
+		delete right_expr;
+	}
+	NULL_ is_null_comOp ID DOT ID { // 左右操作数互换
+		RelAttr *left_attr = new RelAttr();
+		relation_attr_init(left_attr, $3, $5);
+		SelectExpr *left_expr = new SelectExpr();
+		select_attr_init(left_expr, left_attr);
+
+		Value *right_value = $1;
+		SelectExpr *right_expr = new SelectExpr();
+		select_value_init(right_expr, right_value);
+
+		$$ = new Condition();
+		condition_init($$, CompOp($2), left_expr, right_expr);
+		delete left_expr;
+		delete right_expr;
+	}
     ;
 
 comOp:
@@ -868,6 +942,11 @@ like_comOp:
 	  NOT LIKE { $$ = UNLIKE_SCH; }
 	| LIKE { $$ = LIKE_SCH; }
     ;
+
+is_null_comOp:
+	  IS { $$ = IS_NULL; }
+	| IS NOT { $$ = IS_NOT_NULL; }	
+	;
 
 load_data:
 		LOAD DATA INFILE SSS INTO TABLE ID SEMICOLON

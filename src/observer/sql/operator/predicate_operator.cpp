@@ -114,6 +114,12 @@ bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
                                               right_cell.data(),
                                               strlen(right_cell.data()));
     } break;
+    case IS_NULL: {
+      
+    } break;
+    case IS_NOT_NULL: {
+        
+    } break;
     default: {
       LOG_WARN("invalid compare type: %d", comp);
     } break;

@@ -186,6 +186,13 @@ void value_init_date(Value *value, const char *v) {
   LOG_INFO("%s", ((Date *)value->data)->toString().c_str());
   value->raw_data = strdup(v);
 }
+void value_init_null(Value *value) {
+  value->type = INTS;
+  int v = 1 << 31;
+  value->data = malloc(sizeof(int));
+  memcpy(value->data, &v, sizeof(v));
+  value->raw_data = strdup("null");
+}
 void value_destroy(Value *value)
 {
   value->type = UNDEFINED;
@@ -232,6 +239,7 @@ void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t
   attr_info->name = strdup(name);
   attr_info->type = type;
   attr_info->length = length;
+  attr_info->nullable = false;
   LOG_INFO("attr_info_init: %s, %d, %d", name, type, length);
 }
 void attr_info_destroy(AttrInfo *attr_info)

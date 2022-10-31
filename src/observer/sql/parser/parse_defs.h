@@ -48,6 +48,8 @@ typedef enum {
   GREAT_THAN,   //">"     5
   LIKE_SCH,     // LIKE   6
   UNLIKE_SCH,   // UNLIKE 7
+  IS_NULL,      // IS     8
+  IS_NOT_NULL,  // IS NOT 9
   NO_OP
 } CompOp;
 
@@ -195,6 +197,7 @@ typedef struct {
   char *name;     // Attribute name
   AttrType type;  // Type of attribute
   size_t length;  // Length of attribute
+  bool nullable; // if the attrbute is nullable
 } AttrInfo;
 
 // struct of craete_table
@@ -296,6 +299,7 @@ void value_init_float(Value *value, float v, const char *raw);
 void value_init_string(Value *value, const char *v);
 void value_destroy(Value *value);
 void value_init_date(Value *value, const char *v);
+void value_init_null(Value *value);
 
 void select_attr_init(SelectExpr *expr, RelAttr *attr);
 void select_value_init(SelectExpr *expr, Value *value);

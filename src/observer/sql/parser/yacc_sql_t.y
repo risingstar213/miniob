@@ -357,6 +357,9 @@ value:
 	|DATE_DATA {
 		$1 = substr($1,1,strlen($1)-2);
 		value_init_date(&CONTEXT->values[CONTEXT->value_length++], $1);
+		}
+	|NULL_ {
+		value_init_null(&CONTEXT->values[CONTEXT->value_length++]);
 	}
     ;
 
