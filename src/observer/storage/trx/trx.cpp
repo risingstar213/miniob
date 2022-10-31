@@ -87,7 +87,7 @@ RC Trx::insert_record(Table *table, Record *record)
   }
 
   start_if_not_started();
-  set_record_trx_id(table, *record, trx_id_, true);
+  // set_record_trx_id(table, *record, trx_id_, false);
   // 记录到operations中
   insert_operation(table, Operation::Type::INSERT, record->rid());
   return rc;
@@ -125,7 +125,7 @@ RC Trx::update_record(Table *table, Record *record)
     }
   }
 
-  set_record_trx_id(table, *record, trx_id_, true);
+  set_record_trx_id(table, *record, trx_id_, false);
   insert_operation(table, Operation::Type::UPDATE, record->rid());
   return rc;
 }
