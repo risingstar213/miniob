@@ -15,7 +15,6 @@ void AggFunc::init_data(Aggregation agg, AggData *data, AttrType type) {
     } break; // no alloc
     case AGG_COUNT: {
       data->count.data = (char *)calloc(1, sizeof(int));
-      data->sum.count = 0;
     } break;
     case AGG_SUM: {
       if (type == INTS) {
@@ -23,6 +22,7 @@ void AggFunc::init_data(Aggregation agg, AggData *data, AttrType type) {
       } else if (type == FLOATS) {
         data->sum.data = (char *)calloc(1, sizeof(float));
       }
+      data->sum.count = 0;
     } break;
     case AGG_AVG: {
       data->avg.data = (char *)calloc(1, sizeof(float));
