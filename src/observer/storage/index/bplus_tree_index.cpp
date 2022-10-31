@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "storage/index/bplus_tree_index.h"
 #include "common/log/log.h"
+#include "util/util.h"
 
 BplusTreeIndex::~BplusTreeIndex() noexcept
 {
@@ -106,6 +107,16 @@ RC BplusTreeIndex::get_entry(const char *record, std::list<RID> &rids)
   RC rc = index_handler_.get_entry(data_pool, length, rids);
   delete[] data_pool;
   return rc;
+}
+
+bool BplusTreeIndex::has_null(const char *record)
+{
+  for (size_t i = 0; i < field_metas_.size(); i++) {
+    if (is_null(record + field_metas_[i].offset())) {
+      return true;
+    }
+  }
+  return false;
 }
 
 RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)

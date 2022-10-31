@@ -867,65 +867,12 @@ condition:
 			// $$->right_value =*$5;			
 							
     }
-	ID is_null_comOp NULL_ {
-		RelAttr *left_attr = new RelAttr();
-		relation_attr_init(left_attr, NULL, $1);
-		SelectExpr *left_expr = new SelectExpr();
-		select_attr_init(left_expr, left_attr);
-
-		Value *right_value = $3;
-		SelectExpr *right_expr = new SelectExpr();
-		select_value_init(right_expr, right_value);
-
+	|select_arith_expr is_null_comOp select_arith_expr
+	{
 		$$ = new Condition();
-		condition_init($$, CompOp($2), left_expr, right_expr);
-		delete left_expr;
-		delete right_expr;
-	}
-	ID DOT ID is_null_comOp NULL_ {
-		RelAttr *left_attr = new RelAttr();
-		relation_attr_init(left_attr, $1, $3);
-		SelectExpr *left_expr = new SelectExpr();
-		select_attr_init(left_expr, left_attr);
-
-		Value *right_value = $5;
-		SelectExpr *right_expr = new SelectExpr();
-		select_value_init(right_expr, right_value);
-
-		$$ = new Condition();
-		condition_init($$, CompOp($4), left_expr, right_expr);
-		delete left_expr;
-		delete right_expr;
-	}
-	NULL_ is_null_comOp ID { // 左右操作数互换
-		RelAttr *left_attr = new RelAttr();
-		relation_attr_init(left_attr, NULL, $3);
-		SelectExpr *left_expr = new SelectExpr();
-		select_attr_init(left_expr, left_attr);
-
-		Value *right_value = $1;
-		SelectExpr *right_expr = new SelectExpr();
-		select_value_init(right_expr, right_value);
-
-		$$ = new Condition();
-		condition_init($$, CompOp($2), left_expr, right_expr);
-		delete left_expr;
-		delete right_expr;
-	}
-	NULL_ is_null_comOp ID DOT ID { // 左右操作数互换
-		RelAttr *left_attr = new RelAttr();
-		relation_attr_init(left_attr, $3, $5);
-		SelectExpr *left_expr = new SelectExpr();
-		select_attr_init(left_expr, left_attr);
-
-		Value *right_value = $1;
-		SelectExpr *right_expr = new SelectExpr();
-		select_value_init(right_expr, right_value);
-
-		$$ = new Condition();
-		condition_init($$, CompOp($2), left_expr, right_expr);
-		delete left_expr;
-		delete right_expr;
+		condition_init($$, CompOp($2), $1, $3);
+		delete $1;
+		delete $3;
 	}
     ;
 

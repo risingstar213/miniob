@@ -1,9 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.5.1.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
-   Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,9 +30,6 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* Undocumented macros, especially those whose name start with YY_,
-   are private implementation details.  Do not rely on them.  */
-
 #ifndef YY_YY_YACC_SQL_TAB_H_INCLUDED
 # define YY_YY_YACC_SQL_TAB_H_INCLUDED
 /* Debug traces.  */
@@ -44,7 +40,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 51 "yacc_sql.y"
+#line 51 "yacc_sql.y" /* yacc.c:1909  */
 
 #include <deque>
 #include <string>
@@ -66,90 +62,92 @@ typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
 // typedef std::string String;
 
-#line 70 "yacc_sql.tab.h"
+#line 66 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    NULL_ = 258,
-    NULLABLE = 259,
-    SEMICOLON = 260,
-    CREATE = 261,
-    DROP = 262,
-    TABLE = 263,
-    TABLES = 264,
-    INDEX = 265,
-    SELECT = 266,
-    DESC = 267,
-    SHOW = 268,
-    SYNC = 269,
-    INSERT = 270,
-    DELETE = 271,
-    UPDATE = 272,
-    LBRACE = 273,
-    RBRACE = 274,
-    COMMA = 275,
-    TRX_BEGIN = 276,
-    TRX_COMMIT = 277,
-    TRX_ROLLBACK = 278,
-    INT_T = 279,
-    STRING_T = 280,
-    FLOAT_T = 281,
-    DATE_T = 282,
-    TEXT_T = 283,
-    HELP = 284,
-    EXIT = 285,
-    DOT = 286,
-    INTO = 287,
-    VALUES = 288,
-    FROM = 289,
-    WHERE = 290,
-    AND = 291,
-    SET = 292,
-    NOT = 293,
-    LIKE = 294,
-    INNER = 295,
-    JOIN = 296,
-    ON = 297,
-    LOAD = 298,
-    DATA = 299,
-    INFILE = 300,
-    UNIQUE = 301,
-    MAX = 302,
-    MIN = 303,
-    SUM = 304,
-    COUNT = 305,
-    AVG = 306,
-    ADD_OP = 307,
-    SUB_OP = 308,
-    DIV_OP = 309,
-    IN = 310,
-    EQ = 311,
-    LT = 312,
-    GT = 313,
-    LE = 314,
-    GE = 315,
-    NE = 316,
-    NUMBER = 317,
-    FLOAT = 318,
-    DATE_DATA = 319,
-    ID = 320,
-    PATH = 321,
-    SSS = 322,
-    LIKE_SSS = 323,
-    STAR = 324,
-    STRING_V = 325,
-    UNARYMINUS = 326
+    IS = 258,
+    NULL_ = 259,
+    NULLABLE = 260,
+    SEMICOLON = 261,
+    CREATE = 262,
+    DROP = 263,
+    TABLE = 264,
+    TABLES = 265,
+    INDEX = 266,
+    SELECT = 267,
+    DESC = 268,
+    SHOW = 269,
+    SYNC = 270,
+    INSERT = 271,
+    DELETE = 272,
+    UPDATE = 273,
+    LBRACE = 274,
+    RBRACE = 275,
+    COMMA = 276,
+    TRX_BEGIN = 277,
+    TRX_COMMIT = 278,
+    TRX_ROLLBACK = 279,
+    INT_T = 280,
+    STRING_T = 281,
+    FLOAT_T = 282,
+    DATE_T = 283,
+    TEXT_T = 284,
+    HELP = 285,
+    EXIT = 286,
+    DOT = 287,
+    INTO = 288,
+    VALUES = 289,
+    FROM = 290,
+    WHERE = 291,
+    AND = 292,
+    SET = 293,
+    NOT = 294,
+    LIKE = 295,
+    INNER = 296,
+    JOIN = 297,
+    ON = 298,
+    LOAD = 299,
+    DATA = 300,
+    INFILE = 301,
+    UNIQUE = 302,
+    MAX = 303,
+    MIN = 304,
+    SUM = 305,
+    COUNT = 306,
+    AVG = 307,
+    ADD_OP = 308,
+    SUB_OP = 309,
+    DIV_OP = 310,
+    IN = 311,
+    EQ = 312,
+    LT = 313,
+    GT = 314,
+    LE = 315,
+    GE = 316,
+    NE = 317,
+    NUMBER = 318,
+    FLOAT = 319,
+    DATE_DATA = 320,
+    ID = 321,
+    PATH = 322,
+    SSS = 323,
+    LIKE_SSS = 324,
+    STAR = 325,
+    STRING_V = 326,
+    UNARYMINUS = 327
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+
 union YYSTYPE
 {
-#line 138 "yacc_sql.y"
+#line 139 "yacc_sql.y" /* yacc.c:1909  */
 
   RelAttr *attr1;
   Condition *condition1;
@@ -173,9 +171,9 @@ union YYSTYPE
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
 
-#line 177 "yacc_sql.tab.h"
-
+#line 175 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
+
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

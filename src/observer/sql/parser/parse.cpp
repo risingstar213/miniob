@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "rc.h"
 #include "common/log/log.h"
 #include "util/date.h"
+#include "defs.h"
 
 RC parse(char *st, Query *sqln);
 
@@ -188,8 +189,8 @@ void value_init_date(Value *value, const char *v) {
 }
 void value_init_null(Value *value) {
   value->type = INTS;
-  int v = 1 << 31;
-  value->data = malloc(sizeof(int));
+  int v = NULL_CONST;
+  value->data = malloc(12 * sizeof(char));
   memcpy(value->data, &v, sizeof(v));
   value->raw_data = strdup("null");
 }

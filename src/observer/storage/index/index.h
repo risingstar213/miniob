@@ -51,6 +51,7 @@ public:
   virtual RC get_entry(const char *record, std::list<RID> &rids) = 0;
   virtual RC insert_entry(const char *record, const RID *rid) = 0;
   virtual RC delete_entry(const char *record, const RID *rid) = 0;
+  virtual bool has_null(const char *record) = 0;
 
   virtual IndexScanner *create_scanner(const char *left_key, int left_len, bool left_inclusive,
 				       const char *right_key, int right_len, bool right_inclusive) = 0;

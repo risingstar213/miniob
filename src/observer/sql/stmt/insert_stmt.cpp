@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/db.h"
 #include "storage/common/table.h"
 #include "util/date.h"
+#include "util/util.h"
 
 InsertStmt::InsertStmt(Table *table, const Rows *rows, int value_amount, int row_amount)
   : table_ (table), rows_(rows), value_amount_(value_amount), row_amount_(row_amount)
@@ -62,7 +63,7 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
       LOG_INFO("CHECK FIELD VALUE %d", i);
       const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
       const AttrType field_type = field_meta->type();
-      if (values[i].type == INTS && *((int*)values[i].data) == 1 << 31) { // check if null is permitted
+      if (values[i].type == INTS && is_null((char *)values[i].data)) { // check if null is permitted
         if (field_meta->nullable() == false) {
           LOG_WARN("NULL is not permitted");
           return RC::INVALID_ARGUMENT;

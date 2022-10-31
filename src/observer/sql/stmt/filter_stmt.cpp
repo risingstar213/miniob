@@ -173,6 +173,8 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     can_compare = true;
   } else if (left_type == right_type) {
     can_compare = true;
+  } else if (left->is_null() || right->is_null()) {
+    can_compare = true;
   } else {
     can_compare = false;
   }

@@ -1,6 +1,8 @@
 #include "util/agg.h"
 #include "util/comparator.h"
 #include "util/cast.h"
+#include "util/util.h"
+#include "defs.h"
 #include <cstdlib>
 
 void AggFunc::init_data(Aggregation agg, AggData *data, AttrType type) {
@@ -32,7 +34,7 @@ void AggFunc::init_data(Aggregation agg, AggData *data, AttrType type) {
 
 void AggFunc::add_data(Aggregation agg, AggData *data, AttrType type, char *data_in, int length = 0)
 {
-  if (*((int *)data_in) == 1 << 31) {
+  if (is_null(data_in)) {
     return;
   }
   switch (agg) {
@@ -218,7 +220,7 @@ char* AggFunc::get_data(Aggregation agg, AggData *data, AttrType type)
   } break;
   case AGG_AVG: {
     if (data->avg.count == 0) {
-     *(int *)data->avg.data = 1<<31;
+     *(int *)data->avg.data = NULL_CONST;
       return data->avg.data;
     }
     *((float *)data->sum.data) /= data->avg.count;

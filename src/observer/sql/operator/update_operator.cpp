@@ -5,6 +5,7 @@
 #include "rc.h"
 #include "util/operator_helper.h"
 #include "util/cast.h"
+#include "util/util.h"
 
 RC UpdateOperator::open()
 {
@@ -43,7 +44,7 @@ RC UpdateOperator::open()
         for (auto &oper : operator_queue) delete oper;
         return RC::INVALID_ARGUMENT;
       }
-      if (*((int*)cell.data()) == 1 << 31 && nullable == false) {
+      if (is_null(cell.data()) && nullable == false) {
         LOG_WARN("nullable is not permitted");
         return RC::INVALID_ARGUMENT;
       }
@@ -54,7 +55,7 @@ RC UpdateOperator::open()
       true_values.push_back(value);
     } else {
       Value value = update_values[i].value.value;
-      if (value.type == INTS && *((int*)value.data) == 1<<31) {
+      if (value.type == INTS && is_null((char *)value.data)) {
         if (nullable == false) {
           LOG_WARN("nullable is not permitted");
           return RC::INVALID_ARGUMENT;

@@ -30,6 +30,7 @@ public:
   RC get_entry(const char *record, std::list<RID> &rids) override;
   RC insert_entry(const char *record, const RID *rid) override;
   RC delete_entry(const char *record, const RID *rid) override;
+  bool has_null(const char *record) override;
 
   /**
    * 扫描指定范围的数据

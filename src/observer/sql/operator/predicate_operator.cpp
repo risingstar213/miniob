@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/filter_stmt.h"
 #include "storage/common/field.h"
 #include "util/like.h"
+#include "util/util.h"
 
 RC PredicateOperator::open()
 {
@@ -78,7 +79,7 @@ bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
     int compare;
     if (comp <= GREAT_THAN) {
       compare = left_cell.compare(right_cell);
-      if (compare == 701409) {
+      if (is_null((char *)&compare)) {
         return false;
       }
     }
@@ -115,10 +116,18 @@ bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
                                               strlen(right_cell.data()));
     } break;
     case IS_NULL: {
-      
+      if (left_cell.attr_type() == CHARS && left_cell.length() < 4) {
+        filter_result = false;
+      } else {
+        filter_result = is_null(left_cell.data());
+      }
     } break;
     case IS_NOT_NULL: {
-        
+      if (left_cell.attr_type() == CHARS && left_cell.length() < 4) {
+        filter_result = true;
+      } else {
+        filter_result = !is_null(left_cell.data());
+      }
     } break;
     default: {
       LOG_WARN("invalid compare type: %d", comp);

@@ -19,9 +19,14 @@ See the Mulan PSL v2 for more details. */
 #include "util/comparator.h"
 #include "util/util.h"
 #include "util/date.h"
+#include "defs.h"
 
 void TupleCell::to_string(std::ostream &os) const
 {
+  if (is_null(data_)) {
+    os << "null";
+    return;
+  }
   switch (attr_type_) {
   case INTS: {
     os << *(int *)data_;
@@ -51,6 +56,9 @@ void TupleCell::to_string(std::ostream &os) const
 
 int TupleCell::compare(const TupleCell &other) const
 {
+  if (is_null(data_) || is_null(other.data_)) {
+    return NULL_CONST;
+  }
   if (this->attr_type_ == other.attr_type_) {
     switch (this->attr_type_) {
     case INTS: return compare_int(this->data_, other.data_);
