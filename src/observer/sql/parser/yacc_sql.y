@@ -856,7 +856,7 @@ condition:
 							
     }
 	| ID sq_comOp LBRACE select RBRACE  {
-
+		
 	}
     ;
 

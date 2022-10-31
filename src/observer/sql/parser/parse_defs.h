@@ -131,6 +131,8 @@ struct _Condition {
   // RelAttr right_attr;  // right-hand side attribute if right_is_attr = TRUE 右边的属性
   // Value right_value;   // right-hand side value if right_is_attr = FALSE
   SelectExpr right_expr; // right expr
+  bool right_is_sq;
+  Selects *select;
 };
 
 // struct condiation expression

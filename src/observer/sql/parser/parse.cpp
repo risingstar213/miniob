@@ -220,6 +220,9 @@ void condition_init(Condition *condition, CompOp comp, SelectExpr *left_expr,
   condition->comp = comp;
   condition->left_expr = *left_expr;
   condition->right_expr = *right_expr;
+
+  condition->right_is_sq = false;
+  condition->select = nullptr;
 }
 void condition_destroy(Condition *condition)
 {
