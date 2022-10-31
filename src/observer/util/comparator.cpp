@@ -21,9 +21,9 @@ See the Mulan PSL v2 for more details. */
 
 const double epsilon = 1E-6;
 
-int compare_int(void *arg1, void *arg2)
+int compare_int(void *arg1, void *arg2, bool index = false)
 {
-  if(is_null((char *)arg1) || is_null((char *)arg2)) {
+  if(!index && (is_null((char *)arg1) || is_null((char *)arg2))) {
     return NULL_CONST;
   }
   int v1 = *(int *)arg1;
@@ -31,9 +31,9 @@ int compare_int(void *arg1, void *arg2)
   return v1 - v2;
 }
 
-int compare_float(void *arg1, void *arg2)
+int compare_float(void *arg1, void *arg2, bool index = false)
 {
-  if(is_null((char *)arg1) || is_null((char *)arg2)) {
+  if(!index && (is_null((char *)arg1) || is_null((char *)arg2))) {
     return NULL_CONST;
   }
   float v1 = *(float *)arg1; 
@@ -51,9 +51,9 @@ int compare_float(void *arg1, void *arg2)
   return 0;
 }
 
-int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_length)
+int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_length, bool index = false)
 {
-  if(is_null((char *)arg1) || is_null((char *)arg2)) {
+  if(!index && (is_null((char *)arg1) || is_null((char *)arg2))) {
     return NULL_CONST;
   }
   const char *s1 = (const char *)arg1;
@@ -74,8 +74,8 @@ int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_len
   return 0;
 }
 
-int compare_date(void *arg1, void *arg2) {
-  if(is_null((char *)arg1) || is_null((char *)arg2)) {
+int compare_date(void *arg1, void *arg2, bool index = false) {
+  if(!index && (is_null((char *)arg1) || is_null((char *)arg2))) {
     return NULL_CONST;
   }
   Date *d1 = (Date *)arg1;

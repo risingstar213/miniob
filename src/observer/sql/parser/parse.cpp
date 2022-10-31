@@ -190,7 +190,7 @@ void value_init_date(Value *value, const char *v) {
 void value_init_null(Value *value) {
   value->type = INTS;
   int v = NULL_CONST;
-  value->data = malloc(12 * sizeof(char));
+  value->data = calloc(12 * sizeof(char), 1);
   memcpy(value->data, &v, sizeof(v));
   value->raw_data = strdup("null");
 }
