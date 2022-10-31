@@ -14,6 +14,7 @@ typedef union AggData {
   } count;
   struct {
     char *data;
+    int count;
   } sum;
   struct {
     char *data;
