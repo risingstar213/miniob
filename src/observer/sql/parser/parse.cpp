@@ -214,20 +214,53 @@ void updatevalue_destroy(UpdateValue *update_value) {
   update_value->is_select = false;
 }
 
-void condition_init(Condition *condition, CompOp comp, SelectExpr *left_expr,
-    SelectExpr *right_expr)
+void condition_expr_init_expr(ConditionExpr *cexpr, SelectExpr *expr)
+{
+  cexpr->is_sq = false;
+  cexpr->expr = expr;
+  cexpr->select = nullptr;
+}
+
+void condition_expr_init_sq(ConditionExpr *cexpr, Selects *select)
+{
+  cexpr->is_sq = true;
+  cexpr->select = select;
+  cexpr->expr = nullptr;
+}
+
+void condition_expr_destroy(ConditionExpr *cexpr)
+{
+  if (cexpr->is_sq) {
+    selects_destroy(cexpr->select);
+    cexpr->select = nullptr;
+  } else {
+    select_expr_destroy(cexpr->expr);
+    cexpr->expr = nullptr;
+  }
+  cexpr->is_sq = false;
+}
+
+void condition_init(Condition *condition, CompOp comp, ConditionExpr *left_expr,
+    ConditionExpr *right_expr)
 {
   condition->comp = comp;
   condition->left_expr = *left_expr;
   condition->right_expr = *right_expr;
-
-  condition->right_is_sq = false;
-  condition->select = nullptr;
 }
+
+// void condition_sq_init(Condition *condition, CompOp comp, SelectExpr *left_expr,
+//     Selects *select_sq)
+// {
+//   condition->comp = comp;
+//   condition->left_expr = *left_expr;
+//   condition->right_is_sq = true;
+//   condition->select = select_sq;
+// }
+
 void condition_destroy(Condition *condition)
 {
-  select_expr_destroy(&condition->left_expr);
-  select_expr_destroy(&condition->right_expr);
+  condition_expr_destroy(&condition->left_expr);
+  condition_expr_destroy(&condition->right_expr);
 }
 
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length)

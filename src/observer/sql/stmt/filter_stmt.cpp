@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "common/lang/string.h"
 #include "sql/stmt/filter_stmt.h"
+#include "sql/stmt/select_stmt.h"
 #include "storage/common/db.h"
 #include "storage/common/table.h"
 #include "util/date.h"
@@ -114,8 +115,22 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
 
   left = generate_expression(&condition.left_expr);
   left_type = left->get_valuetype();
-  right = generate_expression(&condition.right_expr);
-  right_type = right->get_valuetype();
+  if (condition.right_is_sq) {
+    Stmt *stmt;
+    rc = SelectStmt::create(db, *condition.select, stmt);
+    if (rc != RC::SUCCESS) {
+      LOG_INFO("Cannot build sub query.");
+      return rc;
+    }
+    SelectStmt *select_stmt = (SelectStmt *)stmt;
+    if (select_stmt->select_exprs().size() != 1) {
+      LOG_INFO("return more than one value from sub query!");
+      return rc;
+    }
+  } else {
+    right = generate_expression(&condition.right_expr);
+    right_type = right->get_valuetype();
+  }
   // if (condition.left_is_attr) {
   //   Table *table = nullptr;
   //   const FieldMeta *field = nullptr;

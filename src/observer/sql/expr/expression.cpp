@@ -98,3 +98,8 @@ RC ComplexExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) co
   cell.set_length(4);
   return RC::SUCCESS;
 }
+
+RC SqueryExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
+{
+  
+}

@@ -177,7 +177,8 @@ typedef std::deque<char *> IdList;
 %type <number1> number;
 %type <comp1> comOp;
 %type <comp1> like_comOp;
-%type <comp1> sq_comOp;
+%type <comp1> in_comOp;
+%type <comp1> exist_comOp;
 %type <attr1> aggration_attr;
 %type <attr1> rel_attr;
 %type <select1> select;
@@ -855,8 +856,28 @@ condition:
 			// $$->right_value =*$5;			
 							
     }
-	| ID sq_comOp LBRACE select RBRACE  {
-		
+	| ID in_comOp LBRACE select RBRACE  {
+		RelAttr *left_attr = new RelAttr();
+		relation_attr_init(left_attr, NULL, $1);
+		SelectExpr *left_expr = new SelectExpr();
+		select_attr_init(left_expr, left_attr);
+
+		$$ = new Condition();
+		condition_sq_init($$, CompOp($2), left_expr, $4);
+		delete left_expr;
+	}
+	| ID DOT ID in_comOp LBRACE select RBRACE {
+		RelAttr *left_attr = new RelAttr();
+		relation_attr_init(left_attr, $1, $3);
+		SelectExpr *left_expr = new SelectExpr();
+		select_attr_init(left_expr, left_attr);
+
+		$$ = new Condition();
+		condition_sq_init($$, CompOp($4), left_expr, $6);
+		delete left_expr;
+	}
+	| exist_comOp LBRACE select RBRACE {
+
 	}
     ;
 
@@ -874,10 +895,13 @@ like_comOp:
 	| LIKE { $$ = LIKE_SCH; }
     ;
 
-sq_comOp:
+in_comOp:
 	IN { $$ = IN_SQ; }
 	| NOT IN { $$ = NOT_IN_SQ; }
-	| EXISTS { $$ = EXISTS_SQ; }
+	;
+
+exist_comOp:
+	EXISTS { $$ = EXISTS_SQ; }
 	| NOT EXISTS { $$ = NOT_EXISTS_SQ; }
 	;
 

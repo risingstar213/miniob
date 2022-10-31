@@ -21,14 +21,17 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/tuple_cell.h"
 //#include "sql/expr/tuple.h"
 #include "util/agg.h"
+#include "util/operator_helper.h"
 
 class Tuple;
+class Operator;
 
 enum class ExprType {
   NONE,
   FIELD,
   VALUE,
-  COMPLEX
+  COMPLEX,
+  SUBQUERY
 };
 
 class Expression
@@ -173,4 +176,37 @@ private:
   Expression *left_ = nullptr;
   Expression *right_ = nullptr;
   char *data_ = nullptr;
+};
+
+class SqueryExpr : public Expression
+{
+public:
+  SqueryExpr() = default;
+  SqueryExpr(SelectStmt *stmt) : stmt_(stmt) {
+    oper_ = get_select_operator(stmt);
+  }
+  ~SqueryExpr() {
+    if (oper_ != nullptr) {
+      delete oper_;
+    }
+    if (stmt_ != nullptr) {
+      delete stmt_;
+    }
+  }
+
+  ExprType type() const {
+    return ExprType::SUBQUERY;
+  }
+
+  AttrType get_valuetype() const {
+    return stmt_->select_exprs()[0].type;
+  }
+  // Get Context
+  RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const override;
+  void update_value(const std::vector<Tuple *> tuples) {
+
+  }
+private:
+  SelectStmt *stmt_ = nullptr;
+  Operator *oper_ = nullptr;
 };
