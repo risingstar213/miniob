@@ -99,7 +99,7 @@ void CastUnit::cast_to(Value &value, AttrType type)
 void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
 {
   bool convert = false;
-  bool cond = (value.type == CHARS && strlen((char *)value.data) >= 4) && value.type != CHARS;
+  bool cond = (value.type == CHARS && strlen((char *)value.data) >= 4) || value.type != CHARS;
   if (cond && is_null((char *)value.data)) {
     value.type = type;
     value.data = calloc(12, 1);
