@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 #include <string.h>
 #include <cmath>
 #include "util/util.h"
+#include "defs.h"
 
 std::string double2string(double v)
 {
@@ -33,4 +34,12 @@ std::string double2string(double v)
   }
 
   return std::string(buf, len);
+}
+
+bool is_null(const char *v)
+{
+  if (*((int *)v) == NULL_CONST) {
+    return true;
+  }
+  return false;
 }

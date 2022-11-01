@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/filter_stmt.h"
 #include "storage/common/field.h"
 #include "util/like.h"
+#include "util/util.h"
 
 RC PredicateOperator::open()
 {
@@ -41,8 +42,12 @@ RC PredicateOperator::next()
       LOG_WARN("failed to get tuple from operator");
       break;
     }
-
-    if (do_predicate(tuples)) {
+    bool result;
+    rc = do_predicate(tuples, result);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+    if (result) {
       return rc;
     }
   }
@@ -60,10 +65,12 @@ std::vector<Tuple *> PredicateOperator::current_tuples()
   return children_[0]->current_tuples();
 }
 
-bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
+RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
 {
+  RC rc = RC::SUCCESS;
   if (filter_stmt_ == nullptr || filter_stmt_->filter_units().empty()) {
-    return true;
+    result = true;
+    return rc;
   }
 
   for (const FilterUnit *filter_unit : filter_stmt_->filter_units()) {
@@ -72,14 +79,24 @@ bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
     CompOp comp = filter_unit->comp();
     TupleCell left_cell;
     TupleCell right_cell;
-    left_expr->get_value(tuples, left_cell);
-    right_expr->get_value(tuples, right_cell);
-
+    if (comp <= NOT_IN_SQ) {
+      rc = left_expr->get_value(tuples, left_cell);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+    }
+    if (comp <= IS_NOT_NULL) {
+      rc = right_expr->get_value(tuples, right_cell);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+    }
     int compare;
     if (comp <= GREAT_THAN) {
       compare = left_cell.compare(right_cell);
-      if (compare == 701409) {
-        return false;
+      if (is_null((char *)&compare)) {
+        result =  false;
+        return rc;
       }
     }
     bool filter_result = false;
@@ -114,15 +131,73 @@ bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
                                               right_cell.data(),
                                               strlen(right_cell.data()));
     } break;
+    case IS_NULL: {
+      if (left_cell.attr_type() == CHARS && left_cell.length() < 4) {
+        filter_result = false;
+      } else {
+        filter_result = is_null(left_cell.data());
+      }
+    } break;
+    case IS_NOT_NULL: {
+      if (left_cell.attr_type() == CHARS && left_cell.length() < 4) {
+        filter_result = true;
+      } else {
+        filter_result = !is_null(left_cell.data());
+      }
+    } break;
+    case EXISTS_SQ: {
+      if (right_expr->type() != ExprType::SUBQUERY) {
+        return RC::INVALID_ARGUMENT;
+      }
+      SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+      rc = rexpr->exsits_cmp(filter_result);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+    } break;
+    case NOT_EXISTS_SQ: {
+      if (right_expr->type() != ExprType::SUBQUERY) {
+        return RC::INVALID_ARGUMENT;
+      }
+      SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+      rc = rexpr->exsits_cmp(filter_result);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      filter_result = !filter_result;
+    } break;
+    case IN_SQ: {
+      if (right_expr->type() != ExprType::SUBQUERY) {
+        return RC::INVALID_ARGUMENT;
+      }
+      SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+      rc = rexpr->in_cmp(left_cell, filter_result);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+    } break;
+    case NOT_IN_SQ: {
+      if (right_expr->type() != ExprType::SUBQUERY) {
+        return RC::INVALID_ARGUMENT;
+      }
+      SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+      rc = rexpr->in_cmp(left_cell, filter_result);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      filter_result = !filter_result;
+    } break;
     default: {
       LOG_WARN("invalid compare type: %d", comp);
     } break;
     }
     if (!filter_result) {
-      return false;
+      result = false;
+      return rc;;
     }
   }
-  return true;
+  result = true;
+  return rc;
 }
 
 // int PredicateOperator::tuple_cell_num() const

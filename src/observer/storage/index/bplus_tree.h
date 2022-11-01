@@ -54,18 +54,18 @@ public:
     for (size_t i = 0; i < attr_type_.size(); i++) {
       switch (attr_type_[i]) {
       case INTS: {
-        result =  compare_int((void *)n1, (void *)n2);
+        result =  compare_int((void *)n1, (void *)n2, true);
       }
         break;
       case FLOATS: {
-        result = compare_float((void *)n1, (void *)n2);
+        result = compare_float((void *)n1, (void *)n2, true);
       } break;
       case TEXTS:
       case CHARS: {
-        result = compare_string((void *)n1, attr_length_[i], (void *)n2, attr_length_[i]);
+        result = compare_string((void *)n1, attr_length_[i], (void *)n2, attr_length_[i], true);
       } break;
       case DATES: {
-        result = compare_date((void *)n1, (void *)n2);
+        result = compare_date((void *)n1, (void *)n2, true);
       } break;
       default:{
         LOG_ERROR("unknown attr type. %d", attr_type_[i]);

@@ -48,10 +48,12 @@ typedef enum {
   GREAT_THAN,   //">"     5
   LIKE_SCH,     // LIKE   6
   UNLIKE_SCH,   // UNLIKE 7
-  IN_SQ,        // in     8
-  NOT_IN_SQ,    // not in 9
-  EXISTS_SQ,    // exsits 10
-  NOT_EXSITS_SQ,// not exists 11
+  IS_NULL,      // IS     8
+  IS_NOT_NULL,  // IS NOT 9
+  IN_SQ,        // in     10
+  NOT_IN_SQ,    // not in 11
+  EXISTS_SQ,    // exsits 12
+  NOT_EXISTS_SQ,// not exists 13
   NO_OP
 } CompOp;
 
@@ -201,6 +203,7 @@ typedef struct {
   char *name;     // Attribute name
   AttrType type;  // Type of attribute
   size_t length;  // Length of attribute
+  bool nullable; // if the attrbute is nullable
 } AttrInfo;
 
 // struct of craete_table
@@ -302,6 +305,7 @@ void value_init_float(Value *value, float v, const char *raw);
 void value_init_string(Value *value, const char *v);
 void value_destroy(Value *value);
 void value_init_date(Value *value, const char *v);
+void value_init_null(Value *value);
 
 void select_attr_init(SelectExpr *expr, RelAttr *attr);
 void select_value_init(SelectExpr *expr, Value *value);
@@ -317,7 +321,7 @@ void condition_expr_init_sq(ConditionExpr *cexpr, Selects *select);
 void condition_expr_destroy(ConditionExpr *cexpr);
 
 void condition_init(Condition *condition, CompOp comp, ConditionExpr *left_expr, ConditionExpr *right_expr);
-void condition_sq_init(Condition *condition, CompOp comp, SelectExpr *left_expr, Selects *select_sq);
+// void condition_sq_init(Condition *condition, CompOp comp, SelectExpr *left_expr, Selects *select_sq);
 void condition_destroy(Condition *condition);
 
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length);

@@ -208,9 +208,11 @@ public:
   RC cell_at(int index, TupleCell &cell) const override
   {
     if (index < 0 || index >= static_cast<int>(speces_.size())) {
+      LOG_INFO("index is wrong");
       return RC::GENERIC_ERROR;
     }
     if (tuples_.size() == 0) {
+      LOG_INFO("tuples is empty");
       return RC::GENERIC_ERROR;
     }
 

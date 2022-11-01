@@ -14,6 +14,9 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#ifndef _OPERATOR_H_
+#define _OPERATOR_H_
+
 #include <vector>
 #include "rc.h"
 #include "sql/expr/tuple.h"
@@ -50,3 +53,6 @@ public:
 protected:
   std::vector<Operator *> children_;
 };
+
+
+#endif

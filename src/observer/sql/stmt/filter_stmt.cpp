@@ -101,35 +101,61 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
 
   std::vector<Table *> table;
   table.push_back(default_table);
-  rc = check_select_expression_valid(&condition.left_expr, 0, &table, tables);
-  if (rc != RC::SUCCESS) {
-    LOG_INFO("left condition not valid: %s", strrc(rc));
-    return rc;
-  }
 
-  rc = check_select_expression_valid(&condition.right_expr, 0, &table, tables);
-  if (rc != RC::SUCCESS) {
-    LOG_INFO("right condition not valid: %s", strrc(rc));
-    return rc;
-  }
-
-  left = generate_expression(&condition.left_expr);
-  left_type = left->get_valuetype();
-  if (condition.right_is_sq) {
+  // check left && build left expression
+  if (condition.left_expr.is_sq) {
     Stmt *stmt;
-    rc = SelectStmt::create(db, *condition.select, stmt);
+    rc = SelectStmt::create(db, *condition.left_expr.select, stmt);
     if (rc != RC::SUCCESS) {
       LOG_INFO("Cannot build sub query.");
       return rc;
     }
+    
     SelectStmt *select_stmt = (SelectStmt *)stmt;
     if (select_stmt->select_exprs().size() != 1) {
       LOG_INFO("return more than one value from sub query!");
       return rc;
     }
+    left = new SqueryExpr(select_stmt);
+    left_type = left->get_valuetype();
+  } else if (condition.left_expr.expr != nullptr) {
+    rc = check_select_expression_valid(condition.left_expr.expr, 0, &table, tables);
+    if (rc != RC::SUCCESS) {
+      LOG_INFO("left condition not valid: %s", strrc(rc));
+      return rc;
+    }
+    left = generate_expression(condition.left_expr.expr);
+    left_type = left->get_valuetype();
   } else {
-    right = generate_expression(&condition.right_expr);
+    left = nullptr;
+    left_type = UNDEFINED;
+  }
+
+  if (condition.right_expr.is_sq) {
+    Stmt *stmt;
+    rc = SelectStmt::create(db, *condition.right_expr.select, stmt);
+    if (rc != RC::SUCCESS) {
+      LOG_INFO("Cannot build sub query.");
+      return rc;
+    }
+    SelectStmt *select_stmt = (SelectStmt *)stmt;
+    // if (select_stmt->select_exprs().size() != 1) {
+    //   LOG_INFO("return more than one value from sub query!");
+    //   return rc;
+    // }
+    right = new SqueryExpr(select_stmt);
     right_type = right->get_valuetype();
+  } else if (condition.right_expr.expr != nullptr) {
+    rc = check_select_expression_valid(condition.right_expr.expr, 0, &table, tables);
+    if (rc != RC::SUCCESS) {
+      LOG_INFO("right condition not valid: %s", strrc(rc));
+      return rc;
+    }
+    right = generate_expression(condition.right_expr.expr);
+    right_type = right->get_valuetype();
+  } else {
+    right = nullptr;
+    right_type = UNDEFINED;
   }
   // if (condition.left_is_attr) {
   //   Table *table = nullptr;
@@ -188,6 +214,10 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     can_compare = true;
   } else if (left_type == right_type) {
     can_compare = true;
+  } else if (left_type == UNDEFINED) { // EXISTS
+    can_compare = true;
+  } else if (left->is_null() || right->is_null()) {
+    can_compare = true;
   } else {
     can_compare = false;
   }
@@ -201,7 +231,8 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
 
   // Check whether like comparator is valid
   if (comp == LIKE_SCH || comp == UNLIKE_SCH) {
-    if (!condition.left_expr.is_attr || right_type != CHARS) {
+    if (condition.left_expr.is_sq || condition.left_expr.expr == nullptr || 
+        !condition.left_expr.expr->is_attr || right_type != CHARS) {
       delete left;
       delete right;
       LOG_WARN("not supported");

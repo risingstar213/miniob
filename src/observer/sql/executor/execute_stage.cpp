@@ -269,7 +269,13 @@ void tuple_to_string(std::ostream &os, const Tuple &tuple)
     } else {
       first_field = false;
     }
-    cell.to_string(os);
+    if (cell.data() == nullptr) {
+      // important
+      LOG_INFO("this value is null");
+      os << "null";
+    } else {
+      cell.to_string(os);
+    }
   }
 }
 
@@ -301,6 +307,8 @@ IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
     } else if (comp > GREAT_THAN) {
       continue;
     } else if (left->type() == ExprType::COMPLEX || right->type() == ExprType::COMPLEX) {
+      return nullptr;
+    } else if (left->type() == ExprType::SUBQUERY || right->type() == ExprType::SUBQUERY) {
       return nullptr;
     }
     FieldExpr &left_field_expr = *(FieldExpr *)left;
@@ -493,10 +501,11 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   if (rc != RC::RECORD_EOF) {
     LOG_WARN("something wrong while iterate operator. rc=%s", strrc(rc));
     project_oper.close();
+    session_event->set_response("FAILURE\n");
   } else {
     rc = project_oper.close();
+    session_event->set_response(ss.str());
   }
-  session_event->set_response(ss.str());
   return rc;
 }
 

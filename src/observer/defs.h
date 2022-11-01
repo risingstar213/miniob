@@ -14,5 +14,13 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#ifndef _DEFS_H_
+#define _DEFS_H_
+
 using PageNum = int32_t;
 using SlotNum = int32_t;
+
+#define NULL_CONST 0xCCCCD5EE // magic "NULL"
+
+
+#endif

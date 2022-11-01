@@ -75,7 +75,10 @@ typedef std::deque<char *> IdList;
 %parse-param { void *scanner }
 
 //标识tokens
-%token  SEMICOLON
+%token  IS
+		NULL_
+		NULLABLE
+		SEMICOLON
         CREATE
         DROP
         TABLE
@@ -177,13 +180,15 @@ typedef std::deque<char *> IdList;
 %type <number1> number;
 %type <comp1> comOp;
 %type <comp1> like_comOp;
+%type <comp1> is_null_comOp;
 %type <comp1> in_comOp;
 %type <comp1> exist_comOp;
-%type <attr1> aggration_attr;
+%type <attr1> aggregtion_attr;
 %type <attr1> rel_attr;
 %type <select1> select;
 %type <updatevalue1> update_value;
 %type <selectexpr1> select_arith_expr;
+%type <conditionexpr1> condition_expr;
 
 %type <values1> value_list;
 %type <conditions1> where;
@@ -357,6 +362,12 @@ attr_def:
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].type=$2;  
 			// CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->value_length].length=4; // default attribute length
 		}
+	|attr_def NOT NULL_
+		{}
+	|attr_def NULLABLE
+		{
+			CONTEXT->ssql->sstr.create_table.attributes[CONTEXT->ssql->sstr.create_table.attribute_count-1].nullable = true;
+		}
     ;
 
 id_list:
@@ -448,6 +459,10 @@ value:
 		$$ = new Value();
   		value_init_string($$, $1);
 		}
+	|NULL_ {
+		$$ = new Value();
+		value_init_null($$);
+	}
 	|DATE_DATA {
 		$1 = substr($1,1,strlen($1)-2);
 		$$ = new Value();
@@ -637,7 +652,7 @@ select_attr:
 	}
 	;
 
-aggration_attr:
+aggregtion_attr:
 	MAX LBRACE select_attr RBRACE {
 		$$ = new RelAttr();
 		if ($3->size() != 1) {
@@ -719,7 +734,7 @@ rel_attr:
 		$$ = new RelAttr();
 		relation_attr_init_with_aggregation($$, $1, $3, AGG_NONE,true);
 	}
-	| aggration_attr {
+	| aggregtion_attr {
 		$$ = $1;
 	}
 	;
@@ -785,6 +800,18 @@ where:
 		delete $2;
 	}
     ;
+
+condition_expr:
+	select_arith_expr {
+		$$ = new ConditionExpr();
+		condition_expr_init_expr($$, $1);
+	}
+	| LBRACE select RBRACE
+	{
+		$$ = new ConditionExpr();
+		condition_expr_init_sq($$, $2);
+	}
+	;
 condition_list:
     /* empty */ {
 		$$ = new ConditionList();
@@ -796,88 +823,53 @@ condition_list:
 	}
     ;
 condition:
-    select_arith_expr comOp select_arith_expr
+    condition_expr comOp condition_expr
 	{
 		$$ = new Condition();
 		condition_init($$, CompOp($2), $1, $3);
 		delete $1;
 		delete $3;
 	}
-	|ID like_comOp like_value
-	{
-		RelAttr *left_attr = new RelAttr();
-		relation_attr_init(left_attr, NULL, $1);
-		SelectExpr *left_expr = new SelectExpr();
-		select_attr_init(left_expr, left_attr);
-
-		Value *right_value = $3;
-		SelectExpr *right_expr = new SelectExpr();
-		select_value_init(right_expr, right_value);
+	| select_arith_expr like_comOp like_value
+	{		
+		ConditionExpr left_cexpr;
+		condition_expr_init_expr(&left_cexpr, $1);
+		
+		SelectExpr *sexpr = new SelectExpr();
+		select_value_init(sexpr, $3);
+		ConditionExpr right_cexpr;
+		condition_expr_init_expr(&right_cexpr, sexpr);
 
 		$$ = new Condition();
-		condition_init($$, CompOp($2), left_expr, right_expr);
-		delete left_expr;
-		delete right_expr;
-
-		// $$ = ( Condition *)malloc(sizeof( Condition));
-		// $$->left_is_attr = 1;
-		// $$->left_attr.relation_name = NULL;
-		// $$->left_attr.attribute_name= $1;
-		// $$->comp = CONTEXT->comp;
-		// $$->right_is_attr = 0;
-		// $$->right_attr.relation_name = NULL;
-		// $$->right_attr.attribute_name = NULL;
-		// $$->right_value = *$3;
-	}
-	|ID DOT ID like_comOp like_value
-		{
-			RelAttr *left_attr = new RelAttr();
-			relation_attr_init(left_attr, $1, $3);
-			SelectExpr *left_expr = new SelectExpr();
-			select_attr_init(left_expr, left_attr);
-
-			Value *right_value = $5;
-			SelectExpr *right_expr = new SelectExpr();
-			select_value_init(right_expr, right_value);
-
-			$$ = new Condition();
-			condition_init($$, CompOp($4), left_expr, right_expr);
-			delete left_expr;
-			delete right_expr;
-
-			// $$=( Condition *)malloc(sizeof( Condition));
-			// $$->left_is_attr = 1;
-			// $$->left_attr.relation_name=$1;
-			// $$->left_attr.attribute_name=$3;
-			// $$->comp=CONTEXT->comp;
-			// $$->right_is_attr = 0;   //属性值
-			// $$->right_attr.relation_name=NULL;
-			// $$->right_attr.attribute_name=NULL;
-			// $$->right_value =*$5;			
-							
+		condition_init($$, CompOp($2) ,&left_cexpr, &right_cexpr);
+		delete $1;
     }
-	| ID in_comOp LBRACE select RBRACE  {
-		RelAttr *left_attr = new RelAttr();
-		relation_attr_init(left_attr, NULL, $1);
-		SelectExpr *left_expr = new SelectExpr();
-		select_attr_init(left_expr, left_attr);
-
+	| condition_expr is_null_comOp condition_expr
+	{
 		$$ = new Condition();
-		condition_sq_init($$, CompOp($2), left_expr, $4);
-		delete left_expr;
+		condition_init($$, CompOp($2), $1, $3);
+		delete $1;
+		delete $3;
 	}
-	| ID DOT ID in_comOp LBRACE select RBRACE {
-		RelAttr *left_attr = new RelAttr();
-		relation_attr_init(left_attr, $1, $3);
-		SelectExpr *left_expr = new SelectExpr();
-		select_attr_init(left_expr, left_attr);
+	| select_arith_expr in_comOp LBRACE select RBRACE  {
+		ConditionExpr left_expr;
+		condition_expr_init_expr(&left_expr, $1);
+
+		ConditionExpr right_expr;
+		condition_expr_init_sq(&right_expr, $4);
 
 		$$ = new Condition();
-		condition_sq_init($$, CompOp($4), left_expr, $6);
-		delete left_expr;
+		condition_init($$, CompOp($2), &left_expr, &right_expr);
 	}
 	| exist_comOp LBRACE select RBRACE {
+		ConditionExpr left_expr;
+		condition_expr_init_expr(&left_expr, nullptr);
 
+		ConditionExpr right_expr;
+		condition_expr_init_sq(&right_expr, $3);
+
+		$$ = new Condition();
+		condition_init($$, CompOp($1), &left_expr, &right_expr);
 	}
     ;
 
@@ -903,6 +895,10 @@ in_comOp:
 exist_comOp:
 	EXISTS { $$ = EXISTS_SQ; }
 	| NOT EXISTS { $$ = NOT_EXISTS_SQ; }
+	;
+is_null_comOp:
+	  IS { $$ = IS_NULL; }
+	| IS NOT { $$ = IS_NOT_NULL; }	
 	;
 
 load_data:

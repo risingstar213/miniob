@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "rc.h"
 #include "common/log/log.h"
 #include "util/date.h"
+#include "defs.h"
 
 RC parse(char *st, Query *sqln);
 
@@ -186,6 +187,13 @@ void value_init_date(Value *value, const char *v) {
   LOG_INFO("%s", ((Date *)value->data)->toString().c_str());
   value->raw_data = strdup(v);
 }
+void value_init_null(Value *value) {
+  value->type = INTS;
+  int v = NULL_CONST;
+  value->data = calloc(12 * sizeof(char), 1);
+  memcpy(value->data, &v, sizeof(v));
+  value->raw_data = strdup("null");
+}
 void value_destroy(Value *value)
 {
   value->type = UNDEFINED;
@@ -233,7 +241,7 @@ void condition_expr_destroy(ConditionExpr *cexpr)
   if (cexpr->is_sq) {
     selects_destroy(cexpr->select);
     cexpr->select = nullptr;
-  } else {
+  } else if (cexpr->expr != nullptr) {
     select_expr_destroy(cexpr->expr);
     cexpr->expr = nullptr;
   }
@@ -268,6 +276,7 @@ void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t
   attr_info->name = strdup(name);
   attr_info->type = type;
   attr_info->length = length;
+  attr_info->nullable = false;
   LOG_INFO("attr_info_init: %s, %d, %d", name, type, length);
 }
 void attr_info_destroy(AttrInfo *attr_info)

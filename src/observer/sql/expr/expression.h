@@ -19,9 +19,10 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/field.h"
 #include "sql/parser/parse_defs.h"
 #include "sql/expr/tuple_cell.h"
-//#include "sql/expr/tuple.h"
+#include "sql/stmt/select_stmt.h"
 #include "util/agg.h"
 #include "util/operator_helper.h"
+#include "util/util.h"
 
 class Tuple;
 class Operator;
@@ -44,6 +45,7 @@ public:
   virtual AttrType get_valuetype() const = 0;
   virtual ExprType type() const = 0;
   virtual void update_value(const std::vector<Tuple *> tuples) = 0;
+  virtual bool is_null() const = 0;
 };
 
 class FieldExpr : public Expression
@@ -94,6 +96,10 @@ public:
   }
 
   void update_value(const std::vector<Tuple *> tuples) override;
+
+  bool is_null() const {
+    return false;
+  }
 private:
   Field field_;
   TupleCell cell_;
@@ -129,6 +135,14 @@ public:
     return tuple_cell_.attr_type();
   }
   void update_value(const std::vector<Tuple *> tuples) {};
+
+  bool is_null() const {
+    if (tuple_cell_.length() < 4 && tuple_cell_.attr_type() == CHARS) {
+      return false;
+    }
+    return ::is_null(tuple_cell_.data());
+  }
+
 private:
   TupleCell tuple_cell_;
 };
@@ -171,6 +185,10 @@ public:
       right_->update_value(tuples);
     }
   }
+
+  bool is_null() const {
+    return false;
+  }
 private:
   SelectExpr *expr_;
   Expression *left_ = nullptr;
@@ -185,26 +203,22 @@ public:
   SqueryExpr(SelectStmt *stmt) : stmt_(stmt) {
     oper_ = get_select_operator(stmt);
   }
-  ~SqueryExpr() {
-    if (oper_ != nullptr) {
-      delete oper_;
-    }
-    if (stmt_ != nullptr) {
-      delete stmt_;
-    }
-  }
+  ~SqueryExpr();
 
   ExprType type() const {
     return ExprType::SUBQUERY;
   }
 
-  AttrType get_valuetype() const {
-    return stmt_->select_exprs()[0].type;
-  }
+  AttrType get_valuetype() const;
   // Get Context
   RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const override;
-  void update_value(const std::vector<Tuple *> tuples) {
+  void update_value(const std::vector<Tuple *> tuples) {}
 
+  RC exsits_cmp(bool &result);
+  RC in_cmp(TupleCell cell, bool &result);
+
+  bool is_null() const {
+    return false;
   }
 private:
   SelectStmt *stmt_ = nullptr;

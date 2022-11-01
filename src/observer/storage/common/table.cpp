@@ -1083,6 +1083,9 @@ RC Table::resolve_unique_before_insert(Trx *trx, Record *record)
   for (size_t i = 0; i < indexes_.size(); i++) {
     // is unique
     if (indexes_[i]->index_meta().is_unique()) {
+      if (indexes_[i]->has_null(record->data())) {
+        continue;
+      }
       std::list<RID> rids;
       RC rc = indexes_[i]->get_entry(record->data(), rids);
       if (rids.size() > 0) {
@@ -1100,6 +1103,9 @@ RC Table::resolve_unique_before_update(Trx *trx, Record *old_record, Record *new
   for (size_t i = 0; i < indexes_.size(); i++) {
     // is unique
     if (indexes_[i]->index_meta().is_unique()) {
+      if (indexes_[i]->has_null(new_record->data())) {
+        continue;
+      }
       std::vector<FieldMeta> field_metas = indexes_[i]->field_metas();
       bool equal = true;
       for (size_t j = 0; j < field_metas.size() && equal; j++) {

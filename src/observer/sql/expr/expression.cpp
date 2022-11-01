@@ -13,6 +13,10 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/expr/tuple.h"
+#include "sql/operator/operator.h"
+#include "sql/stmt/select_stmt.h"
+#include "util/comparator.h"
+#include "util/util.h"
 
 
 RC FieldExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
@@ -101,5 +105,109 @@ RC ComplexExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) co
 
 RC SqueryExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
 {
-  
+  if (stmt_->select_exprs().size() != 1) {
+    LOG_INFO("This type of select sq is not allowed");
+    return RC::INVALID_ARGUMENT;
+  }
+  RC rc = RC::SUCCESS;
+  rc = oper_->open();
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  int count = 0;
+  while ((rc = oper_->next()) == RC::SUCCESS) {
+    count += 1;
+  }
+  if (count > 1) {
+    LOG_INFO("This type of select sq is not allowed");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  if (count == 0) {
+    int *data = new int;
+    *data = NULL_CONST;
+    cell.set_data((char *)data);
+    cell.set_length(4);
+    cell.set_type(INTS);
+  } else {
+    Tuple *tuple = oper_->current_tuples()[0];
+    tuple->cell_at(0, cell);
+  }
+  if (rc != RC::RECORD_EOF) {
+    return RC::INVALID_ARGUMENT;
+  } else {
+    return RC::SUCCESS;
+  }
+}
+
+RC SqueryExpr::exsits_cmp(bool &result)
+{
+  RC rc = RC::SUCCESS;
+  rc = oper_->open();
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  int count = 0;
+  while ((rc = oper_->next()) == RC::SUCCESS) {
+    count += 1;
+  }
+  if (count > 0) {
+    result = true;
+  } else {
+    result = false;
+  }
+  // *** maybe invalid argument ***
+  if (rc != RC::RECORD_EOF) {
+    return RC::INVALID_ARGUMENT;
+  } else {
+    return RC::SUCCESS;
+  }
+}
+RC SqueryExpr::in_cmp(TupleCell cell, bool &result)
+{
+  if (stmt_->select_exprs().size() != 1) {
+    LOG_INFO("This type of select sq is not allowed");
+    return RC::INVALID_ARGUMENT;
+  }
+  RC rc = RC::SUCCESS;
+  rc = oper_->open();
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  result = false;
+  bool left_null = cell.length() >= 4 && ::is_null(cell.data());
+  while ((rc = oper_->next()) == RC::SUCCESS) {
+    Tuple *tuple = oper_->current_tuples()[0];
+    TupleCell cmp_cell;
+    tuple->cell_at(0, cmp_cell);
+    // judge null
+    bool right_null = cmp_cell.length() >= 4 && ::is_null(cmp_cell.data());
+    if (left_null && right_null) {
+      result = true;
+      break;
+    }
+    if (cell.compare(cmp_cell) == 0) {
+      result = true;
+      break;
+    }
+  }
+  oper_->close();
+  if (rc != RC::RECORD_EOF && rc != RC::SUCCESS) {
+    return RC::INVALID_ARGUMENT;
+  } else {
+    return RC::SUCCESS;
+  }
+}
+
+SqueryExpr::~SqueryExpr() {
+  if (oper_ != nullptr) {
+    delete oper_;
+  }
+  if (stmt_ != nullptr) {
+    delete stmt_;
+  }
+}
+
+AttrType SqueryExpr::get_valuetype() const {
+    return stmt_->select_exprs()[0].type;
 }
