@@ -21,18 +21,18 @@ RC JoinOperator::open()
   return RC::SUCCESS;
 }
 
-RC JoinOperator::next()
+RC JoinOperator::next(std::vector<Tuple *> *context)
 {
   if (stop_) {
     return rc_;
   }
 
   RC rc;
-  while ((rc = right_->next()) != RC::SUCCESS) {
+  while ((rc = right_->next(context)) != RC::SUCCESS) {
     if (start_) {
       return rc;
     }
-    if ((rc = left_->next()) != RC::SUCCESS) {
+    if ((rc = left_->next(context)) != RC::SUCCESS) {
       return rc;
     }
     right_->close();

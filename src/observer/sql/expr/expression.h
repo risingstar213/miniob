@@ -19,17 +19,20 @@ See the Mulan PSL v2 for more details. */
 #include "storage/common/field.h"
 #include "sql/parser/parse_defs.h"
 #include "sql/expr/tuple_cell.h"
-//#include "sql/expr/tuple.h"
+#include "sql/stmt/select_stmt.h"
 #include "util/agg.h"
+#include "util/operator_helper.h"
 #include "util/util.h"
 
 class Tuple;
+class Operator;
 
 enum class ExprType {
   NONE,
   FIELD,
   VALUE,
-  COMPLEX
+  COMPLEX,
+  SUBQUERY
 };
 
 class Expression
@@ -191,4 +194,40 @@ private:
   Expression *left_ = nullptr;
   Expression *right_ = nullptr;
   char *data_ = nullptr;
+};
+
+class SqueryExpr : public Expression
+{
+public:
+  SqueryExpr() = default;
+  SqueryExpr(SelectStmt *stmt) : stmt_(stmt) {
+    oper_ = get_select_operator(stmt);
+    is_list_ = false;
+  }
+  SqueryExpr(ValueList *list) : list_(list) {
+    is_list_ = true;
+  }
+  ~SqueryExpr();
+
+  ExprType type() const {
+    return ExprType::SUBQUERY;
+  }
+
+  AttrType get_valuetype() const;
+  // Get Context
+  RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const override;
+  void update_value(const std::vector<Tuple *> tuples) {}
+
+  RC exsits_cmp(const std::vector<Tuple *> tuples, bool &result);
+  RC in_cmp(TupleCell cell, const std::vector<Tuple *> tuples, bool &result);
+  RC not_in_cmp(TupleCell cell, const std::vector<Tuple *> tuples, bool &result);
+
+  bool is_null() const {
+    return false;
+  }
+private:
+  bool is_list_;
+  SelectStmt *stmt_ = nullptr;
+  Operator *oper_ = nullptr;
+  ValueList *list_ = nullptr;
 };

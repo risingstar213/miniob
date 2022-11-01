@@ -215,7 +215,7 @@ public:
       LOG_INFO("tuples is empty");
       return RC::GENERIC_ERROR;
     }
-
+    LOG_INFO("project cell at");
     const TupleCellSpec *spec = speces_[index];
     return spec->expression()->get_value(tuples_, cell);
   }

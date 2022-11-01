@@ -429,6 +429,7 @@ RC CLogFile::block_recover(CLogBlock *block, int16_t &offset, CLogRecordBuf *log
 //
 void CLogMTRManager::log_record_manage(CLogRecord *log_rec)
 {
+  printf("log_record_manage");
   if (log_rec->get_log_type() == REDO_MTR_COMMIT) {
     trx_commited[log_rec->get_trx_id()] = true;
     delete log_rec;
@@ -480,7 +481,7 @@ RC CLogManager::clog_append_record(CLogRecord *log_rec)
       log_buffer_->append_log_record(log_rec, start_offset);
     }
   }
-  delete log_rec;  // NOTE: 单元测试需要注释该行
+  // delete log_rec;  // NOTE: 单元测试需要注释该行
   return rc;
 }
 

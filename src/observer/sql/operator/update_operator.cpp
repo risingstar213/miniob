@@ -103,7 +103,7 @@ RC UpdateOperator::open()
   return RC::SUCCESS;
 }
 
-RC UpdateOperator::next()
+RC UpdateOperator::next(std::vector<Tuple *> *context)
 {
   return RC::RECORD_EOF;
 }

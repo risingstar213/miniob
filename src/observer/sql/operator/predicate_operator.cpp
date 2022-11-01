@@ -30,20 +30,27 @@ RC PredicateOperator::open()
   return children_[0]->open();
 }
 
-RC PredicateOperator::next()
+RC PredicateOperator::next(std::vector<Tuple *> *context)
 {
   RC rc = RC::SUCCESS;
   Operator *oper = children_[0];
   
-  while (RC::SUCCESS == (rc = oper->next())) {
+  while (RC::SUCCESS == (rc = oper->next(context))) {
     std::vector<Tuple *> tuples = oper->current_tuples();
     if (nullptr == tuples[0]) {
       rc = RC::INTERNAL;
       LOG_WARN("failed to get tuple from operator");
       break;
     }
-
-    if (do_predicate(tuples)) {
+    bool result;
+    if (context != nullptr) {
+      tuples.insert(tuples.end(), context->begin(), context->end());
+    }
+    rc = do_predicate(tuples, result);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+    if (result) {
       return rc;
     }
   }
@@ -61,10 +68,12 @@ std::vector<Tuple *> PredicateOperator::current_tuples()
   return children_[0]->current_tuples();
 }
 
-bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
+RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
 {
+  RC rc = RC::SUCCESS;
   if (filter_stmt_ == nullptr || filter_stmt_->filter_units().empty()) {
-    return true;
+    result = true;
+    return rc;
   }
 
   for (const FilterUnit *filter_unit : filter_stmt_->filter_units()) {
@@ -73,14 +82,25 @@ bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
     CompOp comp = filter_unit->comp();
     TupleCell left_cell;
     TupleCell right_cell;
-    left_expr->get_value(tuples, left_cell);
-    right_expr->get_value(tuples, right_cell);
-
+    if (comp <= NOT_IN_SQ) {
+      rc = left_expr->get_value(tuples, left_cell);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+    }
+    if (comp <= IS_NOT_NULL) {
+      rc = right_expr->get_value(tuples, right_cell);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+    }
     int compare;
     if (comp <= GREAT_THAN) {
       compare = left_cell.compare(right_cell);
+      LOG_INFO("%p, compare: %d, %d", this, *(int *)left_cell.data(), *(int *)right_cell.data());
       if (is_null((char *)&compare)) {
-        return false;
+        result =  false;
+        return rc;
       }
     }
     bool filter_result = false;
@@ -129,15 +149,66 @@ bool PredicateOperator::do_predicate(std::vector<Tuple *> tuples)
         filter_result = !is_null(left_cell.data());
       }
     } break;
+    case EXISTS_SQ: {
+      if (right_expr->type() != ExprType::SUBQUERY) {
+        return RC::INVALID_ARGUMENT;
+      }
+      SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+      rc = rexpr->exsits_cmp(tuples, filter_result);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+    } break;
+    case NOT_EXISTS_SQ: {
+      if (right_expr->type() != ExprType::SUBQUERY) {
+        return RC::INVALID_ARGUMENT;
+      }
+      SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+      rc = rexpr->exsits_cmp(tuples, filter_result);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      filter_result = !filter_result;
+    } break;
+    case IN_SQ: {
+      if (right_expr->type() != ExprType::SUBQUERY) {
+        return RC::INVALID_ARGUMENT;
+      }
+      if (left_cell.length() >= 4 && ::is_null(left_cell.data())) {
+        filter_result = false;
+      } else {
+        SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+        rc = rexpr->in_cmp(left_cell, tuples, filter_result);
+        if (rc != RC::SUCCESS) {
+          return rc;
+        }
+      }
+    } break;
+    case NOT_IN_SQ: {
+      if (right_expr->type() != ExprType::SUBQUERY) {
+        return RC::INVALID_ARGUMENT;
+      }
+      if (left_cell.length() >= 4 && ::is_null(left_cell.data())) {
+        filter_result = false;
+      } else {
+        SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+        rc = rexpr->not_in_cmp(left_cell, tuples, filter_result);
+        if (rc != RC::SUCCESS) {
+          return rc;
+        }
+      }
+    } break;
     default: {
       LOG_WARN("invalid compare type: %d", comp);
     } break;
     }
     if (!filter_result) {
-      return false;
+      result = false;
+      return rc;;
     }
   }
-  return true;
+  result = true;
+  return rc;
 }
 
 // int PredicateOperator::tuple_cell_num() const

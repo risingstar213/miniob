@@ -30,7 +30,7 @@ public:
   virtual ~DeleteOperator() = default;
 
   RC open() override;
-  RC next() override;
+  RC next(std::vector<Tuple *> *context = nullptr) override;
   RC close() override;
 
   std::vector<Tuple *> current_tuples() override {

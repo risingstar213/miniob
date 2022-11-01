@@ -25,7 +25,7 @@ RC TableScanOperator::open()
   return rc;
 }
 
-RC TableScanOperator::next()
+RC TableScanOperator::next(std::vector<Tuple *> *context)
 {
   if (!record_scanner_.has_next()) {
     return RC::RECORD_EOF;

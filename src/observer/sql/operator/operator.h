@@ -14,6 +14,9 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#ifndef _OPERATOR_H_
+#define _OPERATOR_H_
+
 #include <vector>
 #include "rc.h"
 #include "sql/expr/tuple.h"
@@ -35,7 +38,7 @@ public:
   }
 
   virtual RC open() = 0;
-  virtual RC next() = 0;
+  virtual RC next(std::vector<Tuple *> *context = nullptr) = 0;
   virtual RC close() = 0;
 
   virtual std::vector<Tuple *> current_tuples() = 0;
@@ -50,3 +53,6 @@ public:
 protected:
   std::vector<Operator *> children_;
 };
+
+
+#endif

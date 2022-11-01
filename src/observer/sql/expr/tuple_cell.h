@@ -25,10 +25,20 @@ public:
   
   TupleCell(FieldMeta *meta, char *data)
     : TupleCell(meta->type(), data)
-  {}
+  {
+    length_ = meta->len();
+  }
   TupleCell(AttrType attr_type, char *data)
     : attr_type_(attr_type), data_(data)
-  {}
+  {
+    if (attr_type == INTS || attr_type == FLOATS) {
+      length_ = 4;
+    } else if (attr_type == DATES) {
+      length_ = 12;
+    } else {
+      length_ = strlen(data);
+    }
+  }
 
   void set_type(AttrType type) { this->attr_type_ = type; }
   void set_length(int length) { this->length_ = length; }

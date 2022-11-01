@@ -52,7 +52,7 @@ RC DeleteOperator::open()
   return RC::SUCCESS;
 }
 
-RC DeleteOperator::next()
+RC DeleteOperator::next(std::vector<Tuple *> *context)
 {
   return RC::RECORD_EOF;
 }

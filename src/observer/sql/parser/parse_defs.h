@@ -52,6 +52,10 @@ typedef enum {
   UNLIKE_SCH,   // UNLIKE 7
   IS_NULL,      // IS     8
   IS_NOT_NULL,  // IS NOT 9
+  IN_SQ,        // in     10
+  NOT_IN_SQ,    // not in 11
+  EXISTS_SQ,    // exsits 12
+  NOT_EXISTS_SQ,// not exists 13
   NO_OP
 } CompOp;
 
@@ -119,25 +123,29 @@ struct _SelectExpr {
   bool is_brace;
 };
 
+// struct condiation expression
+struct _ConditionExpr {
+  bool is_sq;
+  SelectExpr *expr;
+  Selects *select;
+  bool is_valuelist;
+  ValueList *list;
+};
+
+
 struct _Condition {
   // int left_is_attr;    // TRUE if left-hand side is an attribute
   //                      // 1时，操作符左边是属性名，0时，是属性值
   // Value left_value;    // left-hand side value if left_is_attr = FALSE
   // RelAttr left_attr;   // left-hand side attribute
-  SelectExpr left_expr;// left-hand expr
   CompOp comp;         // comparison operator
   // int right_is_attr;   // TRUE if right-hand side is an attribute
   //                      // 1时，操作符右边是属性名，0时，是属性值
   // RelAttr right_attr;  // right-hand side attribute if right_is_attr = TRUE 右边的属性
   // Value right_value;   // right-hand side value if right_is_attr = FALSE
-  SelectExpr right_expr; // right expr
+  ConditionExpr left_expr;
+  ConditionExpr right_expr;
 };
-
-// struct condiation expression
-struct _ConditionExpr {
-
-};
-
 // struct of orderCol
 struct _OrderCol {
   RelAttr *attr;
@@ -323,7 +331,13 @@ void updatevalue_init_value(UpdateValue *update_value, Value *value);
 void updatevalue_init_select(UpdateValue *update_value, Selects *select);
 void updatevalue_destroy(UpdateValue *update_value);
 
-void condition_init(Condition *condition, CompOp comp, SelectExpr *left_expr, SelectExpr *right_expr);
+void condition_expr_init_expr(ConditionExpr *cexpr, SelectExpr *expr);
+void condition_expr_init_sq(ConditionExpr *cexpr, Selects *select);
+void condition_expr_init_valuelist(ConditionExpr *cexpr, ValueList *list);
+void condition_expr_destroy(ConditionExpr *cexpr);
+
+void condition_init(Condition *condition, CompOp comp, ConditionExpr *left_expr, ConditionExpr *right_expr);
+// void condition_sq_init(Condition *condition, CompOp comp, SelectExpr *left_expr, Selects *select_sq);
 void condition_destroy(Condition *condition);
 
 void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t length);

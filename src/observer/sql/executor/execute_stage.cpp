@@ -34,6 +34,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/delete_operator.h"
 #include "sql/operator/update_operator.h"
 #include "sql/operator/project_operator.h"
+#include "sql/operator/order_operator.h"
 #include "sql/operator/join_operator.h"
 #include "sql/stmt/stmt.h"
 #include "sql/stmt/select_stmt.h"
@@ -299,6 +300,9 @@ IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
     Expression *left = filter_unit->left();
     Expression *right = filter_unit->right();
     CompOp comp = filter_unit->comp();
+    if (left == nullptr || right == nullptr) {
+      return nullptr;
+    }
     if (left->type() == ExprType::FIELD && right->type() == ExprType::VALUE) {
     } else if (left->type() == ExprType::VALUE && right->type() == ExprType::FIELD) {
       std::swap(left, right);
@@ -307,6 +311,8 @@ IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
     } else if (comp > GREAT_THAN) {
       continue;
     } else if (left->type() == ExprType::COMPLEX || right->type() == ExprType::COMPLEX) {
+      return nullptr;
+    } else if (left->type() == ExprType::SUBQUERY || right->type() == ExprType::SUBQUERY) {
       return nullptr;
     }
     FieldExpr &left_field_expr = *(FieldExpr *)left;
@@ -466,26 +472,29 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
 
   PredicateOperator *pred_oper = new PredicateOperator(select_stmt->filter_stmt());
   pred_oper->add_child(top_oper);
-  ProjectOperator project_oper;
-  project_oper.add_child(pred_oper);
+  ProjectOperator *project_oper = new ProjectOperator();
+  project_oper->add_child(pred_oper);
 
   int n = select_stmt->select_exprs().size();
   std::vector<SelectExpr> expressions = select_stmt->select_exprs();
   for (int i = 0; i < n; i++) {
-    project_oper.add_projection(multi_tables, &expressions[i], select_stmt->is_aggregations());
+    project_oper->add_projection(multi_tables, &expressions[i], select_stmt->is_aggregations());
   }
 
-  rc = project_oper.open();
+  OrderOperator order_oper(&select_stmt->order_cols());
+  order_oper.add_child(project_oper); 
+
+  rc = order_oper.open();
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to open operator");
     return rc;
   }
   std::stringstream ss;
-  print_tuple_header(ss, project_oper);
-  while ((rc = project_oper.next()) == RC::SUCCESS) {
+  print_tuple_header(ss, *project_oper);
+  while ((rc = order_oper.next()) == RC::SUCCESS) {
     // get current record
     // write to response
-    Tuple *tuple = project_oper.current_tuples()[0];
+    Tuple *tuple = order_oper.current_tuples()[0];
     if (nullptr == tuple) {
       rc = RC::INTERNAL;
       LOG_WARN("failed to get current record. rc=%s", strrc(rc));
@@ -498,11 +507,12 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
 
   if (rc != RC::RECORD_EOF) {
     LOG_WARN("something wrong while iterate operator. rc=%s", strrc(rc));
-    project_oper.close();
+    order_oper.close();
+    session_event->set_response("FAILURE\n");
   } else {
-    rc = project_oper.close();
+    rc = order_oper.close();
+    session_event->set_response(ss.str());
   }
-  session_event->set_response(ss.str());
   return rc;
 }
 

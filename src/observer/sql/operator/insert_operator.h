@@ -30,7 +30,7 @@ public:
   virtual ~InsertOperator() = default;
 
   RC open() override;
-  RC next() override;
+  RC next(std::vector<Tuple *> *context = nullptr) override;
   RC close() override;
 
 private:

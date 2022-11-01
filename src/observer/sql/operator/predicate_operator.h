@@ -32,14 +32,14 @@ public:
   virtual ~PredicateOperator() = default;
 
   RC open() override;
-  RC next() override;
+  RC next(std::vector<Tuple *> *context = nullptr) override;
   RC close() override;
 
   std::vector<Tuple *> current_tuples() override;
   //int tuple_cell_num() const override;
   //RC tuple_cell_spec_at(int index, TupleCellSpec &spec) const override;
 private:
-  bool do_predicate(std::vector<Tuple *> tuples);
+  RC do_predicate(std::vector<Tuple *> tuples, bool &result);
 private:
   FilterStmt *filter_stmt_ = nullptr;
 };

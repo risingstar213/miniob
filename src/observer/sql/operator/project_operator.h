@@ -29,7 +29,7 @@ public:
   void add_projection(bool multi_tables, SelectExpr *expr, bool is_aggregation);
 
   RC open() override;
-  RC next() override;
+  RC next(std::vector<Tuple *> *context = nullptr) override;
   RC close() override;
 
   int tuple_cell_num() const

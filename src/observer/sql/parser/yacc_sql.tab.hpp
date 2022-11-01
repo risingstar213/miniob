@@ -123,22 +123,23 @@ typedef std::deque<char *> IdList;
     SUB_OP = 309,
     DIV_OP = 310,
     IN = 311,
-    EQ = 312,
-    LT = 313,
-    GT = 314,
-    LE = 315,
-    GE = 316,
-    NE = 317,
-    NUMBER = 318,
-    FLOAT = 319,
-    DATE_DATA = 320,
-    ID = 321,
-    PATH = 322,
-    SSS = 323,
-    LIKE_SSS = 324,
-    STAR = 325,
-    STRING_V = 326,
-    UNARYMINUS = 327
+    EXISTS = 312,
+    EQ = 313,
+    LT = 314,
+    GT = 315,
+    LE = 316,
+    GE = 317,
+    NE = 318,
+    NUMBER = 319,
+    FLOAT = 320,
+    DATE_DATA = 321,
+    ID = 322,
+    PATH = 323,
+    SSS = 324,
+    LIKE_SSS = 325,
+    STAR = 326,
+    STRING_V = 327,
+    UNARYMINUS = 328
   };
 #endif
 
@@ -147,7 +148,7 @@ typedef std::deque<char *> IdList;
 
 union YYSTYPE
 {
-#line 139 "yacc_sql.y" /* yacc.c:1909  */
+#line 140 "yacc_sql.y" /* yacc.c:1909  */
 
   RelAttr *attr1;
   Condition *condition1;
@@ -171,7 +172,7 @@ union YYSTYPE
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
 
-#line 175 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 176 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
