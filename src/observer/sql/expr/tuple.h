@@ -238,6 +238,12 @@ public:
     spec = speces_[index];
     return RC::SUCCESS;
   }
+
+  void reset_tuples() {
+    for (auto &spec : speces_) {
+      spec->expression()->reset_value();
+    }
+  }
 private:
   std::vector<TupleCellSpec *> speces_;
   // std::vector<Aggregation> agg_;

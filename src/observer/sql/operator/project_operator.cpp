@@ -36,6 +36,7 @@ RC ProjectOperator::open()
     return rc;
   }
 
+  tuple_.reset_tuples();
   return RC::SUCCESS;
 }
 

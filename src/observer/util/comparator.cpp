@@ -11,7 +11,7 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by wangyunlai on 2021/6/11.
 //
-
+#include "common/log/log.h"
 #include <string.h>
 #include <algorithm>
 #include <cmath>
@@ -28,16 +28,19 @@ int compare_int(void *arg1, void *arg2, bool index = false)
   }
   int v1 = *(int *)arg1;
   int v2 = *(int *)arg2;
+  LOG_INFO("compare int: %d, %d", v1, v2);
   return v1 - v2;
 }
 
 int compare_float(void *arg1, void *arg2, bool index = false)
 {
   if(!index && (is_null((char *)arg1) || is_null((char *)arg2))) {
+    LOG_INFO("compare null");
     return NULL_CONST;
   }
   float v1 = *(float *)arg1; 
   float v2 = *(float *)arg2; 
+  LOG_INFO("compare float: %f, %f", v1, v2);
   if (std::isinf(v1) || std::isinf(v1)) {
     return NULL_CONST;
   }

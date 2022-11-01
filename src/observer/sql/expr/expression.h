@@ -45,6 +45,7 @@ public:
   virtual AttrType get_valuetype() const = 0;
   virtual ExprType type() const = 0;
   virtual void update_value(const std::vector<Tuple *> tuples) = 0;
+  virtual void reset_value() = 0;
   virtual bool is_null() const = 0;
 };
 
@@ -100,6 +101,13 @@ public:
   bool is_null() const {
     return false;
   }
+
+  void reset_value() {
+    if (agg_ != AGG_NONE) {
+      AggFunc::destroy_data(agg_, data_, field_.attr_type());
+      AggFunc::init_data(agg_, data_, field_.attr_type());
+    }
+  }
 private:
   Field field_;
   TupleCell cell_;
@@ -143,6 +151,7 @@ public:
     return ::is_null(tuple_cell_.data());
   }
 
+  void reset_value() {}
 private:
   TupleCell tuple_cell_;
 };
@@ -189,6 +198,15 @@ public:
   bool is_null() const {
     return false;
   }
+
+  void reset_value() {
+    if (left_ != nullptr) {
+      left_->reset_value();
+    }
+    if (right_ != nullptr) {
+      right_->reset_value();
+    }
+  }
 private:
   SelectExpr *expr_;
   Expression *left_ = nullptr;
@@ -225,6 +243,7 @@ public:
   bool is_null() const {
     return false;
   }
+  void reset_value() {} // reset in close !!!
 private:
   bool is_list_;
   SelectStmt *stmt_ = nullptr;

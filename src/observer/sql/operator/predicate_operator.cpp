@@ -97,7 +97,6 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
     int compare;
     if (comp <= GREAT_THAN) {
       compare = left_cell.compare(right_cell);
-      LOG_INFO("%p, compare: %d, %d", this, *(int *)left_cell.data(), *(int *)right_cell.data());
       if (is_null((char *)&compare)) {
         result =  false;
         return rc;
