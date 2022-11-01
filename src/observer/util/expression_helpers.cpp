@@ -133,7 +133,7 @@ RC append_select_expression_with_star(std::vector<Table *> tables, SelectExpr *e
 
 Expression *generate_expression(SelectExpr *expr)
 {
-  LOG_INFO("generate_expression");
+  // LOG_INFO("generate_expression");
   if (expr->is_value) {
     return new ValueExpr(*expr->value);
   }

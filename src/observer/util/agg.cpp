@@ -209,9 +209,17 @@ char* AggFunc::get_data(Aggregation agg, AggData *data, AttrType type)
   switch (agg)
   {
   case AGG_MAX: {
+    if (data->max.data == nullptr) {
+      data->max.data = (char *)malloc(sizeof(int));
+      *((int *)data->max.data) = NULL_CONST;
+    }
     return data->max.data;
   } break;
   case AGG_MIN: {
+    if (data->min.data == nullptr) {
+      data->min.data = (char *)malloc(sizeof(int));
+      *((int *)data->min.data) = NULL_CONST;
+    }
     return data->min.data;
   } break;
   case AGG_COUNT: {

@@ -37,6 +37,7 @@ RC FieldExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) cons
     }
     return RC::SUCCESS;
   }
+  LOG_INFO("not found tuples");
   return RC::NOTFOUND;
 }
 
@@ -123,19 +124,20 @@ RC SqueryExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) con
     tuple->cell_at(0, cell);
     count += 1;
   }
-  if (count > 1) {
+  // LOG_INFO("SqueryExpr::get_value %d", count);
+  if (count != 1) {
     oper_->close();
-    LOG_INFO("This type of select sq is not allowed");
+    LOG_WARN("This type of select sq is not allowed");
     return RC::INVALID_ARGUMENT;
   }
 
-  if (count == 0) {
-    int *data = new int;
-    *data = NULL_CONST;
-    cell.set_data((char *)data);
-    cell.set_length(4);
-    cell.set_type(INTS);
-  }
+  // if (count == 0) {
+  //   int *data = new int;
+  //   *data = NULL_CONST;
+  //   cell.set_data((char *)data);
+  //   cell.set_length(4);
+  //   cell.set_type(INTS);
+  // }
 
   oper_->close();
   if (rc != RC::RECORD_EOF) {

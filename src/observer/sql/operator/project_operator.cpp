@@ -37,6 +37,7 @@ RC ProjectOperator::open()
   }
 
   tuple_.reset_tuples();
+  has_run_ = false;
   return RC::SUCCESS;
 }
 
@@ -49,16 +50,20 @@ RC ProjectOperator::next(std::vector<Tuple *> *context)
     }
     return rc;
   } else {
-    bool start = true;
-    while (children_[0]->next(context) == RC::SUCCESS) {
-      tuple_.set_tuples(children_[0]->current_tuples());
-      start = false;
-    }
-    if (start) {
+    // bool start = true;
+    if (has_run_) {
       return RC::RECORD_EOF;
-    } else {
-      return RC::SUCCESS;
     }
+    RC rc;
+    while ((rc = children_[0]->next(context)) == RC::SUCCESS) {
+      tuple_.set_tuples(children_[0]->current_tuples());
+      // start = false;
+    }
+    if (rc != RC::RECORD_EOF) {
+      return rc;
+    }
+    has_run_ = true;
+    return RC::SUCCESS;
     // int n = tuples_.size();
     // std::vector<float> temp1(n,0);
     // std::vector<float> temp2(n,0);

@@ -27,7 +27,7 @@ RC parse(char *st, Query *sqln);
 // #endif  // __cplusplus
 void select_attr_init(SelectExpr *expr, RelAttr *attr)
 {
-  LOG_INFO("select_attr_init: %s", attr->attribute_name);
+  // LOG_INFO("select_attr_init: %s", attr->attribute_name);
   expr->attr = attr;
   expr->is_attr = true;
 
@@ -45,7 +45,7 @@ void select_attr_init(SelectExpr *expr, RelAttr *attr)
 
 void select_value_init(SelectExpr *expr, Value *value)
 {
-  LOG_INFO("select_value_init: %s", value->raw_data);
+  // LOG_INFO("select_value_init: %s", value->raw_data);
   expr->value = value;
   expr->is_value = true;
 
@@ -127,7 +127,7 @@ void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const
 }
 void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *relation_name, const char *attribute_name, Aggregation agg, bool is_valid)
 {
-  LOG_INFO("relation_attr_init_with_aggregation");
+  // LOG_INFO("relation_attr_init_with_aggregation");
   if (relation_name != nullptr) {
     relation_attr->relation_name = strdup(relation_name);
   } else {
@@ -144,7 +144,7 @@ void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *rel
 
 void relation_attr_init_copy(RelAttr *relation_attr, RelAttr source, Aggregation agg)
 {
-  LOG_INFO("relation_attr_init_copy");
+  // LOG_INFO("relation_attr_init_copy");
   relation_attr->relation_name = source.relation_name;
   relation_attr->attribute_name = source.attribute_name;
   relation_attr->is_valid = source.is_valid;
@@ -184,7 +184,7 @@ void value_init_date(Value *value, const char *v) {
   string s(v);
   value->data = malloc(sizeof(Date));
   ((Date *)value->data)->set_date(s);
-  LOG_INFO("%s", ((Date *)value->data)->toString().c_str());
+  // LOG_INFO("%s", ((Date *)value->data)->toString().c_str());
   value->raw_data = strdup(v);
 }
 void value_init_null(Value *value) {
@@ -209,7 +209,7 @@ void updatevalue_init_value(UpdateValue *update_value, Value *value) {
 }
 
 void updatevalue_init_select(UpdateValue *update_value, Selects *select) {
-  LOG_INFO("updatevalue_init_select");
+  // LOG_INFO("updatevalue_init_select");
   update_value->is_select = true;
   update_value->value.select = *select;
 }
@@ -298,7 +298,7 @@ void attr_info_init(AttrInfo *attr_info, const char *name, AttrType type, size_t
   attr_info->type = type;
   attr_info->length = length;
   attr_info->nullable = false;
-  LOG_INFO("attr_info_init: %s, %d, %d", name, type, length);
+  // LOG_INFO("attr_info_init: %s, %d, %d", name, type, length);
 }
 void attr_info_destroy(AttrInfo *attr_info)
 {
@@ -308,13 +308,13 @@ void attr_info_destroy(AttrInfo *attr_info)
 
 void join_set_relation(Join *join, const char *relation_name)
 {
-  LOG_INFO("%p, JOIN TABLE: %s", join, relation_name);
+  // LOG_INFO("%p, JOIN TABLE: %s", join, relation_name);
   join->relation_name = strdup(relation_name);
 }
 
 void join_append_conditions(Join *join, std::deque<Condition> conditions)
 {
-  LOG_INFO("%p, JOIN CONDITION NUM: %d", join, conditions.size());
+  // LOG_INFO("%p, JOIN CONDITION NUM: %d", join, conditions.size());
   for (size_t i = 0; i < conditions.size(); i++) {
     join->conditions[i] = conditions[i];
   }
@@ -446,7 +446,7 @@ void deletes_destroy(Deletes *deletes)
 
 void updates_init(Updates *updates, const char *relation_name, std::deque<Condition> conditions)
 {
-  LOG_INFO("updates_init");
+  // LOG_INFO("updates_init");
   updates->relation_name = strdup(relation_name);
 
   assert(conditions.size() <= sizeof(updates->conditions) / sizeof(updates->conditions[0]));
@@ -459,14 +459,14 @@ void updates_init(Updates *updates, const char *relation_name, std::deque<Condit
 void update_append_attribute(Updates *updates, const char *attribute_name, UpdateValue *update_value)
 {
   // LOG_INFO("update_append_attribute %s, %s", attribute_name, value->raw_data);
-  LOG_INFO("update_append_attribute");
+  // LOG_INFO("update_append_attribute");
   if (attribute_name == nullptr) {
-    LOG_INFO("nullptr");
+    // LOG_INFO("nullptr");
   } else {
-    LOG_INFO("%d,%s, %p", updates->attribute_num, attribute_name, update_value);
+    // LOG_INFO("%d,%s, %p", updates->attribute_num, attribute_name, update_value);
   }
   updates->attribute_name[updates->attribute_num] = strdup(attribute_name);
-  LOG_INFO("update_append_attribute");
+  // LOG_INFO("update_append_attribute");
   updates->update_value[updates->attribute_num] = *update_value;
   updates->attribute_num += 1;
 }

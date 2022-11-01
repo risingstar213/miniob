@@ -75,7 +75,7 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
     result = true;
     return rc;
   }
-
+  // LOG_INFO("do_predicate");
   for (const FilterUnit *filter_unit : filter_stmt_->filter_units()) {
     Expression *left_expr = filter_unit->left();
     Expression *right_expr = filter_unit->right();
