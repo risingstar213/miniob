@@ -184,13 +184,11 @@ RC SqueryExpr::in_cmp(TupleCell cell, bool &result)
 {
   result = false;
   if (is_list_) {
-    bool left_null = cell.length() >= 4 && ::is_null(cell.data());
     for (auto &value : *list_) {
       bool cond = value.type != CHARS || (value.type == CHARS && strlen((char *)value.data) >= 4);
       bool right_null = cond && ::is_null((const char *)value.data);
-      if (left_null && right_null) {
-        result = true;
-        break;
+      if (right_null) {
+        continue;
       }
       TupleCell cmp_cell(value.type, (char *)value.data);
       if (cell.compare(cmp_cell) == 0) {
@@ -209,19 +207,68 @@ RC SqueryExpr::in_cmp(TupleCell cell, bool &result)
   if (rc != RC::SUCCESS) {
     return rc;
   }
-  bool left_null = cell.length() >= 4 && ::is_null(cell.data());
   while ((rc = oper_->next()) == RC::SUCCESS) {
     Tuple *tuple = oper_->current_tuples()[0];
     TupleCell cmp_cell;
     tuple->cell_at(0, cmp_cell);
     // judge null
     bool right_null = cmp_cell.length() >= 4 && ::is_null(cmp_cell.data());
-    if (left_null && right_null) {
-      result = true;
-      break;
+    if (right_null) {
+      continue;
     }
     if (cell.compare(cmp_cell) == 0) {
       result = true;
+      break;
+    }
+  }
+  oper_->close();
+  if (rc != RC::RECORD_EOF && rc != RC::SUCCESS) {
+    return RC::INVALID_ARGUMENT;
+  } else {
+    return RC::SUCCESS;
+  }
+}
+
+RC SqueryExpr::not_in_cmp(TupleCell cell, bool &result)
+{
+  result = true;
+  if (is_list_) {
+    for (auto &value : *list_) {
+      bool cond = value.type != CHARS || (value.type == CHARS && strlen((char *)value.data) >= 4);
+      bool right_null = cond && ::is_null((const char *)value.data);
+      if (right_null) {
+        result = false;
+        break;
+      }
+      TupleCell cmp_cell(value.type, (char *)value.data);
+      if (cell.compare(cmp_cell) == 0) {
+        result = false;
+        break;
+      }
+    }
+    return RC::SUCCESS;
+  }
+  if (stmt_->select_exprs().size() != 1) {
+    LOG_INFO("This type of select sq is not allowed");
+    return RC::INVALID_ARGUMENT;
+  }
+  RC rc = RC::SUCCESS;
+  rc = oper_->open();
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  while ((rc = oper_->next()) == RC::SUCCESS) {
+    Tuple *tuple = oper_->current_tuples()[0];
+    TupleCell cmp_cell;
+    tuple->cell_at(0, cmp_cell);
+    // judge null
+    bool right_null = cmp_cell.length() >= 4 && ::is_null(cmp_cell.data());
+    if (right_null) {
+      result = false;
+      break;
+    }
+    if (cell.compare(cmp_cell) == 0) {
+      result = false;
       break;
     }
   }

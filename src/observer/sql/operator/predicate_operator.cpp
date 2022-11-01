@@ -188,11 +188,10 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
         filter_result = false;
       } else {
         SqueryExpr *rexpr = (SqueryExpr *)right_expr;
-        rc = rexpr->in_cmp(left_cell, filter_result);
+        rc = rexpr->not_in_cmp(left_cell, filter_result);
         if (rc != RC::SUCCESS) {
           return rc;
         }
-        filter_result = !filter_result;
       }
     } break;
     default: {

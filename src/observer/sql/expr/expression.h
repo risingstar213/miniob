@@ -220,6 +220,7 @@ public:
 
   RC exsits_cmp(bool &result);
   RC in_cmp(TupleCell cell, bool &result);
+  RC not_in_cmp(TupleCell cell, bool &result);
 
   bool is_null() const {
     return false;
