@@ -126,6 +126,8 @@ struct _ConditionExpr {
   bool is_sq;
   SelectExpr *expr;
   Selects *select;
+  bool is_valuelist;
+  ValueList *list;
 };
 
 
@@ -318,6 +320,7 @@ void updatevalue_destroy(UpdateValue *update_value);
 
 void condition_expr_init_expr(ConditionExpr *cexpr, SelectExpr *expr);
 void condition_expr_init_sq(ConditionExpr *cexpr, Selects *select);
+void condition_expr_init_valuelist(ConditionExpr *cexpr, ValueList *list);
 void condition_expr_destroy(ConditionExpr *cexpr);
 
 void condition_init(Condition *condition, CompOp comp, ConditionExpr *left_expr, ConditionExpr *right_expr);

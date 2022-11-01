@@ -227,6 +227,9 @@ void condition_expr_init_expr(ConditionExpr *cexpr, SelectExpr *expr)
   cexpr->is_sq = false;
   cexpr->expr = expr;
   cexpr->select = nullptr;
+
+  cexpr->is_valuelist = false;
+  cexpr->list = nullptr;
 }
 
 void condition_expr_init_sq(ConditionExpr *cexpr, Selects *select)
@@ -234,11 +237,29 @@ void condition_expr_init_sq(ConditionExpr *cexpr, Selects *select)
   cexpr->is_sq = true;
   cexpr->select = select;
   cexpr->expr = nullptr;
+
+  cexpr->is_valuelist = false;
+  cexpr->list = nullptr;
+}
+
+void condition_expr_init_valuelist(ConditionExpr *cexpr, ValueList *list)
+{
+  cexpr->is_valuelist = true;
+  cexpr->list = list;
+
+  cexpr->is_sq = false;
+  cexpr->expr = nullptr;
+  cexpr->select = nullptr;
 }
 
 void condition_expr_destroy(ConditionExpr *cexpr)
 {
-  if (cexpr->is_sq) {
+  if (cexpr->is_valuelist) {
+    for (auto &value : *cexpr->list) {
+      value_destroy(&value);
+    }
+    delete cexpr->list;
+  } else if (cexpr->is_sq) {
     selects_destroy(cexpr->select);
     cexpr->select = nullptr;
   } else if (cexpr->expr != nullptr) {

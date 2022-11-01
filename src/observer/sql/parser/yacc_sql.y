@@ -842,7 +842,6 @@ condition:
 
 		$$ = new Condition();
 		condition_init($$, CompOp($2) ,&left_cexpr, &right_cexpr);
-		delete $1;
     }
 	| condition_expr is_null_comOp condition_expr
 	{
@@ -857,6 +856,19 @@ condition:
 
 		ConditionExpr right_expr;
 		condition_expr_init_sq(&right_expr, $4);
+
+		$$ = new Condition();
+		condition_init($$, CompOp($2), &left_expr, &right_expr);
+	}
+	| select_arith_expr in_comOp LBRACE value value_list RBRACE
+	{
+		ConditionExpr left_expr;
+		condition_expr_init_expr(&left_expr, $1);
+
+		$5->push_front(*$4);
+		ConditionExpr right_expr;
+		condition_expr_init_valuelist(&right_expr, $5);
+		delete $4;
 
 		$$ = new Condition();
 		condition_init($$, CompOp($2), &left_expr, &right_expr);

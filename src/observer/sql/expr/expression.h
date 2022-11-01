@@ -202,6 +202,10 @@ public:
   SqueryExpr() = default;
   SqueryExpr(SelectStmt *stmt) : stmt_(stmt) {
     oper_ = get_select_operator(stmt);
+    is_list_ = false;
+  }
+  SqueryExpr(ValueList *list) : list_(list) {
+    is_list_ = true;
   }
   ~SqueryExpr();
 
@@ -221,6 +225,8 @@ public:
     return false;
   }
 private:
+  bool is_list_;
   SelectStmt *stmt_ = nullptr;
   Operator *oper_ = nullptr;
+  ValueList *list_ = nullptr;
 };

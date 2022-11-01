@@ -131,7 +131,11 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     left_type = UNDEFINED;
   }
 
-  if (condition.right_expr.is_sq) {
+  if (condition.right_expr.is_valuelist) {
+    right = new SqueryExpr(condition.right_expr.list);
+    right_type = right->get_valuetype();
+  }
+  else if (condition.right_expr.is_sq) {
     Stmt *stmt;
     rc = SelectStmt::create(db, *condition.right_expr.select, stmt);
     if (rc != RC::SUCCESS) {

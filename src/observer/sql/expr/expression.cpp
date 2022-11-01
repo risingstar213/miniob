@@ -105,6 +105,9 @@ RC ComplexExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) co
 
 RC SqueryExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
 {
+  if (is_list_) {
+    return RC::INVALID_ARGUMENT;
+  }
   if (stmt_->select_exprs().size() != 1) {
     LOG_INFO("This type of select sq is not allowed");
     return RC::INVALID_ARGUMENT;
@@ -143,6 +146,9 @@ RC SqueryExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) con
 RC SqueryExpr::exsits_cmp(bool &result)
 {
   RC rc = RC::SUCCESS;
+  if (is_list_) {
+    return RC::INVALID_ARGUMENT;
+  }
   rc = oper_->open();
   if (rc != RC::SUCCESS) {
     return rc;
@@ -165,6 +171,24 @@ RC SqueryExpr::exsits_cmp(bool &result)
 }
 RC SqueryExpr::in_cmp(TupleCell cell, bool &result)
 {
+  result = false;
+  if (is_list_) {
+    bool left_null = cell.length() >= 4 && ::is_null(cell.data());
+    for (auto &value : *list_) {
+      bool cond = value.type != CHARS || (value.type == CHARS && strlen((char *)value.data) >= 4);
+      bool right_null = cond && ::is_null((const char *)value.data);
+      if (left_null && right_null) {
+        result = true;
+        break;
+      }
+      TupleCell cmp_cell(value.type, (char *)value.data);
+      if (cell.compare(cmp_cell) == 0) {
+        result = true;
+        break;
+      }
+    }
+    return RC::SUCCESS;
+  }
   if (stmt_->select_exprs().size() != 1) {
     LOG_INFO("This type of select sq is not allowed");
     return RC::INVALID_ARGUMENT;
@@ -174,7 +198,6 @@ RC SqueryExpr::in_cmp(TupleCell cell, bool &result)
   if (rc != RC::SUCCESS) {
     return rc;
   }
-  result = false;
   bool left_null = cell.length() >= 4 && ::is_null(cell.data());
   while ((rc = oper_->next()) == RC::SUCCESS) {
     Tuple *tuple = oper_->current_tuples()[0];
@@ -209,5 +232,9 @@ SqueryExpr::~SqueryExpr() {
 }
 
 AttrType SqueryExpr::get_valuetype() const {
+  if (is_list_) {
+    return (*list_)[0].type;
+  } else {
     return stmt_->select_exprs()[0].type;
+  }
 }
