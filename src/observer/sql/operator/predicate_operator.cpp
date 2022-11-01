@@ -170,22 +170,30 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
       if (right_expr->type() != ExprType::SUBQUERY) {
         return RC::INVALID_ARGUMENT;
       }
-      SqueryExpr *rexpr = (SqueryExpr *)right_expr;
-      rc = rexpr->in_cmp(left_cell, filter_result);
-      if (rc != RC::SUCCESS) {
-        return rc;
+      if (left_cell.length() >= 4 && ::is_null(left_cell.data())) {
+        filter_result = false;
+      } else {
+        SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+        rc = rexpr->in_cmp(left_cell, filter_result);
+        if (rc != RC::SUCCESS) {
+          return rc;
+        }
       }
     } break;
     case NOT_IN_SQ: {
       if (right_expr->type() != ExprType::SUBQUERY) {
         return RC::INVALID_ARGUMENT;
       }
-      SqueryExpr *rexpr = (SqueryExpr *)right_expr;
-      rc = rexpr->in_cmp(left_cell, filter_result);
-      if (rc != RC::SUCCESS) {
-        return rc;
+      if (left_cell.length() >= 4 && ::is_null(left_cell.data())) {
+        filter_result = false;
+      } else {
+        SqueryExpr *rexpr = (SqueryExpr *)right_expr;
+        rc = rexpr->in_cmp(left_cell, filter_result);
+        if (rc != RC::SUCCESS) {
+          return rc;
+        }
+        filter_result = !filter_result;
       }
-      filter_result = !filter_result;
     } break;
     default: {
       LOG_WARN("invalid compare type: %d", comp);

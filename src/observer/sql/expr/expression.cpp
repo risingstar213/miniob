@@ -155,7 +155,18 @@ RC SqueryExpr::exsits_cmp(bool &result)
   }
   int count = 0;
   while ((rc = oper_->next()) == RC::SUCCESS) {
-    count += 1;
+    Tuple *tuple = oper_->current_tuples()[0];
+    TupleCell cell;
+    bool null_record = true;
+    for (int i = 0; i < tuple->cell_num(); i++) {
+      tuple->cell_at(i, cell);
+      if (!::is_null(cell.data())) {
+        null_record = false;
+      }
+    }
+    if (!null_record) {
+      count += 1;
+    }
   }
   if (count > 0) {
     result = true;
