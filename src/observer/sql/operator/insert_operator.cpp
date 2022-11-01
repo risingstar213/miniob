@@ -36,7 +36,7 @@ RC InsertOperator::open()
   return RC::SUCCESS;
 }
 
-RC InsertOperator::next()
+RC InsertOperator::next(std::vector<Tuple *> *context)
 {
   return RC::RECORD_EOF;
 }

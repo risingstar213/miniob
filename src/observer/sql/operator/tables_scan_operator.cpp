@@ -30,7 +30,7 @@ RC TablesScanOperator::open()
   return rc;
 }
 
-RC TablesScanOperator::next()
+RC TablesScanOperator::next(std::vector<Tuple *> *context)
 {
   // if there is any empty tuple
   if (stop_) {
@@ -38,7 +38,7 @@ RC TablesScanOperator::next()
   }
   RC rc;
   int stack_top = children_.size() - 1;
-  while((rc = children_[stack_top]->next()) != RC::SUCCESS) {
+  while((rc = children_[stack_top]->next(context)) != RC::SUCCESS) {
     if (start_ || stack_top == 0) {
       return rc;
     }
@@ -47,7 +47,7 @@ RC TablesScanOperator::next()
   for (uint i = stack_top+1; i < children_.size(); i++) {
     children_[i]->close();
     children_[i]->open();
-    children_[i]->next();
+    children_[i]->next(context);
   }
   for (uint i = stack_top; i < children_.size(); i++) {
     tuples_[i] = children_[i]->current_tuples()[0];

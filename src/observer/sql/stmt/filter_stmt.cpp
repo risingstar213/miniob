@@ -105,7 +105,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   // check left && build left expression
   if (condition.left_expr.is_sq) {
     Stmt *stmt;
-    rc = SelectStmt::create(db, *condition.left_expr.select, stmt);
+    rc = SelectStmt::create(db, *condition.left_expr.select, stmt, tables);
     if (rc != RC::SUCCESS) {
       LOG_INFO("Cannot build sub query.");
       return rc;
@@ -137,7 +137,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   }
   else if (condition.right_expr.is_sq) {
     Stmt *stmt;
-    rc = SelectStmt::create(db, *condition.right_expr.select, stmt);
+    rc = SelectStmt::create(db, *condition.right_expr.select, stmt, tables);
     if (rc != RC::SUCCESS) {
       LOG_INFO("Cannot build sub query.");
       return rc;

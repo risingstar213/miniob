@@ -38,7 +38,7 @@ public:
   }
 
   virtual RC open() = 0;
-  virtual RC next() = 0;
+  virtual RC next(std::vector<Tuple *> *context = nullptr) = 0;
   virtual RC close() = 0;
 
   virtual std::vector<Tuple *> current_tuples() = 0;

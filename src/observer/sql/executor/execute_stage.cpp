@@ -299,6 +299,9 @@ IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
     Expression *left = filter_unit->left();
     Expression *right = filter_unit->right();
     CompOp comp = filter_unit->comp();
+    if (left == nullptr || right == nullptr) {
+      return nullptr;
+    }
     if (left->type() == ExprType::FIELD && right->type() == ExprType::VALUE) {
     } else if (left->type() == ExprType::VALUE && right->type() == ExprType::FIELD) {
       std::swap(left, right);

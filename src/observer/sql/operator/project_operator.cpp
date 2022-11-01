@@ -39,17 +39,17 @@ RC ProjectOperator::open()
   return RC::SUCCESS;
 }
 
-RC ProjectOperator::next()
+RC ProjectOperator::next(std::vector<Tuple *> *context)
 {
   if (!is_aggregation_) {
-    RC rc =  children_[0]->next();
+    RC rc =  children_[0]->next(context);
     if (rc == RC::SUCCESS) {
       tuple_.set_tuples(children_[0]->current_tuples());
     }
     return rc;
   } else {
     bool start = true;
-    while (children_[0]->next() == RC::SUCCESS) {
+    while (children_[0]->next(context) == RC::SUCCESS) {
       tuple_.set_tuples(children_[0]->current_tuples());
       start = false;
     }

@@ -30,12 +30,12 @@ RC PredicateOperator::open()
   return children_[0]->open();
 }
 
-RC PredicateOperator::next()
+RC PredicateOperator::next(std::vector<Tuple *> *context)
 {
   RC rc = RC::SUCCESS;
   Operator *oper = children_[0];
   
-  while (RC::SUCCESS == (rc = oper->next())) {
+  while (RC::SUCCESS == (rc = oper->next(context))) {
     std::vector<Tuple *> tuples = oper->current_tuples();
     if (nullptr == tuples[0]) {
       rc = RC::INTERNAL;
@@ -43,6 +43,9 @@ RC PredicateOperator::next()
       break;
     }
     bool result;
+    if (context != nullptr) {
+      tuples.insert(tuples.end(), context->begin(), context->end());
+    }
     rc = do_predicate(tuples, result);
     if (rc != RC::SUCCESS) {
       return rc;
@@ -94,6 +97,7 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
     int compare;
     if (comp <= GREAT_THAN) {
       compare = left_cell.compare(right_cell);
+      LOG_INFO("%p, compare: %d, %d", this, *(int *)left_cell.data(), *(int *)right_cell.data());
       if (is_null((char *)&compare)) {
         result =  false;
         return rc;
@@ -150,7 +154,7 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
         return RC::INVALID_ARGUMENT;
       }
       SqueryExpr *rexpr = (SqueryExpr *)right_expr;
-      rc = rexpr->exsits_cmp(filter_result);
+      rc = rexpr->exsits_cmp(tuples, filter_result);
       if (rc != RC::SUCCESS) {
         return rc;
       }
@@ -160,7 +164,7 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
         return RC::INVALID_ARGUMENT;
       }
       SqueryExpr *rexpr = (SqueryExpr *)right_expr;
-      rc = rexpr->exsits_cmp(filter_result);
+      rc = rexpr->exsits_cmp(tuples, filter_result);
       if (rc != RC::SUCCESS) {
         return rc;
       }
@@ -174,7 +178,7 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
         filter_result = false;
       } else {
         SqueryExpr *rexpr = (SqueryExpr *)right_expr;
-        rc = rexpr->in_cmp(left_cell, filter_result);
+        rc = rexpr->in_cmp(left_cell, tuples, filter_result);
         if (rc != RC::SUCCESS) {
           return rc;
         }
@@ -188,7 +192,7 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
         filter_result = false;
       } else {
         SqueryExpr *rexpr = (SqueryExpr *)right_expr;
-        rc = rexpr->not_in_cmp(left_cell, filter_result);
+        rc = rexpr->not_in_cmp(left_cell, tuples, filter_result);
         if (rc != RC::SUCCESS) {
           return rc;
         }

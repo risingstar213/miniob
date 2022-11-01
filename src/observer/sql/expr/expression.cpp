@@ -118,10 +118,13 @@ RC SqueryExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) con
     return rc;
   }
   int count = 0;
-  while ((rc = oper_->next()) == RC::SUCCESS) {
+  while ((rc = oper_->next(const_cast<std::vector<Tuple *>* >(&tuples))) == RC::SUCCESS) {
+    Tuple *tuple = oper_->current_tuples()[0];
+    tuple->cell_at(0, cell);
     count += 1;
   }
   if (count > 1) {
+    oper_->close();
     LOG_INFO("This type of select sq is not allowed");
     return RC::INVALID_ARGUMENT;
   }
@@ -132,10 +135,9 @@ RC SqueryExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) con
     cell.set_data((char *)data);
     cell.set_length(4);
     cell.set_type(INTS);
-  } else {
-    Tuple *tuple = oper_->current_tuples()[0];
-    tuple->cell_at(0, cell);
   }
+
+  oper_->close();
   if (rc != RC::RECORD_EOF) {
     return RC::INVALID_ARGUMENT;
   } else {
@@ -143,7 +145,7 @@ RC SqueryExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) con
   }
 }
 
-RC SqueryExpr::exsits_cmp(bool &result)
+RC SqueryExpr::exsits_cmp(const std::vector<Tuple *> tuples, bool &result)
 {
   RC rc = RC::SUCCESS;
   if (is_list_) {
@@ -154,7 +156,7 @@ RC SqueryExpr::exsits_cmp(bool &result)
     return rc;
   }
   int count = 0;
-  while ((rc = oper_->next()) == RC::SUCCESS) {
+  while ((rc = oper_->next(const_cast<std::vector<Tuple *>* >(&tuples))) == RC::SUCCESS) {
     Tuple *tuple = oper_->current_tuples()[0];
     TupleCell cell;
     bool null_record = true;
@@ -173,6 +175,7 @@ RC SqueryExpr::exsits_cmp(bool &result)
   } else {
     result = false;
   }
+  oper_->close();
   // *** maybe invalid argument ***
   if (rc != RC::RECORD_EOF) {
     return RC::INVALID_ARGUMENT;
@@ -180,7 +183,7 @@ RC SqueryExpr::exsits_cmp(bool &result)
     return RC::SUCCESS;
   }
 }
-RC SqueryExpr::in_cmp(TupleCell cell, bool &result)
+RC SqueryExpr::in_cmp(TupleCell cell, const std::vector<Tuple *> tuples, bool &result)
 {
   result = false;
   if (is_list_) {
@@ -207,7 +210,7 @@ RC SqueryExpr::in_cmp(TupleCell cell, bool &result)
   if (rc != RC::SUCCESS) {
     return rc;
   }
-  while ((rc = oper_->next()) == RC::SUCCESS) {
+  while ((rc = oper_->next(const_cast<std::vector<Tuple *>* >(&tuples))) == RC::SUCCESS) {
     Tuple *tuple = oper_->current_tuples()[0];
     TupleCell cmp_cell;
     tuple->cell_at(0, cmp_cell);
@@ -229,7 +232,7 @@ RC SqueryExpr::in_cmp(TupleCell cell, bool &result)
   }
 }
 
-RC SqueryExpr::not_in_cmp(TupleCell cell, bool &result)
+RC SqueryExpr::not_in_cmp(TupleCell cell, const std::vector<Tuple *> tuples, bool &result)
 {
   result = true;
   if (is_list_) {
@@ -257,7 +260,7 @@ RC SqueryExpr::not_in_cmp(TupleCell cell, bool &result)
   if (rc != RC::SUCCESS) {
     return rc;
   }
-  while ((rc = oper_->next()) == RC::SUCCESS) {
+  while ((rc = oper_->next(const_cast<std::vector<Tuple *>* >(&tuples))) == RC::SUCCESS) {
     Tuple *tuple = oper_->current_tuples()[0];
     TupleCell cmp_cell;
     tuple->cell_at(0, cmp_cell);

@@ -56,7 +56,7 @@ RC IndexScanOperator::open()
   return RC::SUCCESS;
 }
 
-RC IndexScanOperator::next()
+RC IndexScanOperator::next(std::vector<Tuple *> *context)
 {
   RID rid;
   RC rc = index_scanner_->next_entry(&rid);

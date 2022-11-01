@@ -218,9 +218,9 @@ public:
   RC get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const override;
   void update_value(const std::vector<Tuple *> tuples) {}
 
-  RC exsits_cmp(bool &result);
-  RC in_cmp(TupleCell cell, bool &result);
-  RC not_in_cmp(TupleCell cell, bool &result);
+  RC exsits_cmp(const std::vector<Tuple *> tuples, bool &result);
+  RC in_cmp(TupleCell cell, const std::vector<Tuple *> tuples, bool &result);
+  RC not_in_cmp(TupleCell cell, const std::vector<Tuple *> tuples, bool &result);
 
   bool is_null() const {
     return false;

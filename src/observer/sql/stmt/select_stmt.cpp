@@ -45,7 +45,7 @@ static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::
   }
 }
 
-RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
+RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_map<std::string, Table *> *context)
 {
   LOG_INFO("SelectStmt::create");
   // if (select_sql.is_valid == false) {
@@ -206,6 +206,9 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt)
 
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
+  if (context != nullptr) {
+    table_map.insert(context->begin(), context->end());
+  }
   RC rc = FilterStmt::create(db, default_table, &table_map,
            select_sql.conditions, select_sql.condition_num, filter_stmt);
   if (rc != RC::SUCCESS) {
