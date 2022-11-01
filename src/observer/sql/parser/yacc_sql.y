@@ -110,6 +110,7 @@ typedef std::deque<char *> IdList;
         FROM
         WHERE
         AND
+		OR
         SET
         NOT
         LIKE
@@ -192,7 +193,9 @@ typedef std::deque<char *> IdList;
 
 %type <values1> value_list;
 %type <conditions1> where;
-%type <conditions1> condition_list;
+%type <conditions1> or_where;
+%type <conditions1> and_condition_list;
+%type <conditions1> or_condition_list;
 %type <conditions1> join_condition_list;
 %type <joins1> join_list;
 %type <ids1> id_list;
@@ -559,6 +562,26 @@ select:				/*  select 语句的语法解析树*/
 			delete $5;
 
 	}
+	| SELECT select_expr_list FROM ID rel_list or_where
+		{
+			$$ = new Selects();
+			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
+			$5->push_back($4);
+			selects_append_relation($$, *$5);
+
+			selects_append_select_exprs($$, *$2);
+
+            selects_append_joins($$, JoinList());
+
+			selects_append_conditions($$, *$6, true);
+
+			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
+			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
+			delete $2;
+			delete $6;
+			delete $5;
+
+	}
 	| SELECT select_expr_list FROM ID join_list where {
 		// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			$$ = new Selects();
@@ -782,7 +805,7 @@ join_list:
 	;
 
 join_condition_list:
-	ON condition condition_list {
+	ON condition and_condition_list {
 		$$ = $3;
 		$$->push_front(*$2);
 
@@ -794,13 +817,18 @@ where:
     /* empty */ {
 		$$ = new ConditionList();
 	}
-    | WHERE condition condition_list {
+    | WHERE condition and_condition_list {
 		$$ = $3;
 		$$->push_front(*$2);
 		delete $2;
 	}
     ;
 
+or_where:
+	WHERE or_condition_list {
+		$$ = $2;
+	}
+	;
 condition_expr:
 	select_arith_expr {
 		$$ = new ConditionExpr();
@@ -812,16 +840,31 @@ condition_expr:
 		condition_expr_init_sq($$, $2);
 	}
 	;
-condition_list:
+and_condition_list:
     /* empty */ {
 		$$ = new ConditionList();
 	}
-    | AND condition condition_list {
+    | AND condition and_condition_list {
 		$$ = $3;
 		$$->push_front(*$2);
 		delete $2;
 	}
     ;
+
+or_condition_list:
+	condition OR condition {
+		$$ = new ConditionList();
+		$$->push_back(*$1);
+		$$->push_back(*$3);
+		delete $1;
+		delete $3;
+	}
+	| or_condition_list OR condition {
+		$$ = $1;
+		$$->push_back(*$3);
+		delete $3;
+	}
+	;
 condition:
     condition_expr comOp condition_expr
 	{

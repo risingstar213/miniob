@@ -349,13 +349,14 @@ void selects_append_relation(Selects *selects, std::deque<char *> relation_names
   selects->relation_num = relation_names.size();
 }
 
-void selects_append_conditions(Selects *selects, std::deque<Condition> conditions)
+void selects_append_conditions(Selects *selects, std::deque<Condition> conditions, bool is_or)
 {
   assert(conditions.size() <= sizeof(selects->conditions) / sizeof(selects->conditions[0]));
   for (size_t i = 0; i < conditions.size(); i++) {
     selects->conditions[i] = conditions[i];
   }
   selects->condition_num = conditions.size();
+  selects->is_or = is_or;
 }
 
 void selects_append_joins(Selects *selects, std::deque<Join> joins)

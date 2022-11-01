@@ -201,12 +201,16 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
       LOG_WARN("invalid compare type: %d", comp);
     } break;
     }
-    if (!filter_result) {
+    if (!filter_stmt_->is_or() && !filter_result) {
       result = false;
-      return rc;;
+      return rc;
+    }
+    if (filter_stmt_->is_or() && filter_result) {
+      result = true;
+      return rc;
     }
   }
-  result = true;
+  result = !filter_stmt_->is_or();
   return rc;
 }
 

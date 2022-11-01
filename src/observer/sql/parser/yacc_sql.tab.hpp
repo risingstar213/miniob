@@ -104,42 +104,43 @@ typedef std::deque<char *> IdList;
     FROM = 290,
     WHERE = 291,
     AND = 292,
-    SET = 293,
-    NOT = 294,
-    LIKE = 295,
-    INNER = 296,
-    JOIN = 297,
-    ON = 298,
-    LOAD = 299,
-    DATA = 300,
-    INFILE = 301,
-    UNIQUE = 302,
-    MAX = 303,
-    MIN = 304,
-    SUM = 305,
-    COUNT = 306,
-    AVG = 307,
-    ADD_OP = 308,
-    SUB_OP = 309,
-    DIV_OP = 310,
-    IN = 311,
-    EXISTS = 312,
-    EQ = 313,
-    LT = 314,
-    GT = 315,
-    LE = 316,
-    GE = 317,
-    NE = 318,
-    NUMBER = 319,
-    FLOAT = 320,
-    DATE_DATA = 321,
-    ID = 322,
-    PATH = 323,
-    SSS = 324,
-    LIKE_SSS = 325,
-    STAR = 326,
-    STRING_V = 327,
-    UNARYMINUS = 328
+    OR = 293,
+    SET = 294,
+    NOT = 295,
+    LIKE = 296,
+    INNER = 297,
+    JOIN = 298,
+    ON = 299,
+    LOAD = 300,
+    DATA = 301,
+    INFILE = 302,
+    UNIQUE = 303,
+    MAX = 304,
+    MIN = 305,
+    SUM = 306,
+    COUNT = 307,
+    AVG = 308,
+    ADD_OP = 309,
+    SUB_OP = 310,
+    DIV_OP = 311,
+    IN = 312,
+    EXISTS = 313,
+    EQ = 314,
+    LT = 315,
+    GT = 316,
+    LE = 317,
+    GE = 318,
+    NE = 319,
+    NUMBER = 320,
+    FLOAT = 321,
+    DATE_DATA = 322,
+    ID = 323,
+    PATH = 324,
+    SSS = 325,
+    LIKE_SSS = 326,
+    STAR = 327,
+    STRING_V = 328,
+    UNARYMINUS = 329
   };
 #endif
 
@@ -148,7 +149,7 @@ typedef std::deque<char *> IdList;
 
 union YYSTYPE
 {
-#line 140 "yacc_sql.y" /* yacc.c:1909  */
+#line 141 "yacc_sql.y" /* yacc.c:1909  */
 
   RelAttr *attr1;
   Condition *condition1;
@@ -172,7 +173,7 @@ union YYSTYPE
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
 
-#line 176 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 177 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

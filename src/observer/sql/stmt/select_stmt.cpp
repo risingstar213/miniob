@@ -210,7 +210,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
     table_map.insert(context->begin(), context->end());
   }
   RC rc = FilterStmt::create(db, default_table, &table_map,
-           select_sql.conditions, select_sql.condition_num, filter_stmt);
+           select_sql.conditions, select_sql.condition_num, filter_stmt, select_sql.is_or);
   if (rc != RC::SUCCESS) {
     LOG_WARN("cannot construct filter stmt");
     return rc;

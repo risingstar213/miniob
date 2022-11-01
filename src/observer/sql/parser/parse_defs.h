@@ -160,6 +160,7 @@ struct _Selects {
   size_t join_num;                // Length of joins in join clause
   Join join[MAX_NUM];
   size_t condition_num;           // Length of conditions in Where clause
+  bool is_or;
   Condition conditions[MAX_NUM];  // conditions in Where clause
 };
 
@@ -337,7 +338,7 @@ void join_destroy(Join *join);
 void selects_init(Selects *selects, ...);
 void selects_append_select_exprs(Selects *selects, std::deque<SelectExpr> select_exprs);
 void selects_append_relation(Selects *selects, std::deque<char *> relation_names);
-void selects_append_conditions(Selects *selects, std::deque<Condition> conditions);
+void selects_append_conditions(Selects *selects, std::deque<Condition> conditions, bool is_or = false);
 void selects_append_joins(Selects *selects, std::deque<Join> joins);
 void selects_destroy(Selects *selects);
 
