@@ -75,7 +75,11 @@ typedef std::deque<char *> IdList;
 %parse-param { void *scanner }
 
 //标识tokens
-%token  IS
+%token  ORDER
+		BY 
+		ASC
+		DESC
+		IS
 		NULL_
 		NULLABLE
 		SEMICOLON
@@ -158,6 +162,7 @@ typedef std::deque<char *> IdList;
   UpdateValueList *updatevaluelist1;
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
+  OrderCol *ocol; 		// order column
 }
 
 %token <string1> NUMBER
@@ -185,6 +190,9 @@ typedef std::deque<char *> IdList;
 %type <select1> select;
 %type <updatevalue1> update_value;
 %type <selectexpr1> select_arith_expr;
+%type <ocol> order_col
+%type <ocol_list> order
+%type <ocol_list> order_col_list
 
 %type <values1> value_list;
 %type <conditions1> where;
@@ -734,6 +742,41 @@ rel_attr:
 		$$ = $1;
 	}
 	;
+/*************************** ORDER BY ****************************/
+order:
+	/* empty */
+	{
+		$$ = new OrderColList;
+	}
+	| ORDER BY order_col[ocol] order_col_list[ocolist] {
+		$$ = $ocolist;
+		$$->push_front($ocol);
+	}
+	;
+
+order_col_list:
+	/* empty */
+	{
+		$$ = new OrderColList;
+	}
+	| COMMA order_col[ocol] order_col_list[ocolist] {
+		$$ = $ocolist;
+		$$->push_front($ocol);
+	}
+	;
+
+order_col:
+	rel_attr {
+		$$ = (OrderCol *)malloc(sizeof(OrderCol));
+		order_col_init($$, $1, 1);
+	}
+	| rel_attr ASC {
+		$$ = (OrderCol *)malloc(sizeof(OrderCol));
+		order_col_init($$, $1, 1);
+	} rel_attr DESC {
+		$$ = (OrderCol *)malloc(sizeof(OrderCol));
+		order_col_init($$, $1, 0);
+	}
 
 attr_list:
     /* empty */ {
@@ -806,6 +849,7 @@ condition_list:
 		delete $2;
 	}
     ;
+
 condition:
     select_arith_expr comOp select_arith_expr
 	{

@@ -44,6 +44,7 @@ public:
   std::vector<SelectExpr> &select_exprs() { return select_exprs_; }
   FilterStmt *filter_stmt() const { return filter_stmt_; }
   std::vector<JoinStmt *> join_stmts() { return join_stmts_; }
+  std::vector<OrderCol *> order_cols() { return order_cols_; }
   bool is_aggregations() { return is_aggregations_; }
 
 private:
@@ -53,6 +54,7 @@ private:
   std::vector<Table *> tables_;
   std::vector<SelectExpr> select_exprs_;
   std::vector<JoinStmt *> join_stmts_;
+  std::vector<OrderCol *> order_cols_; 
   FilterStmt *filter_stmt_ = nullptr;
 };
 

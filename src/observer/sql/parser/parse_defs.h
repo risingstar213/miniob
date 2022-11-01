@@ -26,12 +26,14 @@ typedef struct _RelAttr RelAttr;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
+typedef struct _OrderCol OrderCol;
 typedef struct _UpdateValue UpdateValue;
 typedef struct _SelectExpr SelectExpr;
 typedef struct _ConditionExpr ConditionExpr;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
+typedef std::deque<OrderCol> OrderColList;
 
 #define MAX_NUM 20
 #define MAX_REL_NAME 20
@@ -136,6 +138,12 @@ struct _ConditionExpr {
 
 };
 
+// struct of orderCol
+struct _OrderCol {
+  RelAttr *attr;
+  int asc; // 1: 升序；0：降序
+};
+
 // struct of join
 struct _Join {
   char *relation_name;
@@ -153,6 +161,8 @@ struct _Selects {
   Join join[MAX_NUM];
   size_t condition_num;           // Length of conditions in Where clause
   Condition conditions[MAX_NUM];  // conditions in Where clause
+  size_t order_col_num;
+  OrderCol order_col[MAX_NUM];     // the columns ordered by
 };
 
 struct _UpdateValue {
@@ -301,6 +311,9 @@ void value_destroy(Value *value);
 void value_init_date(Value *value, const char *v);
 void value_init_null(Value *value);
 
+void order_col_init(OrderCol *col, RelAttr *attr, int asc_flag);
+void order_col_destory(OrderCol *col);
+
 void select_attr_init(SelectExpr *expr, RelAttr *attr);
 void select_value_init(SelectExpr *expr, Value *value);
 void select_subexpr_init(SelectExpr *expr, SelectExpr *left, SelectExpr *right, ArithOp op);
@@ -325,6 +338,7 @@ void selects_append_select_exprs(Selects *selects, std::deque<SelectExpr> select
 void selects_append_relation(Selects *selects, std::deque<char *> relation_names);
 void selects_append_conditions(Selects *selects, std::deque<Condition> conditions);
 void selects_append_joins(Selects *selects, std::deque<Join> joins);
+void selects_append_ordercols(Selects *selects, std::deque<OrderCol> cols);
 void selects_destroy(Selects *selects);
 
 void inserts_row_init(Rows *rows, std::deque<Value> values);

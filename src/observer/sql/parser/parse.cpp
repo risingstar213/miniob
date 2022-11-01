@@ -25,6 +25,16 @@ RC parse(char *st, Query *sqln);
 // #ifdef __cplusplus
 // extern "C" {
 // #endif  // __cplusplus
+void order_col_init(OrderCol *col, RelAttr *attr, int asc_flag) {
+  col->attr = attr;
+  col->asc = asc_flag;
+}
+
+void order_col_destory(OrderCol *col) {
+  relation_attr_destroy(col->attr);
+  free(col);
+}
+
 void select_attr_init(SelectExpr *expr, RelAttr *attr)
 {
   LOG_INFO("select_attr_init: %s", attr->attribute_name);
@@ -307,6 +317,13 @@ void selects_append_joins(Selects *selects, std::deque<Join> joins)
     selects->join[i] = joins[i];
   }
   selects->join_num = joins.size();
+}
+
+void selects_append_ordercols(Selects *selects, std::deque<OrderCol> cols) {
+  for (size_t i = 0; i < cols.size(); i++) {
+    selects->order_col[selects->order_col_num++] = cols[i];
+  }
+  selects->order_col_num = cols.size();
 }
 
 void selects_destroy(Selects *selects)
