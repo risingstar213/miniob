@@ -26,7 +26,7 @@ class FilterStmt;
 class JoinStmt;
 class Db;
 class Table;
-
+class Expression;
 class SelectStmt : public Stmt
 {
 public:
@@ -46,6 +46,9 @@ public:
   FilterStmt *filter_stmt() const { return filter_stmt_; }
   std::vector<JoinStmt *> join_stmts() { return join_stmts_; }
   bool is_aggregations() { return is_aggregations_; }
+  std::vector<Expression *> group_expresions() { return group_expresions_; }
+  FilterStmt *having_filter() { return having_filter_; }
+
 
 private:
   // std::vector<Field> query_fields_;
@@ -54,6 +57,8 @@ private:
   std::vector<Table *> tables_;
   std::vector<SelectExpr> select_exprs_;
   std::vector<JoinStmt *> join_stmts_;
+  std::vector<Expression *> group_expresions_;
+  FilterStmt *having_filter_ = nullptr; // for having
   FilterStmt *filter_stmt_ = nullptr;
 };
 

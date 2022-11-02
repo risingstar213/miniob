@@ -26,6 +26,7 @@ typedef struct _RelAttr RelAttr;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
+typedef struct _GroupBy GroupBy;
 typedef struct _UpdateValue UpdateValue;
 typedef struct _SelectExpr SelectExpr;
 typedef struct _ConditionExpr ConditionExpr;
@@ -151,6 +152,13 @@ struct _Join {
   Condition conditions[MAX_NUM];
 };
 
+struct _GroupBy {
+  size_t group_num;
+  RelAttr group_attr[MAX_NUM];
+  size_t condition_num;
+  Condition conditions[MAX_NUM];
+};
+
 // struct of select
 struct _Selects {
   size_t select_expr_num;                // Length of attrs in Select clause and length of aggregations
@@ -159,9 +167,10 @@ struct _Selects {
   char *relations[MAX_NUM];       // relations in From clause
   size_t join_num;                // Length of joins in join clause
   Join join[MAX_NUM];
-  size_t condition_num;           // Length of conditions in Where clause
   bool is_or;
+  size_t condition_num;           // Length of conditions in Where clause
   Condition conditions[MAX_NUM];  // conditions in Where clause
+  GroupBy *group_by;
 };
 
 struct _UpdateValue {
@@ -335,11 +344,15 @@ void join_set_relation(Join *join, const char *relation_name);
 void join_append_conditions(Join *join, std::deque<Condition> conditions);
 void join_destroy(Join *join);
 
+void group_init(GroupBy *group, std::deque<RelAttr> attr, std::deque<Condition> condition);
+void group_destroy(GroupBy *group);
+
 void selects_init(Selects *selects, ...);
 void selects_append_select_exprs(Selects *selects, std::deque<SelectExpr> select_exprs);
 void selects_append_relation(Selects *selects, std::deque<char *> relation_names);
 void selects_append_conditions(Selects *selects, std::deque<Condition> conditions, bool is_or = false);
 void selects_append_joins(Selects *selects, std::deque<Join> joins);
+void selects_append_groupby(Selects *selects, GroupBy *group);
 void selects_destroy(Selects *selects);
 
 void inserts_row_init(Rows *rows, std::deque<Value> values);

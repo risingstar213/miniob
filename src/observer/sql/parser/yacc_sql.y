@@ -59,6 +59,7 @@ typedef struct _Join Join;
 typedef struct _UpdateValue UpdateValue;
 typedef struct _SelectExpr SelectExpr;
 typedef struct _ConditionExpr ConditionExpr;
+typedef struct _GroupBy GroupBy;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
@@ -131,6 +132,9 @@ typedef std::deque<char *> IdList;
 		DIV_OP
 		IN
 		EXISTS
+		GROUP
+		BY
+		HAVING
         EQ
         LT
         GT
@@ -147,6 +151,7 @@ typedef std::deque<char *> IdList;
   UpdateValue *updatevalue1;
   SelectExpr *selectexpr1;
   ConditionExpr *conditionexpr1;
+  GroupBy *groupby1;
   char *string1;
   int number1;
   float floats1;
@@ -190,10 +195,12 @@ typedef std::deque<char *> IdList;
 %type <updatevalue1> update_value;
 %type <selectexpr1> select_arith_expr;
 %type <conditionexpr1> condition_expr;
+%type <groupby1> groupby;
 
 %type <values1> value_list;
 %type <conditions1> where;
 %type <conditions1> or_where;
+%type <conditions1> having;
 %type <conditions1> and_condition_list;
 %type <conditions1> or_condition_list;
 %type <conditions1> join_condition_list;
@@ -542,7 +549,7 @@ update_value:
 	;
 
 select:				/*  select 语句的语法解析树*/
-    SELECT select_expr_list FROM ID rel_list where
+    SELECT select_expr_list FROM ID rel_list where groupby
 		{
 			$$ = new Selects();
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
@@ -554,6 +561,8 @@ select:				/*  select 语句的语法解析树*/
             selects_append_joins($$, JoinList());
 
 			selects_append_conditions($$, *$6);
+
+			selects_append_groupby($$, $7);
 
 			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
@@ -575,6 +584,8 @@ select:				/*  select 语句的语法解析树*/
 
 			selects_append_conditions($$, *$6, true);
 
+			selects_append_groupby($$, nullptr);
+
 			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
 			delete $2;
@@ -594,6 +605,8 @@ select:				/*  select 语句的语法解析树*/
             selects_append_joins($$, *$5);
 
 			selects_append_conditions($$, *$6);
+
+			selects_append_groupby($$, nullptr);
 
 			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
@@ -810,6 +823,32 @@ join_condition_list:
 		$$->push_front(*$2);
 
 		delete $2;
+	}
+	;
+
+having:
+	/* empty */{
+		$$ = new ConditionList();
+	}
+	| HAVING condition and_condition_list {
+		$$ = $3;
+		$$->push_front(*$2);
+		delete $2;
+	}
+	;
+
+
+groupby:
+	/* empty */{
+		$$ = nullptr;
+	}
+	| GROUP BY rel_attr attr_list having {
+		$$ = new GroupBy();
+		$4->push_front(*$3);
+		delete $3;
+		group_init($$, *$4, *$5);
+		delete $4;
+		delete $5;
 	}
 	;
 

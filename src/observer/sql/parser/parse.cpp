@@ -332,6 +332,30 @@ void join_destroy(Join *join)
   join->condition_num = 0;
 }
 
+void group_init(GroupBy *group, std::deque<RelAttr> attr, std::deque<Condition> condition)
+{
+  for (size_t i = 0; i < attr.size(); i++) {
+    group->group_attr[i] = attr[i];
+  }
+  group->group_num = attr.size();
+  for (size_t i = 0; i < condition.size(); i++) {
+    group->conditions[i] = condition[i];
+  }
+  group->condition_num = condition.size();
+}
+
+void group_destroy(GroupBy *group)
+{
+  for (int i = 0; i < group->group_num; i++) {
+    relation_attr_destroy(&group->group_attr[i]);
+  }
+  group->group_num = 0;
+  for (int i = 0; i < group->condition_num; i++) {
+    condition_destroy(&group->conditions[i]);
+  }
+  group->condition_num = 0;
+}
+
 void selects_init(Selects *selects, ...);
 
 void selects_append_select_exprs(Selects *selects, std::deque<SelectExpr> select_exprs)
@@ -367,6 +391,11 @@ void selects_append_joins(Selects *selects, std::deque<Join> joins)
   selects->join_num = joins.size();
 }
 
+void selects_append_groupby(Selects *selects, GroupBy *group)
+{
+  selects->group_by = group;
+}
+
 void selects_destroy(Selects *selects)
 {
   for (size_t i = 0; i < selects->select_expr_num; i++) {
@@ -389,6 +418,11 @@ void selects_destroy(Selects *selects)
     join_destroy(&selects->join[i]);
   }
   selects->join_num = 0;
+  if (selects->group_by != nullptr) {
+    group_destroy(selects->group_by);
+    delete selects->group_by;
+    selects->group_by = nullptr;
+  }
 }
 
 

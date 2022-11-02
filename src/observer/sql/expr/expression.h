@@ -14,6 +14,9 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#ifndef _EXPRESSION_H_
+#define _EXPRESSION_H_
+
 #include <string.h>
 #include <vector>
 #include "storage/common/field.h"
@@ -250,3 +253,6 @@ private:
   Operator *oper_ = nullptr;
   ValueList *list_ = nullptr;
 };
+
+
+#endif

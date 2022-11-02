@@ -38,9 +38,9 @@ std::string double2string(double v)
 
 bool is_null(const char *v)
 {
-  if (v == nullptr) {
-    return true;
-  }
+  // if (v == nullptr) {
+  //   return true;
+  // }
   if (*((int *)v) == NULL_CONST) {
     return true;
   }

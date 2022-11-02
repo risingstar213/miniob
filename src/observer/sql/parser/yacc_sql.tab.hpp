@@ -52,6 +52,7 @@ typedef struct _Join Join;
 typedef struct _UpdateValue UpdateValue;
 typedef struct _SelectExpr SelectExpr;
 typedef struct _ConditionExpr ConditionExpr;
+typedef struct _GroupBy GroupBy;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
@@ -62,7 +63,7 @@ typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
 // typedef std::string String;
 
-#line 66 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 67 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -125,22 +126,25 @@ typedef std::deque<char *> IdList;
     DIV_OP = 311,
     IN = 312,
     EXISTS = 313,
-    EQ = 314,
-    LT = 315,
-    GT = 316,
-    LE = 317,
-    GE = 318,
-    NE = 319,
-    NUMBER = 320,
-    FLOAT = 321,
-    DATE_DATA = 322,
-    ID = 323,
-    PATH = 324,
-    SSS = 325,
-    LIKE_SSS = 326,
-    STAR = 327,
-    STRING_V = 328,
-    UNARYMINUS = 329
+    GROUP = 314,
+    BY = 315,
+    HAVING = 316,
+    EQ = 317,
+    LT = 318,
+    GT = 319,
+    LE = 320,
+    GE = 321,
+    NE = 322,
+    NUMBER = 323,
+    FLOAT = 324,
+    DATE_DATA = 325,
+    ID = 326,
+    PATH = 327,
+    SSS = 328,
+    LIKE_SSS = 329,
+    STAR = 330,
+    STRING_V = 331,
+    UNARYMINUS = 332
   };
 #endif
 
@@ -149,7 +153,7 @@ typedef std::deque<char *> IdList;
 
 union YYSTYPE
 {
-#line 141 "yacc_sql.y" /* yacc.c:1909  */
+#line 145 "yacc_sql.y" /* yacc.c:1909  */
 
   RelAttr *attr1;
   Condition *condition1;
@@ -159,6 +163,7 @@ union YYSTYPE
   UpdateValue *updatevalue1;
   SelectExpr *selectexpr1;
   ConditionExpr *conditionexpr1;
+  GroupBy *groupby1;
   char *string1;
   int number1;
   float floats1;
@@ -173,7 +178,7 @@ union YYSTYPE
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
 
-#line 177 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 182 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

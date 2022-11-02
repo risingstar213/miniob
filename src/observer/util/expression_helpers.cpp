@@ -8,9 +8,19 @@
 #include "common/lang/string.h"
 #include "storage/common/field.h"
 
+static bool check_field(Field &rel_field, Field &target_field)
+{
+  if (strcmp(rel_field.table_name(), target_field.table_name()) == 0) {
+    if (strcmp(rel_field.field_name(), target_field.field_name()) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table *> *tables, 
-          std::unordered_map<std::string, Table *> *tables_map)
+          std::unordered_map<std::string, Table *> *tables_map, std::vector<Field> *group_fields)
 {
   if (expr->is_value) {
     expr->type = expr->value->type;
@@ -47,33 +57,39 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
         return RC::INVALID_ARGUMENT;
       }
     }
+    Table * table;
     if (!common::is_blank(expr->attr->relation_name)) {
       auto iter = tables_map->find(expr->attr->relation_name);
       if (iter == tables_map->end()) {
         LOG_WARN("no such table in from list: %s", expr->attr->relation_name);
         return RC::SCHEMA_FIELD_MISSING;
       }
-      Table *table = iter->second;
-      const FieldMeta *field_meta = table->table_meta().field(expr->attr->attribute_name);
-      if (nullptr == field_meta) {
-        LOG_WARN("no such field. field=%s.%s", table->name(), expr->attr->attribute_name);
-        return RC::SCHEMA_FIELD_MISSING;
-      }
-      expr->field = new Field(table, field_meta);
+      table = iter->second;
     } else {
       if (tables->size() != 1) {
         LOG_WARN("invalid. I do not know the attr's table. attr=%s", expr->attr->attribute_name);
         return RC::SCHEMA_FIELD_MISSING;
       }
 
-      Table *table = (*tables)[0];
-      const FieldMeta *field_meta = table->table_meta().field(expr->attr->attribute_name);
-      if (nullptr == field_meta) {
-        LOG_WARN("no such field. field=%s.%s", table->name(), expr->attr->attribute_name);
-        return RC::SCHEMA_FIELD_MISSING;
-      }
-      expr->field = new Field(table, field_meta);
+      table = (*tables)[0];
     }
+
+    const FieldMeta *field_meta = table->table_meta().field(expr->attr->attribute_name);
+    if (nullptr == field_meta) {
+      LOG_WARN("no such field. field=%s.%s", table->name(), expr->attr->attribute_name);
+      return RC::SCHEMA_FIELD_MISSING;
+    }
+    expr->field = new Field(table, field_meta);
+
+    // check group by field
+    if (group_fields != nullptr) {
+      for (auto &field : *group_fields) {
+        if (check_field(*expr->field, field)) {
+          expr->aggregation_num += 1;
+        }
+      }
+    }
+
     expr->type = expr->field->attr_type();
     return RC::SUCCESS;
   }

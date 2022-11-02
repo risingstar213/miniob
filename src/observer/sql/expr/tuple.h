@@ -211,10 +211,10 @@ public:
       LOG_INFO("index is wrong");
       return RC::GENERIC_ERROR;
     }
-    if (tuples_.size() == 0) {
-      LOG_INFO("tuples is empty");
-      return RC::GENERIC_ERROR;
-    }
+    // if (tuples_.size() == 0) {
+    //   LOG_INFO("tuples is empty");
+    //   return RC::GENERIC_ERROR;
+    // }
     LOG_INFO("project cell at");
     const TupleCellSpec *spec = speces_[index];
     return spec->expression()->get_value(tuples_, cell);
