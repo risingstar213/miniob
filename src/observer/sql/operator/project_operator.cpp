@@ -45,7 +45,7 @@ RC ProjectOperator::open()
     return rc;
   }
 
-  // tuple_.reset_tuples();
+  tuple_.reset_tuples();
   has_run_ = false;
   return RC::SUCCESS;
 }
@@ -75,7 +75,9 @@ RC ProjectOperator::next(std::vector<Tuple *> *context)
   //   return RC::SUCCESS;
   // }
   RC rc;
-  tuple_.reset_tuples();
+  if (is_group_) {
+    tuple_.reset_tuples();
+  }
   while ((rc = child_->next(context)) == RC::SUCCESS) {
     if (child_->data_valid()) {
       tuple_.set_tuples(child_->current_tuples());
@@ -104,14 +106,14 @@ std::vector<Tuple *> ProjectOperator::current_tuples()
   return tuples;
 }
 
-void ProjectOperator::add_projection(bool multi_tables, SelectExpr *expr, bool is_aggregation)
+void ProjectOperator::add_projection(bool multi_tables, SelectExpr *expr, bool is_group)
 {
   // 对单表来说，展示的(alias) 字段总是字段名称，
   // 对多表查询来说，展示的alias 需要带表名字
   // LOG_INFO("add projection:%s agg:%d", field_meta->name(), agg);
   TupleCellSpec *spec = new TupleCellSpec(generate_expression(expr));
   spec->set_alias(generate_alias(multi_tables, expr));
-  is_aggregation_ = is_aggregation;
+  is_group_ = is_group;
   tuple_.add_cell_spec(spec);
 }
 

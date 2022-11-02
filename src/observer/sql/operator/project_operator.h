@@ -52,7 +52,7 @@ public:
   }
 private:
   ProjectTuple tuple_;
-  bool is_aggregation_ = false;
+  bool is_group_ = false;
   bool has_run_;
   // std::vector<Tuple> tuples_;
   GroupOperator *child_ = nullptr;

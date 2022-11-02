@@ -483,7 +483,7 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   int n = select_stmt->select_exprs().size();
   std::vector<SelectExpr> expressions = select_stmt->select_exprs();
   for (int i = 0; i < n; i++) {
-    project_oper.add_projection(multi_tables, &expressions[i], select_stmt->is_aggregations());
+    project_oper.add_projection(multi_tables, &expressions[i], select_stmt->group_expresions().size() > 0);
   }
 
   rc = project_oper.open();
