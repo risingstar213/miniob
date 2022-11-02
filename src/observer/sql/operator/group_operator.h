@@ -24,13 +24,20 @@ public:
 
   std::vector<Tuple *> current_tuples();
   // for having
-  RC do_having(std::vector<Tuple *> tuples, bool &result);
+  bool do_having();
 
   bool group_complete() { return group_complete_; }
   bool group_valid() { return group_valid_; }
   bool data_valid() { return data_valid_; }
 private:
+  void append_ref_cells();
+  bool compare_cells();
+  void clear_ref_cells();
+  void update_having_datas();
+  void reset_having_datas();
+
   std::unordered_set<int> set_;
+  std::vector<TupleCell> ref_cells_;
   int count_this_cycle_;
   bool started_;
   bool ended_;

@@ -472,9 +472,11 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
 
   PredicateOperator *pred_oper = new PredicateOperator(select_stmt->filter_stmt());
   pred_oper->add_child(top_oper);
+
   GroupOperator *group_oper = new GroupOperator(select_stmt->group_expresions(), 
           select_stmt->having_filter(), select_stmt->is_aggregations());
   group_oper->add_child(pred_oper);
+
   ProjectOperator project_oper;
   project_oper.add_child(group_oper);
 

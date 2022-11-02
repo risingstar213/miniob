@@ -27,6 +27,10 @@ RC FieldExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) cons
         return RC::SUCCESS;
       }
     }
+    if (has_updated) {
+      cell = cell_;
+      return RC::SUCCESS;
+    }
   } else {
     cell.set_data(AggFunc::get_data(agg_, data_, field_.attr_type()));
     cell.set_type(AggFunc::get_attrtype(agg_, field_.attr_type()));
@@ -51,6 +55,7 @@ void FieldExpr::update_value(const std::vector<Tuple *> tuples)
   if (agg_ != AGG_NONE) {
     AggFunc::add_data(agg_, data_, cell_.attr_type(), (char *)cell_.data(), cell_.length());
   }
+  has_updated = true;
 }
 
 RC ValueExpr::get_value(const std::vector<Tuple *> tuples, TupleCell & cell) const

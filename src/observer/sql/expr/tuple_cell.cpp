@@ -23,7 +23,7 @@ See the Mulan PSL v2 for more details. */
 
 void TupleCell::to_string(std::ostream &os) const
 {
-  if (is_null(data_)) {
+  if (::is_null(data_)) {
     os << "null";
     return;
   }
@@ -54,9 +54,44 @@ void TupleCell::to_string(std::ostream &os) const
   }
 }
 
+std::string TupleCell::to_string() const
+{
+  std::stringstream ss;
+  if (::is_null(data_)) {
+    ss << "null";
+    return ss.str();
+  }
+  switch (attr_type_) {
+  case INTS: {
+    ss << *(int *)data_;
+  } break;
+  case FLOATS: {
+    float v = *(float *)data_;
+    ss << double2string(v);
+  } break;
+  case TEXTS:
+  case CHARS: {
+    for (int i = 0; i < length_; i++) {
+      if (data_[i] == '\0') {
+        break;
+      }
+      ss << data_[i];
+    }
+  } break;
+  case DATES: {
+    Date v = *(Date *)data_;
+    ss << v.toString();
+  } break;
+  default: {
+    LOG_WARN("unsupported attr type: %d", attr_type_);
+  } break;
+  }
+  return ss.str();
+}
+
 int TupleCell::compare(const TupleCell &other) const
 {
-  if (is_null(data_) || is_null(other.data_)) {
+  if (is_null() || other.is_null()) {
     return NULL_CONST;
   }
   if (this->attr_type_ == other.attr_type_) {

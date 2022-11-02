@@ -62,6 +62,7 @@ public:
       data_ = new AggData;
       AggFunc::init_data(agg, data_, field_.attr_type());
     }
+    has_updated = false;
   }
 
   ~FieldExpr() {
@@ -106,6 +107,7 @@ public:
   }
 
   void reset_value() {
+    has_updated = false;
     if (agg_ != AGG_NONE) {
       AggFunc::destroy_data(agg_, data_, field_.attr_type());
       AggFunc::init_data(agg_, data_, field_.attr_type());
@@ -115,6 +117,7 @@ private:
   Field field_;
   TupleCell cell_;
   Aggregation agg_;
+  bool has_updated;
   AggData *data_;
 };
 

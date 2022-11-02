@@ -45,7 +45,7 @@ RC ProjectOperator::open()
     return rc;
   }
 
-  tuple_.reset_tuples();
+  // tuple_.reset_tuples();
   has_run_ = false;
   return RC::SUCCESS;
 }
@@ -75,6 +75,7 @@ RC ProjectOperator::next(std::vector<Tuple *> *context)
   //   return RC::SUCCESS;
   // }
   RC rc;
+  tuple_.reset_tuples();
   while ((rc = child_->next(context)) == RC::SUCCESS) {
     if (child_->data_valid()) {
       tuple_.set_tuples(child_->current_tuples());

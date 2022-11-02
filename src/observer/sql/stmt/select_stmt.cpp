@@ -125,8 +125,13 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
     RelAttr *rel_attrs = select_sql.group_by->group_attr;
     for (int i = 0; i < select_sql.group_by->group_num; i++) {
       Table *table;
-      if (!common::is_blank(rel_attrs[i].attribute_name)) {
-        auto iter = table_map.find(rel_attrs[i].attribute_name);
+      if (!common::is_blank(rel_attrs[i].relation_name)) {
+        LOG_INFO("group by: %s",rel_attrs[i].relation_name);
+        auto iter = table_map.find(rel_attrs[i].relation_name);
+        if (iter == table_map.end()) {
+          LOG_WARN("no such table in from list: %s", rel_attrs[i].relation_name);
+          return RC::SCHEMA_FIELD_MISSING;
+        }
         table = iter->second;
       } else {
         if (tables.size() != 1) {

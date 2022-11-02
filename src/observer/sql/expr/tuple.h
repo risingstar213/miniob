@@ -217,7 +217,8 @@ public:
     // }
     LOG_INFO("project cell at");
     const TupleCellSpec *spec = speces_[index];
-    return spec->expression()->get_value(tuples_, cell);
+    std::vector<Tuple *> tuples;
+    return spec->expression()->get_value(tuples, cell);
   }
 
   RC find_cell(const Field &field, TupleCell &cell) const override
@@ -243,6 +244,7 @@ public:
     for (auto &spec : speces_) {
       spec->expression()->reset_value();
     }
+    tuples_.clear();
   }
 private:
   std::vector<TupleCellSpec *> speces_;

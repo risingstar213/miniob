@@ -56,7 +56,9 @@ int compare_float(void *arg1, void *arg2, bool index = false)
 
 int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_length, bool index = false)
 {
-  if(!index && (is_null((char *)arg1) || is_null((char *)arg2))) {
+  bool left_null = strlen((char *)arg1) >= 4 && is_null((char *)arg1);
+  bool right_null = strlen((char *)arg2) >= 4 && is_null((char *)arg2);
+  if(!index && (left_null || right_null)) {
     return NULL_CONST;
   }
   const char *s1 = (const char *)arg1;
