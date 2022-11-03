@@ -444,7 +444,7 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   std::vector<JoinStmt *> join_tables = select_stmt->join_stmts();
   if (join_tables.size() > 0) {
     LOG_INFO("join num: %d", join_tables.size());
-    Operator *left_operator = new TableScanOperator(select_stmt->tables()[0]);
+    Operator *left_operator = new TableScanOperator(select_stmt->tables()[0].table);
     TableScanOperator *right_operator;
     JoinOperator *join_operator;
     for (size_t i = 0; i < join_tables.size(); i++) {
@@ -460,13 +460,13 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
     top_oper = new TablesScanOperator();
     Operator *child_oper;
     for (uint i = 0; i < select_stmt->tables().size(); i++) {
-      child_oper = new TableScanOperator(select_stmt->tables()[i]);
+      child_oper = new TableScanOperator(select_stmt->tables()[i].table);
       top_oper->add_child(child_oper);
     }
   } else {
     top_oper = try_to_create_index_scan_operator(select_stmt->filter_stmt());
     if (nullptr == top_oper) {
-      top_oper = new TableScanOperator(select_stmt->tables()[0]);
+      top_oper = new TableScanOperator(select_stmt->tables()[0].table);
     }
   }
 

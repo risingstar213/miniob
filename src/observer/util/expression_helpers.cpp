@@ -19,7 +19,7 @@ static bool check_field(Field &rel_field, Field &target_field)
 }
 
 
-RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table *> *tables, 
+RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<TableInfo> *tables, 
           std::unordered_map<std::string, Table *> *tables_map, std::vector<Field> *group_fields)
 {
   if (expr->is_value) {
@@ -49,8 +49,11 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
         return RC::SUCCESS;
       } else if (expr->attr->agg == AGG_COUNT) {
         expr->type = INTS;
-        Table *table = (*tables)[0];
+        Table *table = (*tables)[0].table;
         expr->field = new Field(table, table->table_meta().field(Trx::trx_field_name()));
+        if (expr->attr->alias != nullptr) {
+          expr->field->set_alias(expr->attr->alias);
+        }
         return RC::SUCCESS;
       } else {
         LOG_WARN("agg(*) expcept count is not supported.");
@@ -58,6 +61,7 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
       }
     }
     Table * table;
+    const char *table_alias;
     if (!common::is_blank(expr->attr->relation_name)) {
       auto iter = tables_map->find(expr->attr->relation_name);
       if (iter == tables_map->end()) {
@@ -65,13 +69,15 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
         return RC::SCHEMA_FIELD_MISSING;
       }
       table = iter->second;
+      table_alias = expr->attr->relation_name;
     } else {
       if (tables->size() != 1) {
         LOG_WARN("invalid. I do not know the attr's table. attr=%s", expr->attr->attribute_name);
         return RC::SCHEMA_FIELD_MISSING;
       }
 
-      table = (*tables)[0];
+      table = (*tables)[0].table;
+      table_alias = (*tables)[0].alias;
     }
 
     const FieldMeta *field_meta = table->table_meta().field(expr->attr->attribute_name);
@@ -80,6 +86,10 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
       return RC::SCHEMA_FIELD_MISSING;
     }
     expr->field = new Field(table, field_meta);
+    if (expr->attr->alias != nullptr) {
+      expr->field->set_alias(expr->attr->alias);
+    }
+    expr->field->set_table_alias(table_alias);
 
     // check group by field
     if (group_fields != nullptr) {
@@ -120,26 +130,29 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table 
   return RC::SUCCESS;
 }
 
-static void wildcard_fields(Table *table,  std::vector<SelectExpr> &expressions)
+static void wildcard_fields(TableInfo &table,  std::vector<SelectExpr> &expressions)
 {
-  const TableMeta &table_meta = table->table_meta();
+  const TableMeta &table_meta = table.table->table_meta();
   const int field_num = table_meta.field_num();
   for (int i = table_meta.sys_field_num(); i < field_num; i++) {
     // special
     SelectExpr expr;
     memset(&expr, 0, sizeof(SelectExpr));
-    expr.field = new Field(table, table_meta.field(i));
+    expr.field = new Field(table.table, table_meta.field(i));
+    if (table.alias != nullptr) {
+      expr.field->set_table_alias(table.alias);
+    }
     expr.is_attr = true;
     expressions.push_back(expr);
   }
 }
 
-RC append_select_expression_with_star(std::vector<Table *> tables, SelectExpr *expr, std::vector<SelectExpr> &expressions)
+RC append_select_expression_with_star(std::vector<TableInfo> tables, SelectExpr *expr, std::vector<SelectExpr> &expressions)
 {
   // TODO: The only star currently
   if (expr->is_attr && strcmp(expr->attr->attribute_name, "*") == 0 && expr->attr->agg == AGG_NONE) {
-    for (Table *table : tables) {
-      wildcard_fields(table, expressions);
+    for (auto &table_info : tables) {
+      wildcard_fields(table_info, expressions);
     }
   } else {
     expressions.push_back(*expr);
@@ -180,37 +193,41 @@ std::string generate_alias(bool multi_tables, SelectExpr *expr)
   if (expr->is_value) {
     str += (char *)expr->value->raw_data;
   } else if (expr->is_attr) {
-    Aggregation agg = expr->attr == nullptr ? AGG_NONE: expr->attr->agg;
-    switch(agg) {
-      case AGG_AVG:
-        str += "AVG(";
-        break;
-      case AGG_COUNT:
-        str += "COUNT(";
-        break;
-      case AGG_MAX:
-        str += "MAX(";
-        break;
-      case AGG_MIN:
-        str += "MIN(";
-        break;
-      case AGG_SUM:
-        str += "SUM(";
-        break;
-      default:
-        break;
-    }
-    if (strcmp(expr->field->meta()->name(), Trx::trx_field_name()) == 0) {
-      str += "*";
-    } else if (multi_tables) {
-      str += expr->field->table_name();
-      str += '.';
-      str += expr->field->meta()->name();
+    if (expr->field->get_alias() != nullptr) {
+      str += expr->field->get_alias();
     } else {
-      str += expr->field->meta()->name();
-    }
-    if (agg != AGG_NONE) {
-      str += ")";
+      Aggregation agg = expr->attr == nullptr ? AGG_NONE: expr->attr->agg;
+      switch(agg) {
+        case AGG_AVG:
+          str += "AVG(";
+          break;
+        case AGG_COUNT:
+          str += "COUNT(";
+          break;
+        case AGG_MAX:
+          str += "MAX(";
+          break;
+        case AGG_MIN:
+          str += "MIN(";
+          break;
+        case AGG_SUM:
+          str += "SUM(";
+          break;
+        default:
+          break;
+      }
+      if (strcmp(expr->field->meta()->name(), Trx::trx_field_name()) == 0) {
+        str += "*";
+      } else if (multi_tables) {
+        str += expr->field->table_name();
+        str += '.';
+        str += expr->field->meta()->name();
+      } else {
+        str += expr->field->meta()->name();
+      }
+      if (agg != AGG_NONE) {
+        str += ")";
+      }
     }
   } else {
     std::string left_str;

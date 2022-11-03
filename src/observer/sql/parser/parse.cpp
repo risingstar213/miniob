@@ -124,6 +124,8 @@ void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const
     relation_attr->attribute_name = nullptr;
   }
   relation_attr->is_valid = true;
+
+  relation_attr->alias = nullptr;
 }
 void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *relation_name, const char *attribute_name, Aggregation agg, bool is_valid)
 {
@@ -140,6 +142,8 @@ void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *rel
   }
   relation_attr->agg = agg;
   relation_attr->is_valid = is_valid;
+
+  relation_attr->alias = nullptr;
 }
 
 void relation_attr_init_copy(RelAttr *relation_attr, RelAttr source, Aggregation agg)
@@ -149,6 +153,8 @@ void relation_attr_init_copy(RelAttr *relation_attr, RelAttr source, Aggregation
   relation_attr->attribute_name = source.attribute_name;
   relation_attr->is_valid = source.is_valid;
   relation_attr->agg = agg;
+
+  relation_attr->alias = nullptr;
 }
 
 void relation_attr_destroy(RelAttr *relation_attr)
@@ -157,6 +163,38 @@ void relation_attr_destroy(RelAttr *relation_attr)
   free(relation_attr->attribute_name);
   relation_attr->relation_name = nullptr;
   relation_attr->attribute_name = nullptr;
+  if (relation_attr->alias != nullptr) {
+    free(relation_attr->alias);
+    relation_attr->alias = nullptr;
+  }
+}
+
+void relation_name_init(Relation *relation, const char*relation_name, const char *alias)
+{
+  if (relation_name != nullptr) {
+    relation->relation_name = strdup(relation_name);
+  } else {
+    relation->relation_name = nullptr;
+  }
+
+  if (alias != nullptr) {
+    relation->alias = strdup(alias);
+  } else {
+    relation->alias = nullptr;
+  }
+}
+
+void relation_name_destroy(Relation *relation)
+{
+  if (relation->relation_name != nullptr) {
+    free(relation->relation_name);
+    relation->relation_name = nullptr;
+  }
+
+  if (relation->alias != nullptr) {
+    free(relation->alias);
+    relation->alias = nullptr;
+  }
 }
 
 void value_init_integer(Value *value, int v, const char *raw)
@@ -365,10 +403,10 @@ void selects_append_select_exprs(Selects *selects, std::deque<SelectExpr> select
   }
   selects->select_expr_num = select_exprs.size();
 }
-void selects_append_relation(Selects *selects, std::deque<char *> relation_names)
+void selects_append_relation(Selects *selects, std::deque<Relation> relation_names)
 {
   for (size_t i = 0; i < relation_names.size(); i++) {
-    selects->relations[selects->relation_num++] = strdup(relation_names[i]);
+    selects->relations[selects->relation_num++] = relation_names[i];
   }
   selects->relation_num = relation_names.size();
 }
@@ -404,8 +442,9 @@ void selects_destroy(Selects *selects)
   selects->select_expr_num = 0;
 
   for (size_t i = 0; i < selects->relation_num; i++) {
-    free(selects->relations[i]);
-    selects->relations[i] = NULL;
+    // free(selects->relations[i]);
+    // selects->relations[i] = NULL;
+    relation_name_destroy(&selects->relations[i]);
   }
   selects->relation_num = 0;
 

@@ -139,4 +139,9 @@ private:
   std::vector<Index *> indexes_;
 };
 
+struct TableInfo {
+  Table *table;
+  const char *alias;
+};
+
 #endif  // __OBSERVER_STORAGE_COMMON_TABLE_H__

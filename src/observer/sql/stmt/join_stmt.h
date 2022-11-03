@@ -9,6 +9,7 @@
 
 class Db;
 class Table;
+struct TableInfo;
 
 class JoinStmt : public Stmt
 {
@@ -18,7 +19,7 @@ public:
 
   StmtType type() const override { return StmtType::JOIN; }
 
-  static RC create(Db *db, std::vector<Table *>* tables, 
+  static RC create(Db *db, std::vector<TableInfo>* tables, 
                     std::unordered_map<std::string, Table *> *table_map, 
                     Join &join_sql, JoinStmt *&stmt);
 

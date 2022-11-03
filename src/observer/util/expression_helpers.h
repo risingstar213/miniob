@@ -10,10 +10,10 @@
 
 class Table;
 
-RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<Table *> *tables, 
+RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<TableInfo> *tables, 
           std::unordered_map<std::string, Table *> *tables_map, std::vector<Field> *group_fields = nullptr);
 
-RC append_select_expression_with_star(std::vector<Table *> tables, SelectExpr *expr, std::vector<SelectExpr> &expressions);
+RC append_select_expression_with_star(std::vector<TableInfo> tables, SelectExpr *expr, std::vector<SelectExpr> &expressions);
 
 Expression *generate_expression(SelectExpr *expr);
 

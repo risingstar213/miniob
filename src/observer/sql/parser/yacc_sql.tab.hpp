@@ -45,6 +45,7 @@ extern int yydebug;
 #include <deque>
 #include <string>
 typedef struct _RelAttr RelAttr;
+typedef struct _Relation Relation;
 typedef struct _Selects Selects;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
@@ -61,9 +62,10 @@ typedef std::deque<UpdateValue> UpdateValueList;
 typedef std::deque<SelectExpr> SelectExprList;
 typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
+typedef std::deque<Relation> RelationList;
 // typedef std::string String;
 
-#line 67 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 69 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -129,22 +131,23 @@ typedef std::deque<char *> IdList;
     GROUP = 314,
     BY = 315,
     HAVING = 316,
-    EQ = 317,
-    LT = 318,
-    GT = 319,
-    LE = 320,
-    GE = 321,
-    NE = 322,
-    NUMBER = 323,
-    FLOAT = 324,
-    DATE_DATA = 325,
-    ID = 326,
-    PATH = 327,
-    SSS = 328,
-    LIKE_SSS = 329,
-    STAR = 330,
-    STRING_V = 331,
-    UNARYMINUS = 332
+    AS = 317,
+    EQ = 318,
+    LT = 319,
+    GT = 320,
+    LE = 321,
+    GE = 322,
+    NE = 323,
+    NUMBER = 324,
+    FLOAT = 325,
+    DATE_DATA = 326,
+    ID = 327,
+    PATH = 328,
+    SSS = 329,
+    LIKE_SSS = 330,
+    STAR = 331,
+    STRING_V = 332,
+    UNARYMINUS = 333
   };
 #endif
 
@@ -153,9 +156,10 @@ typedef std::deque<char *> IdList;
 
 union YYSTYPE
 {
-#line 145 "yacc_sql.y" /* yacc.c:1909  */
+#line 148 "yacc_sql.y" /* yacc.c:1909  */
 
   RelAttr *attr1;
+  Relation *relation1;
   Condition *condition1;
   Value *value1;
   Join *join1;
@@ -174,11 +178,12 @@ union YYSTYPE
   JoinList *joins1;
   IdList *ids1;
   AttrList *attrs1;
+  RelationList *relations1;
   UpdateValueList *updatevaluelist1;
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
 
-#line 182 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 187 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

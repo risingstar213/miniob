@@ -13,7 +13,7 @@ JoinStmt::~JoinStmt()
   }
 }
 
-RC JoinStmt::create(Db *db, std::vector<Table *>* tables, 
+RC JoinStmt::create(Db *db, std::vector<TableInfo>* tables, 
                     std::unordered_map<std::string, Table *> *table_map, 
                     Join &join_sql, JoinStmt *&stmt)
 {
@@ -34,11 +34,11 @@ RC JoinStmt::create(Db *db, std::vector<Table *>* tables,
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
-  tables->push_back(table);
+  tables->push_back(TableInfo{table, table_name});
   table_map->insert(std::pair<std::string, Table*>(table_name, table));
 
   FilterStmt *filter_stmt = nullptr;
-  RC rc = FilterStmt::create(db, nullptr, table_map,
+  RC rc = FilterStmt::create(db, TableInfo{nullptr, nullptr}, table_map,
             join_sql.conditions, join_sql.condition_num, filter_stmt);
 
   if (rc != RC::SUCCESS) {

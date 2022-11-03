@@ -86,11 +86,11 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
   }
 
   // collect tables in `from` statement
-  std::vector<Table *> tables;
+  std::vector<TableInfo> tables;
   std::unordered_map<std::string, Table *> table_map;
   // *** reverse order
   for (int i = (int)select_sql.relation_num-1; i >= 0; i--) {
-    const char *table_name = select_sql.relations[i];
+    const char *table_name = select_sql.relations[i].relation_name;
     if (nullptr == table_name) {
       LOG_WARN("invalid argument. relation name is null. index=%d", i);
       return RC::INVALID_ARGUMENT;
@@ -102,8 +102,18 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
       return RC::SCHEMA_TABLE_NOT_EXIST;
     }
 
-    tables.push_back(table);
-    table_map.insert(std::pair<std::string, Table*>(table_name, table));
+    const char *alias = nullptr;
+    if (select_sql.relations[i].alias == nullptr) {
+      alias = select_sql.relations[i].relation_name;
+    } else {
+      alias = select_sql.relations[i].alias;
+    }
+    if (table_map.count(alias) > 0) {
+      LOG_WARN("duplicate alias !!!!");
+      return RC::INVALID_ARGUMENT;
+    }
+    tables.push_back(TableInfo{table, alias});
+    table_map.insert(std::pair<std::string, Table*>(alias, table));
   }
 
   // join clause
@@ -138,7 +148,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
           LOG_WARN("invalid. I do not know the attr's table. attr=%s", rel_attrs[i].attribute_name);
           return RC::SCHEMA_FIELD_MISSING;
         }
-        table = tables[0];
+        table = tables[0].table;
       }
       const FieldMeta *field_meta = table->table_meta().field(rel_attrs[i].attribute_name);
       if (nullptr == field_meta) {
@@ -243,7 +253,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
     append_select_expression_with_star(tables, &select_sql.select_expr[i], expressions);
   }
 
-  Table *default_table = nullptr;
+  TableInfo default_table {nullptr, nullptr};
   if (tables.size() == 1) {
     default_table = tables[0];
   }
