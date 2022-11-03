@@ -49,12 +49,17 @@ Operator*  get_select_operator(SelectStmt *select_stmt)
 
   PredicateOperator *pred_oper = new PredicateOperator(select_stmt->filter_stmt());
   pred_oper->add_child(top_oper);
+
+  GroupOperator *group_oper = new GroupOperator(select_stmt->group_expresions(), 
+          select_stmt->having_filter(), select_stmt->is_aggregations());
+  group_oper->add_child(pred_oper);
+
   ProjectOperator *project_oper = new ProjectOperator;
-  project_oper->add_child(pred_oper);
+  project_oper->add_child(group_oper);
   
   int n = select_stmt->select_exprs().size();
   for (int i = 0; i < n; i++) {
-    project_oper->add_projection(multi_tables, &select_stmt->select_exprs()[i], select_stmt->is_aggregations());
+    project_oper->add_projection(multi_tables, &select_stmt->select_exprs()[i], select_stmt->group_expresions().size() > 0);
   }
   return project_oper;
 }

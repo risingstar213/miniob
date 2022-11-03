@@ -24,115 +24,80 @@ See the Mulan PSL v2 for more details. */
 
 RC ProjectOperator::open()
 {
-  if (children_.size() != 1) {
-    LOG_WARN("project operator must has 1 child");
-    return RC::INTERNAL;
-  }
+  // if (children_.size() != 1) {
+  //   LOG_WARN("project operator must has 1 child");
+  //   return RC::INTERNAL;
+  // }
 
-  Operator *child = children_[0];
-  RC rc = child->open();
+  // Operator *child = children_[0];
+  // RC rc = child->open();
+  // if (rc != RC::SUCCESS) {
+  //   LOG_WARN("failed to open child operator: %s", strrc(rc));
+  //   return rc;
+  // }
+
+  // tuple_.reset_tuples();
+  // has_run_ = false;
+  // return RC::SUCCESS;
+  RC rc = child_->open();
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to open child operator: %s", strrc(rc));
     return rc;
   }
   LOG_INFO("PROJECT IS OPENED");
+
+  tuple_.reset_tuples();
+  has_run_ = false;
   return RC::SUCCESS;
 }
 
 RC ProjectOperator::next(std::vector<Tuple *> *context)
 {
-  LOG_INFO("PROJECT Next Is called");
-  if (!is_aggregation_) {
-    RC rc =  children_[0]->next(context);
-    if (rc == RC::SUCCESS) {
-      tuple_.set_tuples(children_[0]->current_tuples());
-    }
-    return rc;
-  } else {
-    bool start = true;
-    while (children_[0]->next(context) == RC::SUCCESS) {
-      tuple_.set_tuples(children_[0]->current_tuples());
-      start = false;
-    }
-    if (start) {
-      return RC::RECORD_EOF;
-    } else {
-      return RC::SUCCESS;
-    }
-    // int n = tuples_.size();
-    // std::vector<float> temp1(n,0);
-    // std::vector<float> temp2(n,0);
-    // std::vector<char*> temp3(n);
-    // for (int i = 0; i < n; i++) {
-    //   if (agg_[i] == AGG_MIN) {
-    //     temp1[i] = __FLT_MAX__;
-    //   } else if (agg_[i] == AGG_MAX) {
-    //     temp1[i] = __FLT_MIN__;
-    //   }
-    // }
-    // while (children_[0]->next() == RC::SUCCESS) {
-    //   Tuple* tuple = children_[0]->current_tuples()[0];
-    //   for (int i = 0; i < n; i++) {
-    //     TupleCell cell;
-    //     Tuple* tuple = children_[0]->current_tuples()[0];
-    //     tuple->cell_at(i, cell);
-    //     AttrType type = cell.attr_type();
-
-    //     switch(agg_[i]) {
-    //       case AGG_COUNT:
-    //         temp1[i]++;
-    //         break;
-    //       case AGG_MIN:
-    //         if (type == CHARS) {
-    //           if (temp3[i] == "") {
-    //             temp3[i] = (char *)cell.data();
-    //           } else {
-    //             temp3[i] = strcmp(temp3[i], (char *)cell.data()) > 0 ? (char *)cell.data() : temp3[i];
-    //           }
-    //         } else {
-    //           temp1[i] = std::min(*(float *)cell.data(), temp1[i]);
-    //         }
-    //         break;
-    //       case AGG_MAX:
-    //         if (type == CHARS) {
-    //           if (temp3[i] == "") {
-    //             temp3[i] = (char *)cell.data();
-    //           } else {
-    //             temp3[i] = strcmp(temp3[i], (char *)cell.data()) < 0 ? (char *)cell.data() : temp3[i];
-    //           }
-    //         } else {
-    //           temp1[i] = std::max(*(float *)cell.data(), temp1[i]);
-    //         }
-    //         break;
-    //       case AGG_SUM:
-    //         if (type == CHARS) {
-    //           LOG_INFO("sum of strings");
-    //           return RC::INVALID_ARGUMENT;
-    //         } else {
-    //           temp1[i] += *(float *)cell.data();
-    //         }
-    //         break;
-    //       case AGG_AVG: 
-    //         temp1[i]++;
-    //         if (type == CHARS) {
-    //           temp2[i] += CastUnit::cast_string_to_float(const_cast<char *>(cell.data()), 0);
-    //         } else {
-    //           temp2[i] += *(float *)cell.data();
-    //         }
-    //         break;
-    //       default:
-    //         LOG_INFO("wrong aggregation");
-    //         return RC::INVALID_ARGUMENT;
-    //     }
-    //   }
-    // }
-    
+  // if (!is_aggregation_) {
+  //   RC rc =  children_[0]->next(context);
+  //   if (rc == RC::SUCCESS) {
+  //     tuple_.set_tuples(children_[0]->current_tuples());
+  //   }
+  //   return rc;
+  // } else {
+  //   // bool start = true;
+  //   if (has_run_) {
+  //     return RC::RECORD_EOF;
+  //   }
+  //   RC rc;
+  //   while ((rc = children_[0]->next(context)) == RC::SUCCESS) {
+  //     tuple_.set_tuples(children_[0]->current_tuples());
+  //     // start = false;
+  //   }
+  //   if (rc != RC::RECORD_EOF) {
+  //     return rc;
+  //   }
+  //   has_run_ = true;
+  //   return RC::SUCCESS;
+  // }
+  RC rc;
+  if (is_group_) {
+    tuple_.reset_tuples();
   }
+  while ((rc = child_->next(context)) == RC::SUCCESS) {
+    if (child_->data_valid()) {
+      tuple_.set_tuples(child_->current_tuples());
+    }
+    if (child_->group_complete()) {
+      if (child_->group_valid()) {
+        break;
+      } else {
+        tuple_.reset_tuples();
+      }
+    }
+  }
+  return rc;
 }
 
 RC ProjectOperator::close()
 {
-  children_[0]->close();
+  // children_[0]->close();
+  child_->close();
   return RC::SUCCESS;
 }
 std::vector<Tuple *> ProjectOperator::current_tuples()
@@ -142,52 +107,14 @@ std::vector<Tuple *> ProjectOperator::current_tuples()
   return tuples;
 }
 
-void ProjectOperator::add_projection(bool multi_tables, SelectExpr *expr, bool is_aggregation)
+void ProjectOperator::add_projection(bool multi_tables, SelectExpr *expr, bool is_group)
 {
   // 对单表来说，展示的(alias) 字段总是字段名称，
   // 对多表查询来说，展示的alias 需要带表名字
   // LOG_INFO("add projection:%s agg:%d", field_meta->name(), agg);
   TupleCellSpec *spec = new TupleCellSpec(generate_expression(expr));
   spec->set_alias(generate_alias(multi_tables, expr));
-  is_aggregation_ = is_aggregation;
-  // if (multi_tables) {
-  //   std::string str;
-  //   str = table->name();
-  //   str += '.';
-  //   str += field_meta->name();
-  //   spec->set_alias(str);
-  // } else if (agg == AGG_NONE) {
-  //   spec->set_alias(field_meta->name());
-  // } else {
-  //   is_aggregation_ = is_aggregation_ || true;
-  //   std::string str;
-  //   switch(agg) {
-  //     case AGG_AVG:
-  //       str += "AVG(";
-  //       break;
-  //     case AGG_COUNT:
-  //       str += "COUNT(";
-  //       break;
-  //     case AGG_MAX:
-  //       str += "MAX(";
-  //       break;
-  //     case AGG_MIN:
-  //       str += "MIN(";
-  //       break;
-  //     case AGG_SUM:
-  //       str += "SUM(";
-  //       break;
-  //     default:
-  //       break;
-  //   }
-  //   if (strcmp(field_meta->name(), Trx::trx_field_name()) == 0) {
-  //     str += "*";
-  //   } else {
-  //     str += field_meta->name();
-  //   }
-  //   str += ")";
-  //   spec->set_alias(str);
-  // }
+  is_group_ = is_group;
   tuple_.add_cell_spec(spec);
 }
 

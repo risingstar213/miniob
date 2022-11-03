@@ -45,7 +45,7 @@ public:
   //virtual int tuple_cell_num() const = 0;
   //virtual RC  tuple_cell_spec_at(int index, TupleCellSpec *&spec) const = 0;
 
-  void add_child(Operator *oper) {
+  virtual void add_child(Operator *oper) {
     children_.push_back(oper);
   }
 

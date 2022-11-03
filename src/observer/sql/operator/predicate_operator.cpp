@@ -75,7 +75,7 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
     result = true;
     return rc;
   }
-
+  // LOG_INFO("do_predicate");
   for (const FilterUnit *filter_unit : filter_stmt_->filter_units()) {
     Expression *left_expr = filter_unit->left();
     Expression *right_expr = filter_unit->right();
@@ -97,7 +97,6 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
     int compare;
     if (comp <= GREAT_THAN) {
       compare = left_cell.compare(right_cell);
-      LOG_INFO("%p, compare: %d, %d", this, *(int *)left_cell.data(), *(int *)right_cell.data());
       if (is_null((char *)&compare)) {
         result =  false;
         return rc;
@@ -202,12 +201,16 @@ RC PredicateOperator::do_predicate(std::vector<Tuple *> tuples, bool &result)
       LOG_WARN("invalid compare type: %d", comp);
     } break;
     }
-    if (!filter_result) {
+    if (!filter_stmt_->is_or() && !filter_result) {
       result = false;
-      return rc;;
+      return rc;
+    }
+    if (filter_stmt_->is_or() && filter_result) {
+      result = true;
+      return rc;
     }
   }
-  result = true;
+  result = !filter_stmt_->is_or();
   return rc;
 }
 

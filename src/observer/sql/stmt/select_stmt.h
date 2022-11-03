@@ -26,7 +26,7 @@ class FilterStmt;
 class JoinStmt;
 class Db;
 class Table;
-
+class Expression;
 class SelectStmt : public Stmt
 {
 public:
@@ -48,6 +48,9 @@ public:
   std::vector<OrderCol *> order_cols() { return order_cols_; }
   std::vector<Field> oder_fields() { return order_fields_; }
   bool is_aggregations() { return is_aggregations_; }
+  std::vector<Expression *> group_expresions() { return group_expresions_; }
+  FilterStmt *having_filter() { return having_filter_; }
+
 
 private:
   // std::vector<Field> query_fields_;
@@ -58,6 +61,8 @@ private:
   std::vector<JoinStmt *> join_stmts_;
   std::vector<OrderCol *> order_cols_; 
   std::vector<Field> order_fields_;
+  std::vector<Expression *> group_expresions_;
+  FilterStmt *having_filter_ = nullptr; // for having
   FilterStmt *filter_stmt_ = nullptr;
 };
 

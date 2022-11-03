@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <iostream>
 #include "storage/common/table.h"
 #include "storage/common/field_meta.h"
+#include "util/util.h"
 
 class TupleCell
 {
@@ -46,6 +47,7 @@ public:
   void set_data(const char *data) { this->set_data(const_cast<char *>(data)); }
 
   void to_string(std::ostream &os) const;
+  std::string to_string() const;
 
   int compare(const TupleCell &other) const;
 
@@ -59,6 +61,23 @@ public:
   AttrType attr_type() const
   {
     return attr_type_;
+  }
+
+  void deep_set(const TupleCell &cell)
+  {
+    attr_type_ = cell.attr_type_;
+    length_ = cell.length_;
+    data_ = new char[length_ + 1];
+    memset(data_, 0, length_+1);
+    memcpy(data_, cell.data_, length_);
+  }
+
+  bool is_null() const
+  {
+    if (attr_type_ == CHARS && strlen(data_) < 4) {
+      return false;
+    }
+    return ::is_null(data_);
   }
 
 private:

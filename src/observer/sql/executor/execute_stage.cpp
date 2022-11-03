@@ -35,6 +35,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/update_operator.h"
 #include "sql/operator/project_operator.h"
 #include "sql/operator/order_operator.h"
+#include "sql/operator/group_operator.h"
 #include "sql/operator/join_operator.h"
 #include "sql/stmt/stmt.h"
 #include "sql/stmt/select_stmt.h"
@@ -500,16 +501,21 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
 
   PredicateOperator *pred_oper = new PredicateOperator(select_stmt->filter_stmt());
   pred_oper->add_child(top_oper);
+
+  GroupOperator *group_oper = new GroupOperator(select_stmt->group_expresions(), 
+          select_stmt->having_filter(), select_stmt->is_aggregations());
+  group_oper->add_child(pred_oper);
+
   ProjectOperator *project_oper = new ProjectOperator();
-  project_oper->add_child(pred_oper);
+  project_oper->add_child(group_oper);
 
   int n = select_stmt->select_exprs().size();
   std::vector<SelectExpr> expressions = select_stmt->select_exprs();
   for (int i = 0; i < n; i++) {
-    project_oper->add_projection(multi_tables, &expressions[i], select_stmt->is_aggregations());
+    project_oper->add_projection(multi_tables, &expressions[i], select_stmt->group_expresions().size() > 0);
   }
 
-  OrderOperator order_oper(select_stmt->order_cols(), select_stmt->oder_fields());
+  OrderOperator order_oper(select_stmt->order_cols(), select_stmt->oder_fields(), select_stmt->tables());
   order_oper.add_child(project_oper); 
 
   rc = order_oper.open();

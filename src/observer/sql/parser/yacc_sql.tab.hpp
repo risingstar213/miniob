@@ -57,6 +57,7 @@ typedef struct _UpdateValue UpdateValue;
 typedef struct _SelectExpr SelectExpr;
 typedef struct _ConditionExpr ConditionExpr;
 typedef struct _OrderCol OrderCol;
+typedef struct _GroupBy GroupBy;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
@@ -68,7 +69,7 @@ typedef std::deque<char *> IdList;
 typedef std::deque<OrderCol> OrderColList;
 // typedef std::string String;
 
-#line 72 "yacc_sql.tab.h"
+#line 73 "yacc_sql.tab.h"
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -113,42 +114,45 @@ typedef std::deque<OrderCol> OrderColList;
     FROM = 293,
     WHERE = 294,
     AND = 295,
-    SET = 296,
-    NOT = 297,
-    LIKE = 298,
-    INNER = 299,
-    JOIN = 300,
-    ON = 301,
-    LOAD = 302,
-    DATA = 303,
-    INFILE = 304,
-    UNIQUE = 305,
-    MAX = 306,
-    MIN = 307,
-    SUM = 308,
-    COUNT = 309,
-    AVG = 310,
-    ADD_OP = 311,
-    SUB_OP = 312,
-    DIV_OP = 313,
-    IN = 314,
-    EXISTS = 315,
-    EQ = 316,
-    LT = 317,
-    GT = 318,
-    LE = 319,
-    GE = 320,
-    NE = 321,
-    NUMBER = 322,
-    FLOAT = 323,
-    DATE_DATA = 324,
-    ID = 325,
-    PATH = 326,
-    SSS = 327,
-    LIKE_SSS = 328,
-    STAR = 329,
-    STRING_V = 330,
-    UNARYMINUS = 331
+    OR = 296,
+    SET = 297,
+    NOT = 298,
+    LIKE = 299,
+    INNER = 300,
+    JOIN = 301,
+    ON = 302,
+    LOAD = 303,
+    DATA = 304,
+    INFILE = 305,
+    UNIQUE = 306,
+    MAX = 307,
+    MIN = 308,
+    SUM = 309,
+    COUNT = 310,
+    AVG = 311,
+    ADD_OP = 312,
+    SUB_OP = 313,
+    DIV_OP = 314,
+    IN = 315,
+    EXISTS = 316,
+    GROUP = 317,
+    HAVING = 318,
+    EQ = 319,
+    LT = 320,
+    GT = 321,
+    LE = 322,
+    GE = 323,
+    NE = 324,
+    NUMBER = 325,
+    FLOAT = 326,
+    DATE_DATA = 327,
+    ID = 328,
+    PATH = 329,
+    SSS = 330,
+    LIKE_SSS = 331,
+    STAR = 332,
+    STRING_V = 333,
+    UNARYMINUS = 334
   };
 #endif
 
@@ -156,7 +160,7 @@ typedef std::deque<OrderCol> OrderColList;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 145 "yacc_sql.y"
+#line 149 "yacc_sql.y"
 
   RelAttr *attr1;
   Condition *condition1;
@@ -166,6 +170,7 @@ union YYSTYPE
   UpdateValue *updatevalue1;
   SelectExpr *selectexpr1;
   ConditionExpr *conditionexpr1;
+  GroupBy *groupby1;
   char *string1;
   int number1;
   float floats1;
@@ -182,7 +187,7 @@ union YYSTYPE
   OrderCol *ocol1; 		// order column
   OrderColList *ocol_list1;
 
-#line 186 "yacc_sql.tab.h"
+#line 191 "yacc_sql.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

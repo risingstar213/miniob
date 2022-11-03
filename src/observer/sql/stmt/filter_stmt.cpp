@@ -32,7 +32,7 @@ FilterStmt::~FilterStmt()
 
 RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
 		      Condition *conditions, int condition_num,
-		      FilterStmt *&stmt)
+		      FilterStmt *&stmt, bool is_or)
 {
   RC rc = RC::SUCCESS;
   stmt = nullptr;
@@ -48,6 +48,7 @@ RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::stri
     }
     tmp_stmt->filter_units_.push_back(filter_unit);
   }
+  tmp_stmt->is_or_ = is_or;
 
   stmt = tmp_stmt;
   return rc;

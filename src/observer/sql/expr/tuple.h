@@ -158,6 +158,10 @@ public:
   {
     return *record_;
   }
+
+  const Table &table() const {
+    return *table_;
+  }
 private:
   Record *record_ = nullptr;
   const Table *table_ = nullptr;
@@ -211,13 +215,14 @@ public:
       LOG_INFO("index is wrong");
       return RC::GENERIC_ERROR;
     }
-    if (tuples_.size() == 0) {
-      LOG_INFO("tuples is empty");
-      return RC::GENERIC_ERROR;
-    }
+    // if (tuples_.size() == 0) {
+    //   LOG_INFO("tuples is empty");
+    //   return RC::GENERIC_ERROR;
+    // }
     LOG_INFO("project cell at");
     const TupleCellSpec *spec = speces_[index];
-    return spec->expression()->get_value(tuples_, cell);
+    std::vector<Tuple *> tuples;
+    return spec->expression()->get_value(tuples, cell);
   }
 
   RC find_cell(const Field &field, TupleCell &cell) const override
@@ -237,6 +242,13 @@ public:
     }
     spec = speces_[index];
     return RC::SUCCESS;
+  }
+
+  void reset_tuples() {
+    for (auto &spec : speces_) {
+      spec->expression()->reset_value();
+    }
+    tuples_.clear();
   }
 private:
   std::vector<TupleCellSpec *> speces_;

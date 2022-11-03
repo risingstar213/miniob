@@ -62,6 +62,7 @@ QUOTE            [\'\"]
 [Jj][Oo][Ii][Nn]                                     RETURN_TOKEN(JOIN);
 [Ww][Hh][Ee][Rr][Ee]                                 RETURN_TOKEN(WHERE);
 [Aa][Nn][Dd]                                         RETURN_TOKEN(AND);
+[Oo][Rr]                                             RETURN_TOKEN(OR);
 [Ii][Nn][Ss][Ee][rR][tT]                             RETURN_TOKEN(INSERT);
 [Ii][Nn][Tt][Oo]                                     RETURN_TOKEN(INTO);
 [Vv][Aa][Ll][Uu][Ee][Ss]                             RETURN_TOKEN(VALUES);
@@ -89,6 +90,8 @@ QUOTE            [\'\"]
 [Aa][Vv][Gg]                                         RETURN_TOKEN(AVG);
 [Ii][Nn]                                             RETURN_TOKEN(IN);
 [Ee][Xx][Ii][Ss][Tt][Ss]                             RETURN_TOKEN(EXISTS);
+[Gg][Rr][Oo][Uu][Pp]                                 RETURN_TOKEN(GROUP);
+[Hh][Aa][Vv][Ii][Nn][Gg]                             RETURN_TOKEN(HAVING);
 {ID}                                                 yylval->string1=strdup(yytext); RETURN_TOKEN(ID);
 "("                                                  RETURN_TOKEN(LBRACE);
 ")"                                                  RETURN_TOKEN(RBRACE);

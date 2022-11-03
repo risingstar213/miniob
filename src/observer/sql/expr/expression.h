@@ -14,6 +14,9 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#ifndef _EXPRESSION_H_
+#define _EXPRESSION_H_
+
 #include <string.h>
 #include <vector>
 #include "storage/common/field.h"
@@ -45,6 +48,7 @@ public:
   virtual AttrType get_valuetype() const = 0;
   virtual ExprType type() const = 0;
   virtual void update_value(const std::vector<Tuple *> tuples) = 0;
+  virtual void reset_value() = 0;
   virtual bool is_null() const = 0;
 };
 
@@ -58,6 +62,7 @@ public:
       data_ = new AggData;
       AggFunc::init_data(agg, data_, field_.attr_type());
     }
+    has_updated = false;
   }
 
   ~FieldExpr() {
@@ -100,10 +105,19 @@ public:
   bool is_null() const {
     return false;
   }
+
+  void reset_value() {
+    has_updated = false;
+    if (agg_ != AGG_NONE) {
+      AggFunc::destroy_data(agg_, data_, field_.attr_type());
+      AggFunc::init_data(agg_, data_, field_.attr_type());
+    }
+  }
 private:
   Field field_;
   TupleCell cell_;
   Aggregation agg_;
+  bool has_updated;
   AggData *data_;
 };
 
@@ -143,6 +157,7 @@ public:
     return ::is_null(tuple_cell_.data());
   }
 
+  void reset_value() {}
 private:
   TupleCell tuple_cell_;
 };
@@ -189,6 +204,15 @@ public:
   bool is_null() const {
     return false;
   }
+
+  void reset_value() {
+    if (left_ != nullptr) {
+      left_->reset_value();
+    }
+    if (right_ != nullptr) {
+      right_->reset_value();
+    }
+  }
 private:
   SelectExpr *expr_;
   Expression *left_ = nullptr;
@@ -225,9 +249,13 @@ public:
   bool is_null() const {
     return false;
   }
+  void reset_value() {} // reset in close !!!
 private:
   bool is_list_;
   SelectStmt *stmt_ = nullptr;
   Operator *oper_ = nullptr;
   ValueList *list_ = nullptr;
 };
+
+
+#endif

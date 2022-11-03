@@ -33,6 +33,16 @@ SelectStmt::~SelectStmt()
     delete join_stmts_[i];
   }
   join_stmts_.clear();
+
+  for (size_t i = 0; i < group_expresions_.size(); i++) {
+    delete group_expresions_[i];
+  }
+  group_expresions_.clear();
+
+  if (nullptr != having_filter_) {
+    delete having_filter_;
+    having_filter_ = nullptr;
+  }
 }
 
 static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::vector<Aggregation> &aggs)
@@ -96,6 +106,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
     table_map.insert(std::pair<std::string, Table*>(table_name, table));
   }
 
+  // join clause
   std::vector<JoinStmt *> join_stmts;
   for (int i = 0; i < select_sql.join_num; i++) {
     JoinStmt *join;
@@ -105,6 +116,39 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
       return rc;
     }
     join_stmts.push_back(join);
+  }
+
+  // group by clause
+  std::vector<Expression *> group_expresions;
+  std::vector<Field> group_field;
+  if (select_sql.group_by != nullptr) {
+    RelAttr *rel_attrs = select_sql.group_by->group_attr;
+    for (int i = 0; i < select_sql.group_by->group_num; i++) {
+      Table *table;
+      if (!common::is_blank(rel_attrs[i].relation_name)) {
+        LOG_INFO("group by: %s",rel_attrs[i].relation_name);
+        auto iter = table_map.find(rel_attrs[i].relation_name);
+        if (iter == table_map.end()) {
+          LOG_WARN("no such table in from list: %s", rel_attrs[i].relation_name);
+          return RC::SCHEMA_FIELD_MISSING;
+        }
+        table = iter->second;
+      } else {
+        if (tables.size() != 1) {
+          LOG_WARN("invalid. I do not know the attr's table. attr=%s", rel_attrs[i].attribute_name);
+          return RC::SCHEMA_FIELD_MISSING;
+        }
+        table = tables[0];
+      }
+      const FieldMeta *field_meta = table->table_meta().field(rel_attrs[i].attribute_name);
+      if (nullptr == field_meta) {
+        LOG_WARN("no such field. field = %s.%s", rel_attrs[i].relation_name, rel_attrs[i].attribute_name);
+        return RC::SCHEMA_FIELD_MISSING;
+      }
+      group_field.push_back(Field(table, field_meta));
+      FieldExpr *expr = new FieldExpr(table, field_meta, rel_attrs[i].agg);
+      group_expresions.push_back(expr);
+    }
   }
   
   // check if the columns ordered by are valid
@@ -212,7 +256,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
   int attr_num = 0;
   int aggregation_num = 0;
   for (int i = 0; i < select_sql.select_expr_num; i++) {
-    RC rc = check_select_expression_valid(&select_sql.select_expr[i], 0, &tables, &table_map);
+    RC rc = check_select_expression_valid(&select_sql.select_expr[i], 0, &tables, &table_map, &group_field);
     if (rc != RC::SUCCESS) {
       return rc;
     }
@@ -234,13 +278,25 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
     default_table = tables[0];
   }
 
+  FilterStmt *having_filter = nullptr;
+  // no context !!!
+  if (select_sql.group_by != nullptr) {
+    RC rc = FilterStmt::create(db, default_table, &table_map,
+            select_sql.group_by->conditions, select_sql.group_by->condition_num,
+            having_filter);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("cannot construct having stmt");
+      return rc;
+    }
+  }
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
+  // context
   if (context != nullptr) {
     table_map.insert(context->begin(), context->end());
   }
   RC rc = FilterStmt::create(db, default_table, &table_map,
-           select_sql.conditions, select_sql.condition_num, filter_stmt);
+           select_sql.conditions, select_sql.condition_num, filter_stmt, select_sql.is_or);
   if (rc != RC::SUCCESS) {
     LOG_WARN("cannot construct filter stmt");
     return rc;
@@ -257,6 +313,8 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->is_aggregations_ = aggregation_num == attr_num;
   // select_stmt->aggregations_.swap(aggregations);
+  select_stmt->group_expresions_.swap(group_expresions);
+  select_stmt->having_filter_ = having_filter;
   stmt = select_stmt;
   return RC::SUCCESS;
 }

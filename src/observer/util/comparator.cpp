@@ -11,7 +11,7 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by wangyunlai on 2021/6/11.
 //
-
+#include "common/log/log.h"
 #include <string.h>
 #include <algorithm>
 #include <cmath>
@@ -28,16 +28,19 @@ int compare_int(void *arg1, void *arg2, bool index = false)
   }
   int v1 = *(int *)arg1;
   int v2 = *(int *)arg2;
+  LOG_INFO("compare int: %d, %d", v1, v2);
   return v1 - v2;
 }
 
 int compare_float(void *arg1, void *arg2, bool index = false)
 {
   if(!index && (is_null((char *)arg1) || is_null((char *)arg2))) {
+    LOG_INFO("compare null");
     return NULL_CONST;
   }
   float v1 = *(float *)arg1; 
   float v2 = *(float *)arg2; 
+  LOG_INFO("compare float: %f, %f", v1, v2);
   if (std::isinf(v1) || std::isinf(v1)) {
     return NULL_CONST;
   }
@@ -53,7 +56,9 @@ int compare_float(void *arg1, void *arg2, bool index = false)
 
 int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_length, bool index = false)
 {
-  if(!index && (is_null((char *)arg1) || is_null((char *)arg2))) {
+  bool left_null = strlen((char *)arg1) >= 4 && is_null((char *)arg1);
+  bool right_null = strlen((char *)arg2) >= 4 && is_null((char *)arg2);
+  if(!index && (left_null || right_null)) {
     return NULL_CONST;
   }
   const char *s1 = (const char *)arg1;
