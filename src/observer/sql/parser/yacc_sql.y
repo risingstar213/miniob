@@ -801,6 +801,10 @@ rel_attr:
 			$$->alias = strdup($4);
 		}
 	}
+	| ID DOT STAR {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, $1, "*", AGG_NONE,true);
+	}
 	| aggregtion_attr alias {
 		$$ = $1;
 		if ($2 != nullptr) {

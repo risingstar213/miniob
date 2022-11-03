@@ -79,7 +79,15 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<TableI
       table = (*tables)[0].table;
       table_alias = (*tables)[0].alias;
     }
-
+    if (0 == strcmp(expr->attr->attribute_name, "*")) {
+      if (depth == 0 && expr->attr->agg == AGG_NONE) {
+        expr->type = INTS;
+        return RC::SUCCESS;
+      } else {
+        LOG_WARN("agg(*.) is not valid.");
+        return RC::INVALID_ARGUMENT;
+      }
+    }
     const FieldMeta *field_meta = table->table_meta().field(expr->attr->attribute_name);
     if (nullptr == field_meta) {
       LOG_WARN("no such field. field=%s.%s", table->name(), expr->attr->attribute_name);
@@ -147,12 +155,19 @@ static void wildcard_fields(TableInfo &table,  std::vector<SelectExpr> &expressi
   }
 }
 
-RC append_select_expression_with_star(std::vector<TableInfo> tables, SelectExpr *expr, std::vector<SelectExpr> &expressions)
+RC append_select_expression_with_star(std::vector<TableInfo> tables, 
+      std::unordered_map<std::string, Table *> *tables_map, SelectExpr *expr, std::vector<SelectExpr> &expressions)
 {
   // TODO: The only star currently
   if (expr->is_attr && strcmp(expr->attr->attribute_name, "*") == 0 && expr->attr->agg == AGG_NONE) {
-    for (auto &table_info : tables) {
-      wildcard_fields(table_info, expressions);
+    if (expr->attr->relation_name == nullptr) {
+      for (auto &table_info : tables) {
+        wildcard_fields(table_info, expressions);
+      }
+    } else {
+      Table *table = (*tables_map).find(expr->attr->relation_name)->second;
+      TableInfo info{table, expr->attr->relation_name};
+      wildcard_fields(info, expressions);
     }
   } else {
     expressions.push_back(*expr);

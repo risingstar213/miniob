@@ -250,7 +250,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
 
   std::vector<SelectExpr> expressions;
   for (int i = 0; i < select_sql.select_expr_num; i++) {
-    append_select_expression_with_star(tables, &select_sql.select_expr[i], expressions);
+    append_select_expression_with_star(tables, &table_map, &select_sql.select_expr[i], expressions);
   }
 
   TableInfo default_table {nullptr, nullptr};
