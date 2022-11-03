@@ -521,6 +521,7 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   rc = order_oper.open();
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to open operator");
+    session_event->set_response("FAILURE\n");
     return rc;
   }
   std::stringstream ss;

@@ -52,6 +52,7 @@ RC OrderOperator::open() {
     if (rc != RC::RECORD_EOF) {
         LOG_WARN("something wrong while iterate operator. rc=%s", strrc(rc));
         child->close();
+        return rc;
     } else {
         if (cols_.size() == 0) { // if don't order 
             return RC::SUCCESS;
@@ -114,8 +115,8 @@ RC OrderOperator::open() {
                     return false;
                 }
             }
-    }
-    return true; // if all the same, don't swap
+            }
+            return true; // if all the same, don't swap
         });
         rc = RC::SUCCESS;
     }
