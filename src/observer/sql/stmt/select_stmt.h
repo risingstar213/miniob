@@ -39,7 +39,7 @@ public:
   static RC create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_map<std::string, Table *> *context = nullptr);
 
 public:
-  const std::vector<Table *> &tables() const { return tables_; }
+  const std::vector<TableInfo> &tables() const { return tables_; }
   // const std::vector<Field> &query_fields() const { return query_fields_; }
   // const std::vector<Aggregation> &aggregations() const { return aggregations_; }
   std::vector<SelectExpr> &select_exprs() { return select_exprs_; }
@@ -56,7 +56,7 @@ private:
   // std::vector<Field> query_fields_;
   // std::vector<Aggregation> aggregations_;
   bool is_aggregations_;
-  std::vector<Table *> tables_;
+  std::vector<TableInfo> tables_;
   std::vector<SelectExpr> select_exprs_;
   std::vector<JoinStmt *> join_stmts_;
   std::vector<OrderCol *> order_cols_; 

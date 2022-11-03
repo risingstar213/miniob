@@ -7,7 +7,7 @@
 class OrderOperator : public Operator
 {
 public:
-  OrderOperator(std::vector<OrderCol *> order_col_, std::vector<Field> order_fields, std::vector<Table*> tables)
+  OrderOperator(std::vector<OrderCol *> order_col_, std::vector<Field> order_fields, std::vector<TableInfo> tables)
   : cols_(order_col_), fields_(order_fields), tables_(tables)
   {}
 
@@ -25,5 +25,5 @@ private:
   OrderTuple orderTuple;
   std::vector<OrderCol *> cols_;
   std::vector<Field> fields_;
-  std::vector<Table*> tables_;
+  std::vector<TableInfo> tables_;
 };

@@ -90,10 +90,10 @@ public:
   }
 
 public:
-  static RC create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+  static RC create(Db *db, TableInfo default_table, std::unordered_map<std::string, Table *> *tables,
 			Condition *conditions, int condition_num, FilterStmt *&stmt, bool is_or = false);
 
-  static RC create_filter_unit(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+  static RC create_filter_unit(Db *db, TableInfo default_table, std::unordered_map<std::string, Table *> *tables,
 			      Condition &condition, FilterUnit *&filter_unit);
 
 private:

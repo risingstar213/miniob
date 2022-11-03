@@ -33,7 +33,13 @@ public:
     return field_->type();
   }
 
-  const char *table_name() const { return table_->name(); }
+  const char *table_name() const {
+    if (table_alias_ != nullptr) {
+      return table_alias_;
+    } else {
+      return table_->name();
+    }
+  }
   const char *field_name() const { return field_->name(); }
 
   void set_table(const Table *table)
@@ -44,8 +50,22 @@ public:
   {
     this->field_ = field;
   }
+  void set_table_alias(const char *alias)
+  {
+    table_alias_ = alias;
+  }
+  void set_alias(const char *alias)
+  {
+    alias_ = alias;
+  }
+  const char *get_alias()
+  {
+    return alias_;
+  }
 private:
   const Table *table_ = nullptr;
+  const char *table_alias_ = nullptr;
+  const char *alias_ = nullptr;
   const FieldMeta *field_ = nullptr;
 };
 #endif

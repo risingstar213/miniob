@@ -30,7 +30,7 @@ FilterStmt::~FilterStmt()
   filter_units_.clear();
 }
 
-RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+RC FilterStmt::create(Db *db, TableInfo default_table, std::unordered_map<std::string, Table *> *tables,
 		      Condition *conditions, int condition_num,
 		      FilterStmt *&stmt, bool is_or)
 {
@@ -83,7 +83,7 @@ RC get_table_and_field(Db *db, Table *default_table, std::unordered_map<std::str
   return RC::SUCCESS;
 }
 
-RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+RC FilterStmt::create_filter_unit(Db *db, TableInfo default_table, std::unordered_map<std::string, Table *> *tables,
 				  Condition &condition, FilterUnit *&filter_unit)
 {
   RC rc = RC::SUCCESS;
@@ -100,7 +100,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   AttrType left_type = UNDEFINED;
   AttrType right_type = UNDEFINED;
 
-  std::vector<Table *> table;
+  std::vector<TableInfo> table;
   table.push_back(default_table);
 
   // check left && build left expression

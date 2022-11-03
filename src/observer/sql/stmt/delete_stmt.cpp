@@ -50,7 +50,7 @@ RC DeleteStmt::create(Db *db, Deletes &delete_sql, Stmt *&stmt)
   table_map.insert(std::pair<std::string, Table *>(std::string(table_name), table));
 
   FilterStmt *filter_stmt = nullptr;
-  RC rc = FilterStmt::create(db, table, &table_map,
+  RC rc = FilterStmt::create(db, TableInfo{table, nullptr}, &table_map,
 			     delete_sql.conditions, delete_sql.condition_num, filter_stmt);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));

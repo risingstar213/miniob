@@ -23,6 +23,7 @@ class Field;
 
 typedef struct _Selects Selects;
 typedef struct _RelAttr RelAttr;
+typedef struct _Relation Relation;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
 typedef struct _Join Join;
@@ -35,6 +36,7 @@ typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
 typedef std::deque<Join> JoinList;
 typedef std::deque<OrderCol> OrderColList;
+typedef std::deque<Relation> RelationList;
 
 #define MAX_NUM 20
 #define MAX_REL_NAME 20
@@ -96,6 +98,13 @@ struct _RelAttr {
   bool is_valid;         // if is valid
   char *relation_name;   // relation name (may be NULL) 表名
   char *attribute_name;  // attribute name              属性名
+  char *alias;
+};
+
+// 表名结构体
+struct _Relation {
+  char *relation_name;
+  char *alias;
 };
 
 //属性值
@@ -172,7 +181,7 @@ struct _Selects {
   size_t select_expr_num;                // Length of attrs in Select clause and length of aggregations
   SelectExpr select_expr[MAX_NUM];    // attrs in Select clause
   size_t relation_num;            // Length of relations in Fro clause
-  char *relations[MAX_NUM];       // relations in From clause
+  Relation relations[MAX_NUM];       // relations in From clause
   size_t join_num;                // Length of joins in join clause
   Join join[MAX_NUM];
   bool is_or;
@@ -322,6 +331,9 @@ void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *rel
 void relation_attr_init_copy(RelAttr *relation_attr, RelAttr source, Aggregation agg);
 void relation_attr_destroy(RelAttr *relation_attr);
 
+void relation_name_init(Relation *relation, const char*relation_name, const char *alias);
+void relation_name_destroy(Relation *relation);
+
 void value_init_integer(Value *value, int v, const char *raw);
 void value_init_float(Value *value, float v, const char *raw);
 void value_init_string(Value *value, const char *v);
@@ -362,7 +374,7 @@ void group_destroy(GroupBy *group);
 
 void selects_init(Selects *selects, ...);
 void selects_append_select_exprs(Selects *selects, std::deque<SelectExpr> select_exprs);
-void selects_append_relation(Selects *selects, std::deque<char *> relation_names);
+void selects_append_relation(Selects *selects, std::deque<Relation> relation_names);
 void selects_append_conditions(Selects *selects, std::deque<Condition> conditions, bool is_or = false);
 void selects_append_joins(Selects *selects, std::deque<Join> joins);
 void selects_append_ordercols(Selects *selects, std::deque<OrderCol> cols);

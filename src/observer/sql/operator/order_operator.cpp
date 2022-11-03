@@ -72,10 +72,10 @@ RC OrderOperator::open() {
             cur_col = cols_[i];
             flags.push_back(cur_col->asc);
             for (int j = 0; j < tables_.size(); j++) {
-                if ( strcmp( tables_[j]->name(), fields_[i].table()->name()) != 0 ) { // not the table craved
-                    LOG_INFO(tables_[j]->name());
+                if ( strcmp( tables_[j].table->name(), fields_[i].table()->name()) != 0 ) { // not the table craved
+                    LOG_INFO(tables_[j].table->name());
                     LOG_INFO(fields_[i].table()->name());
-                    index += tables_[j]->table_meta().field_num()-1;
+                    index += tables_[j].table->table_meta().field_num()-1;
                 } else {
                     int offset = fields_[i].table()->table_meta().field_index(fields_[i].field_name());
                     if (offset == -1) {

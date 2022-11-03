@@ -49,6 +49,7 @@ extern int yydebug;
 #include <deque>
 #include <string>
 typedef struct _RelAttr RelAttr;
+typedef struct _Relation Relation;
 typedef struct _Selects Selects;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
@@ -67,9 +68,10 @@ typedef std::deque<SelectExpr> SelectExprList;
 typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
 typedef std::deque<OrderCol> OrderColList;
+typedef std::deque<Relation> RelationList;
 // typedef std::string String;
 
-#line 73 "yacc_sql.tab.h"
+#line 75 "yacc_sql.tab.h"
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -137,22 +139,23 @@ typedef std::deque<OrderCol> OrderColList;
     EXISTS = 316,
     GROUP = 317,
     HAVING = 318,
-    EQ = 319,
-    LT = 320,
-    GT = 321,
-    LE = 322,
-    GE = 323,
-    NE = 324,
-    NUMBER = 325,
-    FLOAT = 326,
-    DATE_DATA = 327,
-    ID = 328,
-    PATH = 329,
-    SSS = 330,
-    LIKE_SSS = 331,
-    STAR = 332,
-    STRING_V = 333,
-    UNARYMINUS = 334
+    AS = 319,
+    EQ = 320,
+    LT = 321,
+    GT = 322,
+    LE = 323,
+    GE = 324,
+    NE = 325,
+    NUMBER = 326,
+    FLOAT = 327,
+    DATE_DATA = 328,
+    ID = 329,
+    PATH = 330,
+    SSS = 331,
+    LIKE_SSS = 332,
+    STAR = 333,
+    STRING_V = 334,
+    UNARYMINUS = 335
   };
 #endif
 
@@ -160,9 +163,10 @@ typedef std::deque<OrderCol> OrderColList;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 149 "yacc_sql.y"
+#line 152 "yacc_sql.y"
 
   RelAttr *attr1;
+  Relation *relation1;
   Condition *condition1;
   Value *value1;
   Join *join1;
@@ -181,13 +185,14 @@ union YYSTYPE
   JoinList *joins1;
   IdList *ids1;
   AttrList *attrs1;
+  RelationList *relations1;
   UpdateValueList *updatevaluelist1;
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
   OrderCol *ocol1; 		// order column
   OrderColList *ocol_list1;
 
-#line 191 "yacc_sql.tab.h"
+#line 196 "yacc_sql.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

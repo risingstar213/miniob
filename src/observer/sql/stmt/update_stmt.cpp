@@ -88,7 +88,7 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
   }
 
   FilterStmt *filter_stmt = nullptr;
-  RC rc = FilterStmt::create(db, table, nullptr, update.conditions, update.condition_num, filter_stmt);
+  RC rc = FilterStmt::create(db, TableInfo{table, nullptr}, nullptr, update.conditions, update.condition_num, filter_stmt);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
     return rc;

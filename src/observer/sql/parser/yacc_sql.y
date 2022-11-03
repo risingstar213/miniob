@@ -52,6 +52,7 @@ extern double atof();
 #include <deque>
 #include <string>
 typedef struct _RelAttr RelAttr;
+typedef struct _Relation Relation;
 typedef struct _Selects Selects;
 typedef struct _Value Value;
 typedef struct _Condition Condition;
@@ -70,6 +71,7 @@ typedef std::deque<SelectExpr> SelectExprList;
 typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
 typedef std::deque<OrderCol> OrderColList;
+typedef std::deque<Relation> RelationList;
 // typedef std::string String;
 }
 
@@ -139,6 +141,7 @@ typedef std::deque<OrderCol> OrderColList;
 		EXISTS
 		GROUP
 		HAVING
+		AS
         EQ
         LT
         GT
@@ -148,6 +151,7 @@ typedef std::deque<OrderCol> OrderColList;
 
 %union {
   RelAttr *attr1;
+  Relation *relation1;
   Condition *condition1;
   Value *value1;
   Join *join1;
@@ -166,6 +170,7 @@ typedef std::deque<OrderCol> OrderColList;
   JoinList *joins1;
   IdList *ids1;
   AttrList *attrs1;
+  RelationList *relations1;
   UpdateValueList *updatevaluelist1;
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
@@ -184,6 +189,7 @@ typedef std::deque<OrderCol> OrderColList;
 %token <string1> STRING_V
 //非终结符
 
+%type <string1> alias;
 %type <number1> type;
 %type <condition1> condition;
 %type <value1> value;
@@ -215,7 +221,7 @@ typedef std::deque<OrderCol> OrderColList;
 %type <conditions1> join_condition_list;
 %type <joins1> join_list;
 %type <ids1> id_list;
-%type <ids1> rel_list;
+%type <relations1> rel_list;
 %type <attrs1> attr_list;
 %type <attrs1> select_attr;
 %type <selectexprs1> select_expr_list;
@@ -558,72 +564,82 @@ update_value:
 	;
 
 select:				/*  select 语句的语法解析树*/
-    SELECT select_expr_list FROM ID rel_list where groupby order
+    SELECT select_expr_list FROM ID alias rel_list where groupby order
 		{
 			$$ = new Selects();
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
-			$5->push_back($4);
-			selects_append_relation($$, *$5);
+			Relation rel;
+			relation_name_init(&rel, $4, $5);
+			$6->push_back(rel);
+			selects_append_relation($$, *$6);
 
 			selects_append_select_exprs($$, *$2);
 
             selects_append_joins($$, JoinList());
 
-			selects_append_conditions($$, *$6);
+			selects_append_conditions($$, *$7);
 
-			selects_append_ordercols($$, *$8);
+			selects_append_ordercols($$, *$9);
 
-			selects_append_groupby($$, $7);
+			selects_append_groupby($$, $8);
 
 			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
 			delete $2;
+			delete $7;
 			delete $6;
-			delete $5;
 
 	}
-	| SELECT select_expr_list FROM ID rel_list or_where
+	| SELECT select_expr_list FROM ID alias rel_list or_where order
 		{
 			$$ = new Selects();
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
-			$5->push_back($4);
-			selects_append_relation($$, *$5);
+			Relation rel;
+			relation_name_init(&rel, $4, $5);
+			$6->push_back(rel);
+			selects_append_relation($$, *$6);
 
 			selects_append_select_exprs($$, *$2);
 
             selects_append_joins($$, JoinList());
 
-			selects_append_conditions($$, *$6, true);
+			selects_append_conditions($$, *$7, true);
 
 			selects_append_groupby($$, nullptr);
 
+			selects_append_ordercols($$, *$8);
+
 			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
 			delete $2;
+			delete $7;
 			delete $6;
-			delete $5;
 
 	}
-	| SELECT select_expr_list FROM ID join_list where order {
+	| SELECT select_expr_list FROM ID alias join_list where order {
 		// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			$$ = new Selects();
-			IdList relation_list;
-			relation_list.push_back($4);
+			Relation rel;
+			relation_name_init(&rel, $4, $5);
+			RelationList relation_list;
+			relation_list.push_back(rel);
 			selects_append_relation($$, relation_list);
 
 			selects_append_select_exprs($$, *$2);
 
-            selects_append_joins($$, *$5);
+            selects_append_joins($$, *$6);
 
-			selects_append_conditions($$, *$6);
+			selects_append_conditions($$, *$7);
 
 			selects_append_groupby($$, nullptr);
+
+			selects_append_ordercols($$, *$8);
 
 			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
 			delete $2;
-			delete $5;
 			delete $6;
+			delete $7;
 	}
 	;
 
@@ -664,9 +680,12 @@ select_arith_expr:
 	;
 
 select_expr_list:
-	STAR {
+	STAR alias {
 		RelAttr *attr = new RelAttr();
 		relation_attr_init_with_aggregation(attr, NULL, "*", AGG_NONE, true);
+		if ($2 != nullptr) {
+			attr->alias = strdup($2);
+		}
 		SelectExpr expr;
 		select_attr_init(&expr, attr);
 		$$ = new SelectExprList();
@@ -685,11 +704,14 @@ select_expr_list:
 	;
 
 select_attr:
-    STAR attr_list {  
+    STAR alias attr_list {  
 			RelAttr attr;
 			relation_attr_init_with_aggregation(&attr, NULL, "*", AGG_NONE, true);
-			$2->push_front(attr);
-			$$ = $2;
+			if ($2 != nullptr) {
+				attr.alias = strdup($2);
+			}
+			$3->push_front(attr);
+			$$ = $3;
 		}
 	| rel_attr attr_list {
 		$2->push_front(*$1);
@@ -772,17 +794,46 @@ aggregtion_attr:
 	}
 	;
 
+alias:
+	/* EMPTY */ {
+		$$ = nullptr;
+	}
+	| AS ID {
+		$$ = $2;
+	}
+	| ID {
+		$$ = $1;
+	}
+	;
+
 rel_attr:
-	ID {
+	ID alias {
 		$$ = new RelAttr();
 		relation_attr_init_with_aggregation($$, NULL, $1, AGG_NONE,true);
+		if ($2 != nullptr) {
+			$$->alias = strdup($2);
+		}
 	}
-	| ID DOT ID {
+	| ID DOT ID alias {
 		$$ = new RelAttr();
 		relation_attr_init_with_aggregation($$, $1, $3, AGG_NONE,true);
+
+		if ($4 != nullptr) {
+			$$->alias = strdup($4);
+		}
 	}
-	| aggregtion_attr {
+	| ID DOT STAR alias {
+		$$ = new RelAttr();
+		relation_attr_init_with_aggregation($$, $1, "*", AGG_NONE,true);
+		if ($4 != nullptr) {
+			$$->alias = strdup($4);
+		}
+	}
+	| aggregtion_attr alias {
 		$$ = $1;
+		if ($2 != nullptr) {
+			$$->alias = strdup($2);
+		}
 	}
 	;
 /*************************** ORDER BY ****************************/
@@ -835,11 +886,13 @@ attr_list:
 
 rel_list:
     /* empty */ {
-		$$ = new IdList();
+		$$ = new RelationList();
 	}
-    | COMMA ID rel_list {	
-		$$ = $3;
-		$$->push_back($2);
+    | COMMA ID alias rel_list {	
+		Relation rel;
+		relation_name_init(&rel, $2, $3);
+		$$ = $4;
+		$$->push_back(rel);
 	}
     ;
 
