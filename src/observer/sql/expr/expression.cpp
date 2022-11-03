@@ -36,6 +36,8 @@ RC FieldExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) cons
     cell.set_type(AggFunc::get_attrtype(agg_, field_.attr_type()));
     if (cell.attr_type() == CHARS || cell.attr_type() == TEXTS) {
         cell.set_length(cell_.length());
+    } else if (cell.attr_type() == DATES) {
+      cell.set_length(12);
     } else {
       cell.set_length(4);
     }
