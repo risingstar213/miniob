@@ -280,6 +280,34 @@ void tuple_to_string(std::ostream &os, const Tuple &tuple)
   }
 }
 
+void table2string(std::ostream &os, OrderTuple tuple) {
+  int m = tuple.getOrderTable().size();
+  if (m == 0) {
+    return; 
+  }
+  int n = tuple.getOrderTable()[0].size();
+  for (int i = 0; i < m; i++) {
+    RC rc = RC::SUCCESS;
+    bool first_field = true;
+    for (int j = 0; j < n; j++) {
+      TupleCell cell = tuple.getOrderTable()[i][j];
+      if (!first_field) {
+        os << " | ";
+      } else {
+        first_field = false;
+      }
+      if (cell.data() == nullptr) {
+       // important
+        LOG_INFO("this value is null");
+        os << "null";
+      } else {
+        cell.to_string(os);
+      }
+    }
+    os << std::endl;
+  }
+}
+
 IndexScanOperator *try_to_create_index_scan_operator(FilterStmt *filter_stmt)
 {
   const std::vector<FilterUnit *> &filter_units = filter_stmt->filter_units();
@@ -481,7 +509,7 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
     project_oper->add_projection(multi_tables, &expressions[i], select_stmt->is_aggregations());
   }
 
-  OrderOperator order_oper(&select_stmt->order_cols());
+  OrderOperator order_oper(select_stmt->order_cols(), select_stmt->oder_fields());
   order_oper.add_child(project_oper); 
 
   rc = order_oper.open();
@@ -491,29 +519,44 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   }
   std::stringstream ss;
   print_tuple_header(ss, *project_oper);
-  while ((rc = order_oper.next()) == RC::SUCCESS) {
-    // get current record
-    // write to response
-    Tuple *tuple = order_oper.current_tuples()[0];
-    if (nullptr == tuple) {
-      rc = RC::INTERNAL;
-      LOG_WARN("failed to get current record. rc=%s", strrc(rc));
-      break;
-    }
-
-    tuple_to_string(ss, *tuple);
-    ss << std::endl;
-  }
-
-  if (rc != RC::RECORD_EOF) {
-    LOG_WARN("something wrong while iterate operator. rc=%s", strrc(rc));
-    order_oper.close();
+  OrderTuple *tuple = static_cast<OrderTuple*>(order_oper.current_tuples()[0]);
+  // LOG_INFO("取出的data:%s", tuple->getOrderTable()[0][0].data());
+  // LOG_INFO("取出的data:%s", tuple->getOrderTable()[0][1].data());
+  // LOG_INFO("取出的data:%s", tuple->getOrderTable()[0][2].data());
+  table2string(ss, *tuple);
+  rc = order_oper.close();
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("something wrong");
     session_event->set_response("FAILURE\n");
   } else {
-    rc = order_oper.close();
     session_event->set_response(ss.str());
   }
   return rc;
+  
+
+  // while ((rc = order_oper.next()) == RC::SUCCESS) {
+  //   // get current record
+  //   // write to response
+  //   Tuple *tuple = order_oper.current_tuples()[0];
+  //   if (nullptr == tuple) {
+  //     rc = RC::INTERNAL;
+  //     LOG_WARN("failed to get current record. rc=%s", strrc(rc));
+  //     break;
+  //   }
+
+  //   tuple_to_string(ss, *tuple);
+  //   ss << std::endl;
+  // }
+
+  // if (rc != RC::RECORD_EOF) {
+  //   LOG_WARN("something wrong while iterate operator. rc=%s", strrc(rc));
+  //   order_oper.close();
+  //   session_event->set_response("FAILURE\n");
+  // } else {
+  //   rc = order_oper.close();
+  //   session_event->set_response(ss.str());
+  // }
+  // return rc;
 }
 
 RC ExecuteStage::do_help(SQLStageEvent *sql_event)

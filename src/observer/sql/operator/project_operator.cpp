@@ -35,12 +35,13 @@ RC ProjectOperator::open()
     LOG_WARN("failed to open child operator: %s", strrc(rc));
     return rc;
   }
-
+  LOG_INFO("PROJECT IS OPENED");
   return RC::SUCCESS;
 }
 
 RC ProjectOperator::next(std::vector<Tuple *> *context)
 {
+  LOG_INFO("PROJECT Next Is called");
   if (!is_aggregation_) {
     RC rc =  children_[0]->next(context);
     if (rc == RC::SUCCESS) {

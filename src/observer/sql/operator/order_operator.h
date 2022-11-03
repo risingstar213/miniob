@@ -7,8 +7,8 @@
 class OrderOperator : public Operator
 {
 public:
-  OrderOperator(std::vector<OrderCol *> *order_col_)
-  : cols_(order_col_)
+  OrderOperator(std::vector<OrderCol *> order_col_, std::vector<Field> order_fields)
+  : cols_(order_col_), fields_(order_fields)
   {}
 
   virtual ~OrderOperator() = default;
@@ -16,17 +16,13 @@ public:
   RC open() override;
   RC next(std::vector<Tuple *> *context = nullptr) override;
   RC close() override;
-
-  int tuple_cell_num() const
-  {
-    return tuple_.cell_num();
-  }
     
   RC tuple_cell_spec_at(int index, const TupleCellSpec *&spec) const;
 
   std::vector<Tuple *> current_tuples() override;
+  //bool cmp(std::vector<TupleCell> &a, std::vector<TupleCell> &b);
 private:
-  ProjectTuple tuple_;
-  std::vector<Tuple> tuples_;
-  std::vector<OrderCol *> *cols_;
+  OrderTuple orderTuple;
+  std::vector<OrderCol *> cols_;
+  std::vector<Field> fields_;
 };

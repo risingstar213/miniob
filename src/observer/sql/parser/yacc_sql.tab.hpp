@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.5.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,9 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+/* Undocumented macros, especially those whose name start with YY_,
+   are private implementation details.  Do not rely on them.  */
+
 #ifndef YY_YY_YACC_SQL_TAB_H_INCLUDED
 # define YY_YY_YACC_SQL_TAB_H_INCLUDED
 /* Debug traces.  */
@@ -40,7 +44,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 51 "yacc_sql.y" /* yacc.c:1909  */
+#line 51 "yacc_sql.y"
 
 #include <deque>
 #include <string>
@@ -52,6 +56,7 @@ typedef struct _Join Join;
 typedef struct _UpdateValue UpdateValue;
 typedef struct _SelectExpr SelectExpr;
 typedef struct _ConditionExpr ConditionExpr;
+typedef struct _OrderCol OrderCol;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
@@ -60,95 +65,98 @@ typedef std::deque<UpdateValue> UpdateValueList;
 typedef std::deque<SelectExpr> SelectExprList;
 typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
+typedef std::deque<OrderCol> OrderColList;
 // typedef std::string String;
 
-#line 66 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 72 "yacc_sql.tab.h"
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    IS = 258,
-    NULL_ = 259,
-    NULLABLE = 260,
-    SEMICOLON = 261,
-    CREATE = 262,
-    DROP = 263,
-    TABLE = 264,
-    TABLES = 265,
-    INDEX = 266,
-    SELECT = 267,
-    DESC = 268,
-    SHOW = 269,
-    SYNC = 270,
-    INSERT = 271,
-    DELETE = 272,
-    UPDATE = 273,
-    LBRACE = 274,
-    RBRACE = 275,
-    COMMA = 276,
-    TRX_BEGIN = 277,
-    TRX_COMMIT = 278,
-    TRX_ROLLBACK = 279,
-    INT_T = 280,
-    STRING_T = 281,
-    FLOAT_T = 282,
-    DATE_T = 283,
-    TEXT_T = 284,
-    HELP = 285,
-    EXIT = 286,
-    DOT = 287,
-    INTO = 288,
-    VALUES = 289,
-    FROM = 290,
-    WHERE = 291,
-    AND = 292,
-    SET = 293,
-    NOT = 294,
-    LIKE = 295,
-    INNER = 296,
-    JOIN = 297,
-    ON = 298,
-    LOAD = 299,
-    DATA = 300,
-    INFILE = 301,
-    UNIQUE = 302,
-    MAX = 303,
-    MIN = 304,
-    SUM = 305,
-    COUNT = 306,
-    AVG = 307,
-    ADD_OP = 308,
-    SUB_OP = 309,
-    DIV_OP = 310,
-    IN = 311,
-    EXISTS = 312,
-    EQ = 313,
-    LT = 314,
-    GT = 315,
-    LE = 316,
-    GE = 317,
-    NE = 318,
-    NUMBER = 319,
-    FLOAT = 320,
-    DATE_DATA = 321,
-    ID = 322,
-    PATH = 323,
-    SSS = 324,
-    LIKE_SSS = 325,
-    STAR = 326,
-    STRING_V = 327,
-    UNARYMINUS = 328
+    ORDER = 258,
+    BY = 259,
+    ASC = 260,
+    IS = 261,
+    NULL_ = 262,
+    NULLABLE = 263,
+    SEMICOLON = 264,
+    CREATE = 265,
+    DROP = 266,
+    TABLE = 267,
+    TABLES = 268,
+    INDEX = 269,
+    SELECT = 270,
+    DESC = 271,
+    SHOW = 272,
+    SYNC = 273,
+    INSERT = 274,
+    DELETE = 275,
+    UPDATE = 276,
+    LBRACE = 277,
+    RBRACE = 278,
+    COMMA = 279,
+    TRX_BEGIN = 280,
+    TRX_COMMIT = 281,
+    TRX_ROLLBACK = 282,
+    INT_T = 283,
+    STRING_T = 284,
+    FLOAT_T = 285,
+    DATE_T = 286,
+    TEXT_T = 287,
+    HELP = 288,
+    EXIT = 289,
+    DOT = 290,
+    INTO = 291,
+    VALUES = 292,
+    FROM = 293,
+    WHERE = 294,
+    AND = 295,
+    SET = 296,
+    NOT = 297,
+    LIKE = 298,
+    INNER = 299,
+    JOIN = 300,
+    ON = 301,
+    LOAD = 302,
+    DATA = 303,
+    INFILE = 304,
+    UNIQUE = 305,
+    MAX = 306,
+    MIN = 307,
+    SUM = 308,
+    COUNT = 309,
+    AVG = 310,
+    ADD_OP = 311,
+    SUB_OP = 312,
+    DIV_OP = 313,
+    IN = 314,
+    EXISTS = 315,
+    EQ = 316,
+    LT = 317,
+    GT = 318,
+    LE = 319,
+    GE = 320,
+    NE = 321,
+    NUMBER = 322,
+    FLOAT = 323,
+    DATE_DATA = 324,
+    ID = 325,
+    PATH = 326,
+    SSS = 327,
+    LIKE_SSS = 328,
+    STAR = 329,
+    STRING_V = 330,
+    UNARYMINUS = 331
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
 union YYSTYPE
 {
-#line 140 "yacc_sql.y" /* yacc.c:1909  */
+#line 145 "yacc_sql.y"
 
   RelAttr *attr1;
   Condition *condition1;
@@ -171,10 +179,12 @@ union YYSTYPE
   UpdateValueList *updatevaluelist1;
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
+  OrderCol *ocol1; 		// order column
+  OrderColList *ocol_list1;
 
-#line 176 "yacc_sql.tab.h" /* yacc.c:1909  */
+#line 186 "yacc_sql.tab.h"
+
 };
-
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

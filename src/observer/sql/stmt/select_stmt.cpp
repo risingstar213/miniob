@@ -110,22 +110,30 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
   // check if the columns ordered by are valid
   int order_num = select_sql.order_col_num;
   std::vector<OrderCol *> order_cols;
+  std::vector<Field> order_fields;
   for (int i = 0; i < order_num; i++) {
     OrderCol* orderCol = &select_sql.order_col[i];
     RelAttr* relAttr = orderCol->attr;
     const char *table_name = relAttr->relation_name;
     const char *field_name = relAttr->attribute_name;
-    auto iter = table_map.find(table_name);
-    if (iter == table_map.end()) {
-      LOG_WARN("===order check: no such table in from list: %s", table_name);
-      return RC::SCHEMA_FIELD_MISSING;
+    Table *table;
+    if (table_name == nullptr) {
+      table = tables[0];
+    } else {
+      auto iter = table_map.find(table_name);
+      if (iter == table_map.end()) {
+        LOG_WARN("===order check: no such table in from list: %s", table_name);
+        return RC::SCHEMA_FIELD_MISSING;
+      }
+      table = iter->second;
     }
-    Table *table = iter->second;
     const FieldMeta *field_meta = table->table_meta().field(field_name);
     if (nullptr == field_meta) {
       LOG_WARN("===order check: no such field. field=%s.%s.%s", db->name(), table->name(), field_name);
       return RC::SCHEMA_FIELD_MISSING;
     }
+    Field field(table, field_meta);
+    order_fields.push_back(field);
     order_cols.push_back(orderCol);
   }
   
@@ -245,6 +253,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
   select_stmt->select_exprs_.swap(expressions);
   select_stmt->join_stmts_.swap(join_stmts);
   select_stmt->order_cols_.swap(order_cols);
+  select_stmt->order_fields_.swap(order_fields);
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->is_aggregations_ = aggregation_num == attr_num;
   // select_stmt->aggregations_.swap(aggregations);

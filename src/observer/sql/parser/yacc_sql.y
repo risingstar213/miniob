@@ -59,6 +59,7 @@ typedef struct _Join Join;
 typedef struct _UpdateValue UpdateValue;
 typedef struct _SelectExpr SelectExpr;
 typedef struct _ConditionExpr ConditionExpr;
+typedef struct _OrderCol OrderCol;
 typedef std::deque<RelAttr> AttrList;
 typedef std::deque<Value> ValueList;
 typedef std::deque<Condition> ConditionList;
@@ -67,6 +68,7 @@ typedef std::deque<UpdateValue> UpdateValueList;
 typedef std::deque<SelectExpr> SelectExprList;
 typedef std::deque<ConditionExpr> ConditionExprList;
 typedef std::deque<char *> IdList;
+typedef std::deque<OrderCol> OrderColList;
 // typedef std::string String;
 }
 
@@ -78,7 +80,6 @@ typedef std::deque<char *> IdList;
 %token  ORDER
 		BY 
 		ASC
-		DESC
 		IS
 		NULL_
 		NULLABLE
@@ -163,7 +164,8 @@ typedef std::deque<char *> IdList;
   UpdateValueList *updatevaluelist1;
   SelectExprList *selectexprs1;
   ConditionExprList *conditionexprs1;
-  OrderCol *ocol; 		// order column
+  OrderCol *ocol1; 		// order column
+  OrderColList *ocol_list1;
 }
 
 %token <string1> NUMBER
@@ -193,9 +195,9 @@ typedef std::deque<char *> IdList;
 %type <select1> select;
 %type <updatevalue1> update_value;
 %type <selectexpr1> select_arith_expr;
-%type <ocol> order_col
-%type <ocol_list> order
-%type <ocol_list> order_col_list
+%type <ocol1> order_col;
+%type <ocol_list1> order;
+%type <ocol_list1> order_col_list;
 %type <conditionexpr1> condition_expr;
 
 %type <values1> value_list;
@@ -428,7 +430,7 @@ insert:				/*insert   语句的语法解析树*/
 row_list:
 	/* empty */
 	| COMMA row row_list
-	{	/* do nothing here */	}
+	{	/* do nothing here */	};
 
 row:
 	LBRACE value value_list RBRACE {
@@ -547,7 +549,7 @@ update_value:
 	;
 
 select:				/*  select 语句的语法解析树*/
-    SELECT select_expr_list FROM ID rel_list where
+    SELECT select_expr_list FROM ID rel_list where order
 		{
 			$$ = new Selects();
 			// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
@@ -560,6 +562,8 @@ select:				/*  select 语句的语法解析树*/
 
 			selects_append_conditions($$, *$6);
 
+			selects_append_ordercols($$, *$7);
+
 			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
 			delete $2;
@@ -567,7 +571,7 @@ select:				/*  select 语句的语法解析树*/
 			delete $5;
 
 	}
-	| SELECT select_expr_list FROM ID join_list where {
+	| SELECT select_expr_list FROM ID join_list where order {
 		// CONTEXT->ssql->sstr.selection.relations[CONTEXT->from_length++]=$4;
 			$$ = new Selects();
 			IdList relation_list;
@@ -579,6 +583,8 @@ select:				/*  select 语句的语法解析树*/
             selects_append_joins($$, *$5);
 
 			selects_append_conditions($$, *$6);
+
+			selects_append_ordercols($$, *$7);
 
 			// CONTEXT->ssql->flag=SCF_SELECT;//"select";
 			// CONTEXT->ssql->sstr.selection.attr_num = CONTEXT->select_length;
@@ -752,9 +758,9 @@ order:
 	{
 		$$ = new OrderColList;
 	}
-	| ORDER BY order_col[ocol] order_col_list[ocolist] {
-		$$ = $ocolist;
-		$$->push_front($ocol);
+	| ORDER BY order_col order_col_list {
+		$$ = $4;
+		$$->push_front(*$3);
 	}
 	;
 
@@ -763,9 +769,9 @@ order_col_list:
 	{
 		$$ = new OrderColList;
 	}
-	| COMMA order_col[ocol] order_col_list[ocolist] {
-		$$ = $ocolist;
-		$$->push_front($ocol);
+	| COMMA order_col order_col_list {
+		$$ = $3;
+		$$->push_front(*$2);
 	}
 	;
 
@@ -777,11 +783,12 @@ order_col:
 	| rel_attr ASC {
 		$$ = (OrderCol *)malloc(sizeof(OrderCol));
 		order_col_init($$, $1, 1);
-	} rel_attr DESC {
+	}
+	| rel_attr DESC {
 		$$ = (OrderCol *)malloc(sizeof(OrderCol));
 		order_col_init($$, $1, 0);
 	}
-
+	;
 attr_list:
     /* empty */ {
 		$$ = new AttrList();

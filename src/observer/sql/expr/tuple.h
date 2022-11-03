@@ -127,13 +127,13 @@ public:
     if (0 != strcmp(table_name, table_->name())) {
       return RC::NOTFOUND;
     }
-
+    
     const char *field_name = field.field_name();
     for (size_t i = 0; i < speces_.size(); ++i) {
       const FieldExpr * field_expr = (const FieldExpr *)speces_[i]->expression();
       const Field &field = field_expr->field();
       if (0 == strcmp(field_name, field.field_name())) {
-	return cell_at(i, cell);
+	      return cell_at(i, cell);
       }
     }
     return RC::NOTFOUND;
@@ -244,4 +244,43 @@ private:
   // std::vector<AggData *> values_;
   std::vector<Tuple *> tuples_;
   // bool is_aggregation_ = false;
+};
+
+class OrderTuple : public Tuple {
+public:
+  OrderTuple() = default;
+  virtual ~OrderTuple() = default;
+  
+  void delete_tuple()
+  {
+    for (int i = 0; i < orderTable.size(); i++) {
+      for (int j = 0; j < orderTable[0].size(); j++) {
+        LOG_INFO("OrderTuple: %p", orderTable[i][j].data());
+        delete[] orderTable[i][j].data();
+      }
+    }
+    orderTable.clear();
+  }
+  int cell_num() const override
+  {
+    return orderTable.size();
+  }
+
+  RC cell_at(int index, TupleCell &cell) const override
+  {
+    return RC::SUCCESS;
+  }
+
+  RC find_cell(const Field &field, TupleCell &cell) const override
+  {
+    return RC::SUCCESS;
+  }
+  RC cell_spec_at(int index, const TupleCellSpec *&spec) const override
+  {
+    return RC::SUCCESS;
+  }
+
+  std::vector<std::vector<TupleCell> >& getOrderTable() { return orderTable; }
+private:
+  std::vector<std::vector<TupleCell> >  orderTable;
 };
