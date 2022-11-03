@@ -45,6 +45,10 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<TableI
     // select * / count(*)
     if (strcmp(expr->attr->attribute_name, "*") == 0) {
       if ((depth == 0 && expr->attr->agg == AGG_NONE)) {
+        if (expr->attr->alias != nullptr) {
+          LOG_WARN("select * cannot have alias !!!");
+          return RC::INVALID_ARGUMENT;
+        }
         expr->type = INTS;
         return RC::SUCCESS;
       } else if (expr->attr->agg == AGG_COUNT) {
@@ -81,6 +85,10 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<TableI
     }
     if (0 == strcmp(expr->attr->attribute_name, "*")) {
       if (depth == 0 && expr->attr->agg == AGG_NONE) {
+        if (expr->attr->alias != nullptr) {
+          LOG_WARN("select t.* cannot have alias !!!");
+          return RC::INVALID_ARGUMENT;
+        }
         expr->type = INTS;
         return RC::SUCCESS;
       } else {

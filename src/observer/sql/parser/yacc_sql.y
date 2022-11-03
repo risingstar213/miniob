@@ -665,9 +665,12 @@ select_arith_expr:
 	;
 
 select_expr_list:
-	STAR {
+	STAR alias {
 		RelAttr *attr = new RelAttr();
 		relation_attr_init_with_aggregation(attr, NULL, "*", AGG_NONE, true);
+		if ($2 != nullptr) {
+			attr->alias = strdup($2);
+		}
 		SelectExpr expr;
 		select_attr_init(&expr, attr);
 		$$ = new SelectExprList();
@@ -686,11 +689,14 @@ select_expr_list:
 	;
 
 select_attr:
-    STAR attr_list {  
+    STAR alias attr_list {  
 			RelAttr attr;
 			relation_attr_init_with_aggregation(&attr, NULL, "*", AGG_NONE, true);
-			$2->push_front(attr);
-			$$ = $2;
+			if ($2 != nullptr) {
+				attr.alias = strdup($2);
+			}
+			$3->push_front(attr);
+			$$ = $3;
 		}
 	| rel_attr attr_list {
 		$2->push_front(*$1);
@@ -801,9 +807,12 @@ rel_attr:
 			$$->alias = strdup($4);
 		}
 	}
-	| ID DOT STAR {
+	| ID DOT STAR alias {
 		$$ = new RelAttr();
 		relation_attr_init_with_aggregation($$, $1, "*", AGG_NONE,true);
+		if ($4 != nullptr) {
+			$$->alias = strdup($4);
+		}
 	}
 	| aggregtion_attr alias {
 		$$ = $1;
