@@ -269,6 +269,8 @@ RC Table::insert_record(Trx *trx, Record *record)
   }
 
   rc = record_handler_->insert_record(record->data(), table_meta_.record_size(), &record->rid());
+
+  LOG_INFO("insert data: %s", record->rid().to_string().c_str());
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Insert record failed. table name=%s, rc=%d:%s", table_meta_.name(), rc, strrc(rc));
     return rc;
@@ -750,6 +752,7 @@ RC Table::delete_record(Trx *trx, Record *record)
   RC rc = RC::SUCCESS;
 
   rc = delete_entry_of_indexes(record->data(), record->rid(), false);  // 重复代码 refer to commit_delete
+  LOG_INFO("delete data: %s", record->rid().to_string().c_str());
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to delete indexes of record (rid=%d.%d). rc=%d:%s",
         record->rid().page_num,
@@ -800,19 +803,19 @@ RC Table::commit_delete(Trx *trx, const RID &rid)
   if (rc != RC::SUCCESS) {
     return rc;
   }
-  rc = delete_entry_of_indexes(record.data(), record.rid(), false);
-  if (rc != RC::SUCCESS) {
-    LOG_ERROR("Failed to delete indexes of record(rid=%d.%d). rc=%d:%s",
-        rid.page_num,
-        rid.slot_num,
-        rc,
-        strrc(rc));  // panic?
-  }
+  // rc = delete_entry_of_indexes(record.data(), record.rid(), false);
+  // if (rc != RC::SUCCESS) {
+  //   LOG_ERROR("Failed to delete indexes of record(rid=%d.%d). rc=%d:%s",
+  //       rid.page_num,
+  //       rid.slot_num,
+  //       rc,
+  //       strrc(rc));  // panic?
+  // }
 
-  rc = record_handler_->delete_record(&rid);
-  if (rc != RC::SUCCESS) {
-    return rc;
-  }
+  // rc = record_handler_->delete_record(&rid);
+  // if (rc != RC::SUCCESS) {
+  //   return rc;
+  // }
 
   return rc;
 }
@@ -837,7 +840,7 @@ RC Table::commit_update(Trx *trx, const RID &rid)
     LOG_ERROR("Failed to get record %s: %s", this->name(), rid.to_string().c_str());
     return rc;
   }
-  return trx->commit_insert(this, record); // same with commit
+  return trx->commit_insert(this, record); // same with insert
 }
 
 RC Table::recover_update_record(Record *record)
