@@ -70,7 +70,7 @@ char *execute_format(const char *data, char *format)
   sstream << std::setw(2) << std::setfill('0') << date->getMonth();
   std::string m = sstream.str(); sstream.str("");
   
-  sstream << std::setw(2) << std::setfill('0') << date->getDay() << suffix(date->getDay());
+  sstream << date->getDay() << suffix(date->getDay());
   std::string D = sstream.str(); sstream.str("");
   
   sstream << std::setw(2) << std::setfill('0') << date->getDay();
@@ -111,6 +111,11 @@ char *execute_format(const char *data, char *format)
 	{
 		format_.replace(pos,2,d);
 		pos+=d.size();
+	}
+  pos = 0;
+  while((pos=format_.find("%",pos))!=string::npos)
+	{
+		format_.replace(pos,2,"");
 	}
   return strdup(format_.c_str());
 }
