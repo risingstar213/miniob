@@ -86,8 +86,11 @@ QUOTE            [\'\"]
 [Mm][Aa][Xx]                                         RETURN_TOKEN(MAX);
 [Mm][Ii][Nn]                                         RETURN_TOKEN(MIN);
 [Ss][Uu][Mm]                                         RETURN_TOKEN(SUM);
-[Cc][Oo][Uu][Nn][Tt]                                 RETURN_TOKEN(COUNT;)
+[Cc][Oo][Uu][Nn][Tt]                                 RETURN_TOKEN(COUNT);
 [Aa][Vv][Gg]                                         RETURN_TOKEN(AVG);
+[Ll][Ee][Nn][Gg][Tt][Hh]                             RETURN_TOKEN(LENGTH);
+[Rr][Oo][Uu][Nn][Dd]                                 RETURN_TOKEN(ROUND);
+[Dd][Aa][Tt][Ee]_[Ff][Oo][Rr][Mm][Aa][Tt]            RETURN_TOKEN(DATE_FORMAT);
 [Ii][Nn]                                             RETURN_TOKEN(IN);
 [Ee][Xx][Ii][Ss][Tt][Ss]                             RETURN_TOKEN(EXISTS);
 [Gg][Rr][Oo][Uu][Pp]                                 RETURN_TOKEN(GROUP);
@@ -107,6 +110,7 @@ QUOTE            [\'\"]
 "<"                                                  RETURN_TOKEN(LT);
 ">="                                                 RETURN_TOKEN(GE);
 ">"                                                  RETURN_TOKEN(GT);
+{QUOTE}\%[Yy]\-\%[Mm]\-\%[Dd]{QUOTE}                 yylval->string1=strdup(yytext); RETURN_TOKEN(FORMAT_SSS);
 {QUOTE}[\ A-Za-z0-9_/\.\-]*{QUOTE}                   yylval->string1=strdup(yytext); RETURN_TOKEN(SSS);
 {QUOTE}[A-Za-z0-9_/\.\-\%]*{QUOTE}                   yylval->string1=strdup(yytext); RETURN_TOKEN(LIKE_SSS);
 

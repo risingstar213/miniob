@@ -75,12 +75,12 @@ typedef enum
 
 // the functions of aggregation
 enum Aggregation {
-  AGG_NONE,
   AGG_MAX,
   AGG_MIN,
   AGG_COUNT,
   AGG_AVG,
-  AGG_SUM
+  AGG_SUM,
+  AGG_NONE
 };
 
 enum ArithOp {
@@ -90,6 +90,18 @@ enum ArithOp {
   ARITH_DIV,
   ARITH_NEG,
   ARITH_NONE
+};
+
+enum FunctionOp {
+  FUNC_LENGTH,
+  FUNC_ROUND,
+  FUNC_FORMAT,
+  FUNC_NONE
+};
+
+struct Function {
+  FunctionOp op;
+  char *data;
 };
 
 //属性结构体
@@ -119,6 +131,11 @@ struct _SelectExpr {
   ArithOp arithOp;
   SelectExpr *left;
   SelectExpr *right;
+
+  // For function
+  Function *function;
+  char *alias;
+
   // Aggregation agg;  no aggregation in expression
   // 叶子节点 == RelAttr / Value
   bool is_attr;
@@ -148,7 +165,7 @@ struct _Condition {
   //                      // 1时，操作符左边是属性名，0时，是属性值
   // Value left_value;    // left-hand side value if left_is_attr = FALSE
   // RelAttr left_attr;   // left-hand side attribute
-  CompOp comp;         // comparison operator
+  CompOp comp;            // comparison operator
   // int right_is_attr;   // TRUE if right-hand side is an attribute
   //                      // 1时，操作符右边是属性名，0时，是属性值
   // RelAttr right_attr;  // right-hand side attribute if right_is_attr = TRUE 右边的属性
@@ -328,7 +345,7 @@ typedef struct Query {
 
 void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const char *attribute_name);
 void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *relation_name, const char *attribute_name, Aggregation agg, bool is_valid);
-void relation_attr_init_copy(RelAttr *relation_attr, RelAttr source, Aggregation agg);
+void relation_attr_init_update_aggregation(RelAttr *relation_attr, RelAttr source, Aggregation agg);
 void relation_attr_destroy(RelAttr *relation_attr);
 
 void relation_name_init(Relation *relation, const char*relation_name, const char *alias);
@@ -343,6 +360,11 @@ void value_init_null(Value *value);
 
 void order_col_init(OrderCol *col, RelAttr *attr, int asc_flag);
 void order_col_destory(OrderCol *col);
+
+void function_init_length(SelectExpr *expr, SelectExpr *right_expr, const char *alias);
+void function_init_round(SelectExpr *expr, SelectExpr *right_expr, int len, const char *alias);
+void function_init_format(SelectExpr *expr, SelectExpr *right_expr, const char *format, const char *alias);
+void function_destroy(Function *func);
 
 void select_attr_init(SelectExpr *expr, RelAttr *attr);
 void select_value_init(SelectExpr *expr, Value *value);

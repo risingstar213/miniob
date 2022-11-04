@@ -55,4 +55,5 @@ private:
   bool has_run_;
   // std::vector<Tuple> tuples_;
   GroupOperator *child_ = nullptr;
+  bool ended_;
 };

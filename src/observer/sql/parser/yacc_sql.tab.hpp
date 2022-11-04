@@ -1,9 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.5.1.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
-   Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,9 +30,6 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* Undocumented macros, especially those whose name start with YY_,
-   are private implementation details.  Do not rely on them.  */
-
 #ifndef YY_YY_YACC_SQL_TAB_H_INCLUDED
 # define YY_YY_YACC_SQL_TAB_H_INCLUDED
 /* Debug traces.  */
@@ -44,7 +40,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 51 "yacc_sql.y"
+#line 51 "yacc_sql.y" /* yacc.c:1909  */
 
 #include <deque>
 #include <string>
@@ -71,7 +67,7 @@ typedef std::deque<OrderCol> OrderColList;
 typedef std::deque<Relation> RelationList;
 // typedef std::string String;
 
-#line 75 "yacc_sql.tab.h"
+#line 71 "yacc_sql.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -132,38 +128,43 @@ typedef std::deque<Relation> RelationList;
     SUM = 309,
     COUNT = 310,
     AVG = 311,
-    ADD_OP = 312,
-    SUB_OP = 313,
-    DIV_OP = 314,
-    IN = 315,
-    EXISTS = 316,
-    GROUP = 317,
-    HAVING = 318,
-    AS = 319,
-    EQ = 320,
-    LT = 321,
-    GT = 322,
-    LE = 323,
-    GE = 324,
-    NE = 325,
-    NUMBER = 326,
-    FLOAT = 327,
-    DATE_DATA = 328,
-    ID = 329,
-    PATH = 330,
-    SSS = 331,
-    LIKE_SSS = 332,
-    STAR = 333,
-    STRING_V = 334,
-    UNARYMINUS = 335
+    LENGTH = 312,
+    ROUND = 313,
+    DATE_FORMAT = 314,
+    ADD_OP = 315,
+    SUB_OP = 316,
+    DIV_OP = 317,
+    IN = 318,
+    EXISTS = 319,
+    GROUP = 320,
+    HAVING = 321,
+    AS = 322,
+    EQ = 323,
+    LT = 324,
+    GT = 325,
+    LE = 326,
+    GE = 327,
+    NE = 328,
+    NUMBER = 329,
+    FLOAT = 330,
+    DATE_DATA = 331,
+    ID = 332,
+    PATH = 333,
+    SSS = 334,
+    LIKE_SSS = 335,
+    FORMAT_SSS = 336,
+    STAR = 337,
+    STRING_V = 338,
+    UNARYMINUS = 339
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+
 union YYSTYPE
 {
-#line 152 "yacc_sql.y"
+#line 155 "yacc_sql.y" /* yacc.c:1909  */
 
   RelAttr *attr1;
   Relation *relation1;
@@ -192,9 +193,9 @@ union YYSTYPE
   OrderCol *ocol1; 		// order column
   OrderColList *ocol_list1;
 
-#line 196 "yacc_sql.tab.h"
-
+#line 197 "yacc_sql.tab.h" /* yacc.c:1909  */
 };
+
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

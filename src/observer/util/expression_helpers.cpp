@@ -136,13 +136,44 @@ RC check_select_expression_valid(SelectExpr *expr, int depth, std::vector<TableI
   if (rc != RC::SUCCESS) {
     return rc;
   }
-  if (expr->right->type == DATES || expr->right->type == CHARS || expr->right->type == TEXTS) {
+  if (expr->function == nullptr && (expr->right->type == DATES || expr->right->type == CHARS || expr->right->type == TEXTS)) {
       LOG_WARN("the type %d in complex expression is not supported.", expr->right->type);
       return RC::INVALID_ARGUMENT;
   }
   expr->attr_num += expr->right->attr_num;
   expr->aggregation_num += expr->right->aggregation_num;
-  expr->type = FLOATS;
+  if (expr->function != nullptr) {
+    switch (expr->function->op) {
+      case FUNC_LENGTH: {
+        if (expr->right->type != CHARS) {
+          LOG_INFO("The type %d doesn't match FUNC_LENGTH", expr->right->type);
+          return RC::INVALID_ARGUMENT;
+        }
+        expr->type = INTS;
+      } break;
+      case FUNC_ROUND: {
+        if (expr->right->type != FLOATS) {
+          LOG_INFO("The type %d doesn't match FUNC_ROUND", expr->right->type);
+          return RC::INVALID_ARGUMENT;
+        }
+        expr->type = FLOATS;
+      } break;
+      case FUNC_FORMAT: {
+        if (expr->right->type != DATES) {
+          LOG_INFO("The type %d doesn't match FUNC_FORMAT", expr->right->type);
+          return RC::INVALID_ARGUMENT;
+        }
+        expr->type = CHARS;
+      } break;
+      default: {
+        if (expr->right->type != CHARS) {
+          return RC::INVALID_ARGUMENT;
+        }
+      } break;
+    }
+  } else {
+    expr->type = FLOATS;
+  }
   return RC::SUCCESS;
 }
 
@@ -214,7 +245,13 @@ std::string generate_alias(bool multi_tables, SelectExpr *expr)
     str += '(';
   }
   if (expr->is_value) {
-    str += (char *)expr->value->raw_data;
+    if (expr->value->type == FLOATS || expr->value->type == INTS) {
+      str += (char *)expr->value->raw_data;
+    } else {
+      str += "\'";
+      str += (char *)expr->value->raw_data;
+      str += "\'";
+    }
   } else if (expr->is_attr) {
     if (expr->field->get_alias() != nullptr) {
       str += expr->field->get_alias();
@@ -253,32 +290,61 @@ std::string generate_alias(bool multi_tables, SelectExpr *expr)
       }
     }
   } else {
-    std::string left_str;
-    std::string right_str;
-    if (expr->left != nullptr) {
-      left_str = generate_alias(multi_tables, expr->left);
-    }
-    if (expr->right != nullptr) {
-      right_str = generate_alias(multi_tables, expr->right);
-    }
-    switch (expr->arithOp) {
-      case ARITH_ADD: {
-        str += left_str + "+" + right_str;
-      } break;
-      case ARITH_SUB: {
-        str += left_str + "-" + right_str;
-      } break;
-      case ARITH_MUL: {
-        str += left_str + "*" + right_str;
-      } break;
-      case ARITH_DIV: {
-        str += left_str + "/" + right_str;
-      } break;
-      case ARITH_NEG: {
-        str += "-" + right_str;
-      } break;
-      default:
-        break;
+    if (expr->function != nullptr) {
+      if (expr->alias != nullptr) {
+        str += expr->alias;
+      } else {
+        std::string right_str = generate_alias(multi_tables, expr->right);
+        switch (expr->function->op) {
+          case FUNC_LENGTH: {
+            str += "length(" + right_str + ")";
+          } break;
+          case FUNC_ROUND: {
+            str += "round(" + right_str;
+            if (expr->function->data != nullptr) {
+              str += "," + + *(int *)expr->function->data;
+
+            }
+            str += ")";
+          } break;
+          case FUNC_FORMAT: {
+            str += "data_format(" + right_str + ",";
+            str += (expr->function->data);
+            str += ")";
+          } break;
+          default:
+            break;
+        }
+        return str;
+      }
+    } else {
+      std::string left_str;
+      std::string right_str;
+      if (expr->left != nullptr) {
+        left_str = generate_alias(multi_tables, expr->left);
+      }
+      if (expr->right != nullptr) {
+        right_str = generate_alias(multi_tables, expr->right);
+      }
+      switch (expr->arithOp) {
+        case ARITH_ADD: {
+          str += left_str + "+" + right_str;
+        } break;
+        case ARITH_SUB: {
+          str += left_str + "-" + right_str;
+        } break;
+        case ARITH_MUL: {
+          str += left_str + "*" + right_str;
+        } break;
+        case ARITH_DIV: {
+          str += left_str + "/" + right_str;
+        } break;
+        case ARITH_NEG: {
+          str += "-" + right_str;
+        } break;
+        default:
+          break;
+      }
     }
   }
   if (expr->is_brace) {

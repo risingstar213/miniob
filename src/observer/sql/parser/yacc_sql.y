@@ -134,6 +134,9 @@ typedef std::deque<Relation> RelationList;
 		SUM
 		COUNT
 		AVG
+		LENGTH
+		ROUND
+		DATE_FORMAT
 		ADD_OP
 		SUB_OP
 		DIV_OP
@@ -185,6 +188,7 @@ typedef std::deque<Relation> RelationList;
 %token <string1> PATH
 %token <string1> SSS
 %token <string1> LIKE_SSS
+%token <string1> FORMAT_SSS
 %token <string1> STAR
 %token <string1> STRING_V
 //非终结符
@@ -503,6 +507,10 @@ insert_value:
   		$$ = new Value();
 		value_init_integer($$, -atoi($2), $2);
 	}
+	| SUB_OP FLOAT {
+		$$ = new Value();
+		value_init_float($$, -(float)(atof($2)), $2);
+	}
 	;
 
 like_value:
@@ -641,6 +649,20 @@ select:				/*  select 语句的语法解析树*/
 			delete $6;
 			delete $7;
 	}
+	| SELECT select_expr_list {
+		$$ = new Selects();
+		selects_append_relation($$, RelationList());
+
+		selects_append_select_exprs($$, *$2);
+
+		selects_append_joins($$, JoinList());
+
+		selects_append_conditions($$, ConditionList());
+
+		selects_append_groupby($$, nullptr);
+
+		selects_append_ordercols($$, OrderColList());
+	}
 	;
 
 
@@ -676,6 +698,23 @@ select_arith_expr:
 	| SUB_OP select_arith_expr %prec UNARYMINUS {
 		$$ = new SelectExpr();
 		select_subexpr_init($$, nullptr, $2, ARITH_NEG);
+	}
+	| LENGTH LBRACE select_arith_expr RBRACE alias {
+		$$ = new SelectExpr();
+		function_init_length($$, $3, $5);
+	}
+	| ROUND LBRACE select_arith_expr RBRACE alias {
+		$$ = new SelectExpr();
+		function_init_round($$, $3, -1, $5);
+	}
+	| ROUND LBRACE select_arith_expr COMMA NUMBER RBRACE alias {
+		$$ = new SelectExpr();
+		function_init_round($$, $3, atoi($5), $7);
+	}
+	| DATE_FORMAT LBRACE select_arith_expr COMMA FORMAT_SSS RBRACE alias {
+		$5 = substr($5,1,strlen($5)-2);
+		$$ = new SelectExpr();
+		function_init_format($$, $3, $5, $7);
 	}
 	;
 
@@ -728,7 +767,7 @@ aggregtion_attr:
 			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
 		} else {
 			RelAttr attr = (*$3)[0];
-			relation_attr_init_copy($$, attr, AGG_MAX);
+			relation_attr_init_update_aggregation($$, attr, AGG_MAX);
 		}
 		delete $3;
 	}
@@ -738,7 +777,7 @@ aggregtion_attr:
 			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
 		} else {
 			RelAttr attr = (*$3)[0];
-			relation_attr_init_copy($$, attr, AGG_MIN);
+			relation_attr_init_update_aggregation($$, attr, AGG_MIN);
 		}
 		delete $3;
 	}
@@ -748,7 +787,7 @@ aggregtion_attr:
 			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
 		} else {
 			RelAttr attr = (*$3)[0];
-			relation_attr_init_copy($$, attr, AGG_SUM);
+			relation_attr_init_update_aggregation($$, attr, AGG_SUM);
 		}
 		delete $3;
 	}
@@ -758,7 +797,7 @@ aggregtion_attr:
 			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
 		} else {
 			RelAttr attr = (*$3)[0];
-			relation_attr_init_copy($$, attr, AGG_COUNT);
+			relation_attr_init_update_aggregation($$, attr, AGG_COUNT);
 		}
 		delete $3;
 	}
@@ -768,7 +807,7 @@ aggregtion_attr:
 			relation_attr_init_with_aggregation($$, NULL, NULL, AGG_NONE, false);
 		} else {
 			RelAttr attr = (*$3)[0];
-			relation_attr_init_copy($$, attr, AGG_AVG);
+			relation_attr_init_update_aggregation($$, attr, AGG_AVG);
 		}
 		delete $3;
 	}

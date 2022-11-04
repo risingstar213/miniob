@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/select_stmt.h"
 #include "util/comparator.h"
 #include "util/util.h"
+#include "util/function.h"
 
 
 RC FieldExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
@@ -68,6 +69,31 @@ RC ValueExpr::get_value(const std::vector<Tuple *> tuples, TupleCell & cell) con
 
 RC ComplexExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
 {
+  if (expr_->function != nullptr) {
+    TupleCell right_cell;
+    right_->get_value(tuples, right_cell);
+    switch (expr_->function->op) {
+      case FUNC_LENGTH: {
+        cell.set_data(execute_length(right_cell.data()));
+        cell.set_type(INTS);
+        cell.set_length(4);
+      } break;
+      case FUNC_ROUND: {
+        cell.set_data(execute_round(right_cell.data(), expr_->function->data));
+        cell.set_type(FLOATS);
+        cell.set_length(4);
+      } break;
+      case FUNC_FORMAT: {
+        cell.set_data(execute_format(right_cell.data(), expr_->function->data));
+        cell.set_type(CHARS);
+        cell.set_length(strlen(cell.data()));
+      } break;
+      default: {
+        return RC::INVALID_ARGUMENT;
+      } break;
+    }
+    return RC::SUCCESS;
+  }
   TupleCell left_cell, right_cell;
   float left_value = 0.0, right_value = 0.0;
   if (left_ != nullptr) {

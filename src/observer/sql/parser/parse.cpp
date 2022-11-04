@@ -36,6 +36,101 @@ void order_col_destory(OrderCol *col) {
   free(col);
 }
 
+void function_init_length(SelectExpr *expr, SelectExpr *right_expr, const char *alias)
+{
+  expr->right = right_expr;
+  expr->function = (Function *)malloc(sizeof(Function));
+  expr->function->op = FUNC_LENGTH;
+  expr->function->data = nullptr;
+
+  if (alias != nullptr) {
+    expr->alias = strdup(alias);
+  } else {
+    expr->alias = nullptr;
+  }
+
+  expr->attr = nullptr;
+  expr->is_attr = false;
+  expr->is_value = false;
+  expr->arithOp = ARITH_NONE;
+  expr->value = nullptr;
+  expr->left = nullptr;
+  expr->type = UNDEFINED;
+  expr->is_brace = false;
+  expr->field = nullptr;
+  expr->attr_num = 0;
+  expr->aggregation_num = 0;
+}
+
+void function_init_round(SelectExpr *expr, SelectExpr *right_expr, int len, const char *alias)
+{
+  expr->right = right_expr;
+  expr->function = (Function *)malloc(sizeof(Function));
+  expr->function->op = FUNC_ROUND;
+  if (len >= 0) {
+    expr->function->data = (char *)malloc(sizeof(int));
+    *(int *)expr->function->data = len;
+  } else {
+    expr->function->data = nullptr;
+  }
+
+  if (alias != nullptr) {
+    expr->alias = strdup(alias);
+  } else {
+    expr->alias = nullptr;
+  }
+
+  expr->attr = nullptr;
+  expr->is_attr = false;
+  expr->is_value = false;
+  expr->arithOp = ARITH_NONE;
+  expr->value = nullptr;
+  expr->left = nullptr;
+  expr->type = UNDEFINED;
+  expr->is_brace = false;
+  expr->field = nullptr;
+  expr->attr_num = 0;
+  expr->aggregation_num = 0;
+}
+
+void function_init_format(SelectExpr *expr, SelectExpr *right_expr, const char *format, const char *alias)
+{
+  expr->right = right_expr;
+  expr->function = (Function *)malloc(sizeof(Function));
+  expr->function->op = FUNC_FORMAT;
+  if (format != nullptr) {
+    expr->function->data = strdup(format);
+  } else {
+    expr->function->data = nullptr;
+  }
+
+  if (alias != nullptr) {
+    expr->alias = strdup(alias);
+  } else {
+    expr->alias = nullptr;
+  }
+
+  expr->attr = nullptr;
+  expr->is_attr = false;
+  expr->is_value = false;
+  expr->arithOp = ARITH_NONE;
+  expr->value = nullptr;
+  expr->left = nullptr;
+  expr->type = UNDEFINED;
+  expr->is_brace = false;
+  expr->field = nullptr;
+  expr->attr_num = 0;
+  expr->aggregation_num = 0;
+}
+
+void function_destroy(Function *func)
+{
+  if (func->data != nullptr) {
+    free(func->data);
+    func->data = nullptr;
+  }
+}
+
 void select_attr_init(SelectExpr *expr, RelAttr *attr)
 {
   // LOG_INFO("select_attr_init: %s", attr->attribute_name);
@@ -52,6 +147,9 @@ void select_attr_init(SelectExpr *expr, RelAttr *attr)
   expr->field = nullptr;
   expr->attr_num = 0;
   expr->aggregation_num = 0;
+
+  expr->function = nullptr;
+  expr->alias = nullptr;
 }
 
 void select_value_init(SelectExpr *expr, Value *value)
@@ -70,6 +168,9 @@ void select_value_init(SelectExpr *expr, Value *value)
   expr->field = nullptr;
   expr->attr_num = 0;
   expr->aggregation_num = 0;
+
+  expr->function = nullptr;
+  expr->alias = nullptr;
 }
 
 void select_subexpr_init(SelectExpr *expr, SelectExpr *left, SelectExpr *right,
@@ -87,6 +188,9 @@ void select_subexpr_init(SelectExpr *expr, SelectExpr *left, SelectExpr *right,
   expr->field = nullptr;
   expr->attr_num = 0;
   expr->aggregation_num = 0;
+
+  expr->function = nullptr;
+  expr->alias = nullptr;
 }
 
 void select_expr_destroy(SelectExpr *expr)
@@ -120,6 +224,11 @@ void select_expr_destroy(SelectExpr *expr)
     expr->field = nullptr;
   }
   expr->is_brace = false;
+
+  if (expr->function != nullptr) {
+    function_destroy(expr->function);
+    expr->function = nullptr;
+  }
 }
 
 void relation_attr_init(RelAttr *relation_attr, const char *relation_name, const char *attribute_name)
@@ -157,9 +266,9 @@ void relation_attr_init_with_aggregation(RelAttr *relation_attr, const char *rel
   relation_attr->alias = nullptr;
 }
 
-void relation_attr_init_copy(RelAttr *relation_attr, RelAttr source, Aggregation agg)
+void relation_attr_init_update_aggregation(RelAttr *relation_attr, RelAttr source, Aggregation agg)
 {
-  // LOG_INFO("relation_attr_init_copy");
+  // LOG_INFO("relation_attr_init_update_aggregation");
   relation_attr->relation_name = source.relation_name;
   relation_attr->attribute_name = source.attribute_name;
   relation_attr->is_valid = source.is_valid;

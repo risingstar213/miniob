@@ -468,6 +468,7 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
   //   rc = RC::UNIMPLENMENT;
   //   return rc;
   // }
+
   Operator *top_oper;
   bool multi_tables = select_stmt->tables().size() > 1;
   std::vector<JoinStmt *> join_tables = select_stmt->join_stmts();
@@ -492,20 +493,23 @@ RC ExecuteStage::do_select(SQLStageEvent *sql_event)
       child_oper = new TableScanOperator(select_stmt->tables()[i].table);
       top_oper->add_child(child_oper);
     }
-  } else {
+  } else if (select_stmt->tables().size() > 0) {
     top_oper = try_to_create_index_scan_operator(select_stmt->filter_stmt());
     if (nullptr == top_oper) {
       top_oper = new TableScanOperator(select_stmt->tables()[0].table);
     }
   }
 
-  PredicateOperator *pred_oper = new PredicateOperator(select_stmt->filter_stmt());
-  pred_oper->add_child(top_oper);
+  PredicateOperator *pred_oper = nullptr;
+  GroupOperator *group_oper = nullptr;
+  if (select_stmt->tables().size() > 0) {
+    pred_oper = new PredicateOperator(select_stmt->filter_stmt());
+    pred_oper->add_child(top_oper);
 
-  GroupOperator *group_oper = new GroupOperator(select_stmt->group_expresions(), 
-          select_stmt->having_filter(), select_stmt->is_aggregations());
-  group_oper->add_child(pred_oper);
-
+    group_oper = new GroupOperator(select_stmt->group_expresions(), 
+            select_stmt->having_filter(), select_stmt->is_aggregations());
+    group_oper->add_child(pred_oper);
+  }
   ProjectOperator *project_oper = new ProjectOperator();
   project_oper->add_child(group_oper);
 

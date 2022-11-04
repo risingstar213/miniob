@@ -39,6 +39,10 @@ RC ProjectOperator::open()
   // tuple_.reset_tuples();
   // has_run_ = false;
   // return RC::SUCCESS;
+  if (child_ == nullptr) {
+    ended_ = false;
+    return RC::SUCCESS;
+  }
   RC rc = child_->open();
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to open child operator: %s", strrc(rc));
@@ -75,6 +79,11 @@ RC ProjectOperator::next(std::vector<Tuple *> *context)
   //   has_run_ = true;
   //   return RC::SUCCESS;
   // }
+  if (child_ == nullptr) {
+    if (ended_) return RC::RECORD_EOF;
+    ended_ = true;
+    return RC::SUCCESS;
+  }
   RC rc;
   if (is_group_) {
     tuple_.reset_tuples();
@@ -97,7 +106,9 @@ RC ProjectOperator::next(std::vector<Tuple *> *context)
 RC ProjectOperator::close()
 {
   // children_[0]->close();
-  child_->close();
+  if (child_ != nullptr) {
+    child_->close();
+  }
   return RC::SUCCESS;
 }
 std::vector<Tuple *> ProjectOperator::current_tuples()
