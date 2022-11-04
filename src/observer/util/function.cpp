@@ -61,23 +61,56 @@ char *execute_format(const char *data, char *format)
 {
   Date *date = (Date *)data;
   std::stringstream sstream;
-  if (format[1] == 'Y') {
-    sstream << date->getYear();
-  } else {
-    sstream << date->getYear() % 100;
-  }
-  sstream << format[2];
-  if (format[4] == 'M') {
-    sstream << month_name[date->getMonth()];
-  } else {
-    sstream << std::setw(2) << std::setfill('0') << date->getMonth();
-  }
-  sstream << format[5];
-  if (format[7] == 'D') {
-    sstream << std::setw(2) << std::setfill('0') << date->getDay() << suffix(date->getDay());
-  } else {
-    sstream << std::setw(2) << std::setfill('0') << date->getDay();
-  }
+  std::string format_ = format;
 
-  return strdup(sstream.str().c_str());
+  std::string Y = std::to_string(date->getYear());
+  std::string y = std::to_string(date->getYear() % 100);
+
+  std::string M = month_name[date->getMonth()];
+  sstream << std::setw(2) << std::setfill('0') << date->getMonth();
+  std::string m = sstream.str(); sstream.str("");
+  
+  sstream << std::setw(2) << std::setfill('0') << date->getDay() << suffix(date->getDay());
+  std::string D = sstream.str(); sstream.str("");
+  
+  sstream << std::setw(2) << std::setfill('0') << date->getDay();
+  std::string d = sstream.str(); sstream.str("");
+
+  int pos = 0;
+  while((pos=format_.find("%Y",pos))!=string::npos)
+	{
+		format_.replace(pos,2,Y);
+		pos+=Y.size();
+	}
+  pos = 0;
+  while((pos=format_.find("%y",pos))!=string::npos)
+	{
+		format_.replace(pos,2,y);
+		pos+=y.size();
+	}
+  pos = 0;
+  while((pos=format_.find("%M",pos))!=string::npos)
+	{
+		format_.replace(pos,2,M);
+		pos+=M.size();
+	}
+  pos = 0;
+  while((pos=format_.find("%m",pos))!=string::npos)
+	{
+		format_.replace(pos,2,m);
+		pos+=m.size();
+	}
+  pos = 0;
+  while((pos=format_.find("%D",pos))!=string::npos)
+	{
+		format_.replace(pos,2,D);
+		pos+=D.size();
+	}
+  pos = 0;
+  while((pos=format_.find("%d",pos))!=string::npos)
+	{
+		format_.replace(pos,2,d);
+		pos+=d.size();
+	}
+  return strdup(format_.c_str());
 }
