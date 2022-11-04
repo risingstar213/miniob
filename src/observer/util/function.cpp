@@ -115,7 +115,7 @@ char *execute_format(const char *data, char *format)
   pos = 0;
   while((pos=format_.find("%",pos))!=string::npos)
 	{
-		format_.replace(pos,2,"");
+		format_.replace(pos,1,"");
 	}
   return strdup(format_.c_str());
 }
