@@ -1088,7 +1088,7 @@ RC Table::resolve_unique_before_insert(Trx *trx, Record *record)
       }
       std::list<RID> rids;
       RC rc = indexes_[i]->get_entry(record->data(), rids);
-      if (rc != RC::SUCCESS) {
+      if (rc != RC::SUCCESS && rc != RC::EMPTY) {
         return rc;
       }
       if (rids.size() > 0) {
@@ -1140,7 +1140,7 @@ RC Table::resolve_unique_before_update(Trx *trx, Record *old_record, Record *new
       LOG_INFO("resolve_unique_before_update ask in b+tree");
       std::list<RID> rids;
       RC rc = indexes_[i]->get_entry(new_record->data(), rids);
-      if (rc != RC::SUCCESS) {
+      if (rc != RC::SUCCESS && rc != RC::EMPTY) {
         return rc;
       }
       if (rids.size() > 0) {
