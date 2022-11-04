@@ -186,7 +186,7 @@ const IndexMeta *TableMeta::find_index_by_field(std::vector<std::string> field) 
     if (index_fields.size() != field.size()) {
       continue;
     }
-    int i;
+    size_t i;
     for (i = 0; i < field.size(); i++) {
       if (0 != strcmp(index_fields[i].c_str(), field[i].c_str())) {
         break;

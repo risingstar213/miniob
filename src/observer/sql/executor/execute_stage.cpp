@@ -199,7 +199,7 @@ void ExecuteStage::handle_request(common::StageEvent *event)
     case SCF_COMMIT: {
       do_commit(sql_event);
       Trx *trx = session->current_trx();
-      RC rc = trx->commit();
+      trx->commit();
       session->set_trx_multi_operation_mode(false);
       // session_event->set_response(strrc(rc));
     } break;
@@ -288,7 +288,7 @@ void table2string(std::ostream &os, OrderTuple tuple) {
   }
   int n = tuple.getOrderTable()[0].size();
   for (int i = 0; i < m; i++) {
-    RC rc = RC::SUCCESS;
+    // RC rc = RC::SUCCESS;
     bool first_field = true;
     for (int j = 0; j < n; j++) {
       TupleCell cell = tuple.getOrderTable()[i][j];

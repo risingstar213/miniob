@@ -57,7 +57,7 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
   
   std::vector<char *> field_name;
   std::vector<UpdateValueStmt> update_values;
-  for (int i = 0; i < update.attribute_num; i++) {
+  for (size_t i = 0; i < update.attribute_num; i++) {
     // check whether the column exists
     const FieldMeta *field_meta = table->table_meta().field(column_name[i]);
     if (nullptr == field_meta) {
@@ -70,8 +70,9 @@ RC UpdateStmt::create(Db *db, Updates &update, Stmt *&stmt)
 
     if (!update.update_value[i].is_select) {
       // check whether the type of the value is correct
-      const AttrType field_type = field_meta->type();
-      AttrType value_type = update.update_value[i].value.value.type;
+
+      // const AttrType field_type = field_meta->type();
+      // AttrType value_type = update.update_value[i].value.value.type;
       update_value.value.value = update.update_value[i].value.value;
     } else {
       // select

@@ -69,7 +69,7 @@ RC ValueExpr::get_value(const std::vector<Tuple *> tuples, TupleCell & cell) con
 RC ComplexExpr::get_value(const std::vector<Tuple *> tuples, TupleCell &cell) const
 {
   TupleCell left_cell, right_cell;
-  float left_value, right_value;
+  float left_value = 0.0, right_value = 0.0;
   if (left_ != nullptr) {
     left_->get_value(tuples, left_cell);
     if (left_cell.attr_type() == INTS) {

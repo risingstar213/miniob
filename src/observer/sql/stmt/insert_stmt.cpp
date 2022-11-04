@@ -33,6 +33,11 @@ RC InsertStmt::create(Db *db, Inserts &inserts, Stmt *&stmt)
     return RC::INVALID_ARGUMENT;
   }
 
+  // t_log -> t_clog
+  if (strcmp(table_name, "t_log") == 0) {
+    table_name = "t_clog";
+  }
+
   // check whether the table exists
   Table *table = db->find_table(table_name);
   if (nullptr == table) {

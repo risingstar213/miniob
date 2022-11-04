@@ -227,7 +227,7 @@ public:
 
   RC find_cell(const Field &field, TupleCell &cell) const override
   {
-    RC rc;
+    RC rc = RC::SUCCESS;
     for (uint i = 0; i < tuples_.size(); i++) {
       if ((rc = tuples_[i]->find_cell(field, cell)) == RC::SUCCESS) {
         return rc;
@@ -265,8 +265,8 @@ public:
   
   void delete_tuple()
   {
-    for (int i = 0; i < orderTable.size(); i++) {
-      for (int j = 0; j < orderTable[0].size(); j++) {
+    for (size_t i = 0; i < orderTable.size(); i++) {
+      for (size_t j = 0; j < orderTable[0].size(); j++) {
         LOG_INFO("OrderTuple: %p", orderTable[i][j].data());
         delete[] orderTable[i][j].data();
       }

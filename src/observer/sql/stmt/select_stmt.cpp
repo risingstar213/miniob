@@ -45,15 +45,15 @@ SelectStmt::~SelectStmt()
   }
 }
 
-static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::vector<Aggregation> &aggs)
-{
-  const TableMeta &table_meta = table->table_meta();
-  const int field_num = table_meta.field_num();
-  for (int i = table_meta.sys_field_num(); i < field_num; i++) {
-    field_metas.push_back(Field(table, table_meta.field(i)));
-    aggs.push_back(AGG_NONE);
-  }
-}
+// static void wildcard_fields(Table *table, std::vector<Field> &field_metas, std::vector<Aggregation> &aggs)
+// {
+//   const TableMeta &table_meta = table->table_meta();
+//   const int field_num = table_meta.field_num();
+//   for (int i = table_meta.sys_field_num(); i < field_num; i++) {
+//     field_metas.push_back(Field(table, table_meta.field(i)));
+//     aggs.push_back(AGG_NONE);
+//   }
+// }
 
 RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_map<std::string, Table *> *context)
 {
@@ -96,6 +96,11 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
       return RC::INVALID_ARGUMENT;
     }
 
+    // t_log -> t_clog
+    if (strcmp(table_name, "t_log") == 0) {
+      table_name = "t_clog";
+    }
+
     Table *table = db->find_table(table_name);
     if (nullptr == table) {
       LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
@@ -118,7 +123,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
 
   // join clause
   std::vector<JoinStmt *> join_stmts;
-  for (int i = 0; i < select_sql.join_num; i++) {
+  for (size_t i = 0; i < select_sql.join_num; i++) {
     JoinStmt *join;
     RC rc = JoinStmt::create(db, &tables, &table_map, select_sql.join[i], join);
     if (rc != RC::SUCCESS) {
@@ -133,7 +138,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
   std::vector<Field> group_field;
   if (select_sql.group_by != nullptr) {
     RelAttr *rel_attrs = select_sql.group_by->group_attr;
-    for (int i = 0; i < select_sql.group_by->group_num; i++) {
+    for (size_t i = 0; i < select_sql.group_by->group_num; i++) {
       Table *table;
       if (!common::is_blank(rel_attrs[i].relation_name)) {
         LOG_INFO("group by: %s",rel_attrs[i].relation_name);
@@ -265,7 +270,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
   // LOG_INFO("got %d tables in from stmt and %d fields in query stmt", tables.size(), query_fields.size());
   int attr_num = 0;
   int aggregation_num = 0;
-  for (int i = 0; i < select_sql.select_expr_num; i++) {
+  for (size_t i = 0; i < select_sql.select_expr_num; i++) {
     RC rc = check_select_expression_valid(&select_sql.select_expr[i], 0, &tables, &table_map, &group_field);
     if (rc != RC::SUCCESS) {
       return rc;
@@ -279,7 +284,7 @@ RC SelectStmt::create(Db *db, Selects &select_sql, Stmt *&stmt, std::unordered_m
   }
 
   std::vector<SelectExpr> expressions;
-  for (int i = 0; i < select_sql.select_expr_num; i++) {
+  for (size_t i = 0; i < select_sql.select_expr_num; i++) {
     append_select_expression_with_star(tables, &table_map, &select_sql.select_expr[i], expressions);
   }
 

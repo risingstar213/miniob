@@ -98,7 +98,7 @@ void CastUnit::cast_to(Value &value, AttrType type)
 
 void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
 {
-  bool convert = false;
+  // bool convert = false;
   bool cond = (value.type == CHARS && strlen((char *)value.data) >= 4) || value.type != CHARS;
   if (cond && is_null((char *)value.data)) {
     value.type = type;
@@ -111,7 +111,7 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
       char *old_data = (char *)value.data;
       switch (type) {
         case AttrType::FLOATS: {
-          convert = true;
+          // convert = true;
           value.data = malloc(sizeof(float));
           if (old_data[0] <'0' || old_data[0] > '9') {
             *(float *)(value.data) = 0;
@@ -121,7 +121,7 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
           value.type = AttrType::FLOATS;
         } break;
         case AttrType::INTS: {
-          convert = true;
+          // convert = true;
           value.data = malloc(sizeof(int));
           if (old_data[0] <'0' || old_data[0] > '9') {
             *(int *)(value.data) = 0;
@@ -143,13 +143,13 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
       float *old_data = (float *)value.data;
       switch (type) {
         case AttrType::CHARS: {
-          convert = true;
+          // convert = true;
           value.data = malloc(15 * sizeof(char));
           sprintf((char *)value.data, "%f", *old_data);
           value.type = AttrType::CHARS;
         } break;
         case AttrType::INTS: {
-          convert = true;
+          // convert = true;
           value.data = malloc(sizeof(int));
           *(int *)(value.data) = cast_float_to_int(*old_data);
           value.type = AttrType::INTS;
@@ -164,13 +164,13 @@ void CastUnit::cast_to_with_new_alloc(Value &value, AttrType type)
       int *old_data = (int *)value.data;
       switch (type) {
         case AttrType::CHARS: {
-          convert = true;
+          // convert = true;
           value.data = malloc(15 * sizeof(char));
           sprintf((char *)value.data, "%d", *old_data);
           value.type = AttrType::CHARS;
         } break;
         case AttrType::FLOATS: {
-          convert = true;
+          // convert = true;
           value.data = malloc(sizeof(float));
           *(float *)(value.data) = *old_data;
           value.type = AttrType::FLOATS;

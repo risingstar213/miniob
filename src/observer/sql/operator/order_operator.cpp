@@ -71,7 +71,7 @@ RC OrderOperator::open() {
             index = 0;
             cur_col = cols_[i];
             flags.push_back(cur_col->asc);
-            for (int j = 0; j < tables_.size(); j++) {
+            for (size_t j = 0; j < tables_.size(); j++) {
                 if ( strcmp( tables_[j].table->name(), fields_[i].table()->name()) != 0 ) { // not the table craved
                     LOG_INFO(tables_[j].table->name());
                     LOG_INFO(fields_[i].table()->name());

@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "util/date.h"
 #include "defs.h"
+#include "storage/common/field.h"
 
 RC parse(char *st, Query *sqln);
 
@@ -394,11 +395,11 @@ void group_init(GroupBy *group, std::deque<RelAttr> attr, std::deque<Condition> 
 
 void group_destroy(GroupBy *group)
 {
-  for (int i = 0; i < group->group_num; i++) {
+  for (size_t i = 0; i < group->group_num; i++) {
     relation_attr_destroy(&group->group_attr[i]);
   }
   group->group_num = 0;
-  for (int i = 0; i < group->condition_num; i++) {
+  for (size_t i = 0; i < group->condition_num; i++) {
     condition_destroy(&group->conditions[i]);
   }
   group->condition_num = 0;
@@ -564,7 +565,7 @@ void updates_destroy(Updates *updates)
 {
   free(updates->relation_name);
   updates->relation_name = nullptr;
-  for (int i = 0; i < updates->attribute_num ; i++) {
+  for (size_t i = 0; i < updates->attribute_num ; i++) {
     free(updates->attribute_name[i]);
     updates->attribute_name[i] = nullptr;
     updatevalue_destroy(&updates->update_value[i]);

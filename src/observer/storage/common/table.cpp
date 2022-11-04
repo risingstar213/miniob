@@ -690,7 +690,7 @@ RC Table::show_index(Trx *trx, std::ostream &os)
 {
   os << "Table | Non_unique | Key_name | Seq_in_index | Column_name" << std::endl;
   for (const auto &index : indexes_) {
-    for (int i = 0; i < index->index_meta().fields().size(); i++) {
+    for (size_t i = 0; i < index->index_meta().fields().size(); i++) {
       os << name() << "|" << !index->index_meta().is_unique() << "|" << index->index_meta().name() << "|" << i+1 << "|" << index->index_meta().fields()[i] << std::endl;
     }
   }
@@ -1088,6 +1088,9 @@ RC Table::resolve_unique_before_insert(Trx *trx, Record *record)
       }
       std::list<RID> rids;
       RC rc = indexes_[i]->get_entry(record->data(), rids);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
       if (rids.size() > 0) {
         LOG_INFO("insert duplicate keys into unique index");
         return RC::INVALID_ARGUMENT;
@@ -1137,6 +1140,9 @@ RC Table::resolve_unique_before_update(Trx *trx, Record *old_record, Record *new
       LOG_INFO("resolve_unique_before_update ask in b+tree");
       std::list<RID> rids;
       RC rc = indexes_[i]->get_entry(new_record->data(), rids);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
       if (rids.size() > 0) {
         LOG_INFO("insert duplicate keys into unique index");
         return RC::INVALID_ARGUMENT;
