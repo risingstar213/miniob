@@ -110,7 +110,7 @@ QUOTE            [\'\"]
 "<"                                                  RETURN_TOKEN(LT);
 ">="                                                 RETURN_TOKEN(GE);
 ">"                                                  RETURN_TOKEN(GT);
-{QUOTE}\%[Yy]\-\%[Mm]\-\%[Dd]{QUOTE}                 yylval->string1=strdup(yytext); RETURN_TOKEN(FORMAT_SSS);
+{QUOTE}\%[Yy][\-/\.]\%[Mm][\-/\.]\%[Dd]{QUOTE}                 yylval->string1=strdup(yytext); RETURN_TOKEN(FORMAT_SSS);
 {QUOTE}[\ A-Za-z0-9_/\.\-]*{QUOTE}                   yylval->string1=strdup(yytext); RETURN_TOKEN(SSS);
 {QUOTE}[A-Za-z0-9_/\.\-\%]*{QUOTE}                   yylval->string1=strdup(yytext); RETURN_TOKEN(LIKE_SSS);
 

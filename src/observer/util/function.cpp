@@ -66,13 +66,13 @@ char *execute_format(const char *data, char *format)
   } else {
     sstream << date->getYear() % 100;
   }
-  sstream << "-";
+  sstream << format[2];
   if (format[4] == 'M') {
     sstream << month_name[date->getMonth()];
   } else {
     sstream << std::setw(2) << std::setfill('0') << date->getMonth();
   }
-  sstream << "-";
+  sstream << format[5];
   if (format[7] == 'D') {
     sstream << std::setw(2) << std::setfill('0') << date->getDay() << suffix(date->getDay());
   } else {
