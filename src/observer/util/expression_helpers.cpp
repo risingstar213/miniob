@@ -302,8 +302,7 @@ std::string generate_alias(bool multi_tables, SelectExpr *expr)
           case FUNC_ROUND: {
             str += "round(" + right_str;
             if (expr->function->data != nullptr) {
-              str += "," + + *(int *)expr->function->data;
-
+              str += "," + std::to_string(*(int *)expr->function->data);
             }
             str += ")";
           } break;
