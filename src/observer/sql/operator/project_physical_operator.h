@@ -23,7 +23,7 @@ See the Mulan PSL v2 for more details. */
 class ProjectPhysicalOperator : public PhysicalOperator
 {
 public:
-  ProjectPhysicalOperator()
+  ProjectPhysicalOperator(std::vector<std::unique_ptr<Expression>> &exprs) : tuple_(exprs)
   {}
 
   virtual ~ProjectPhysicalOperator() = default;

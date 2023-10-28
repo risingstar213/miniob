@@ -21,6 +21,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/stmt.h"
 #include "sql/expr/expression.h"
 
+#include "sql/utils/expression_helpers.h"
+
 class Db;
 class Table;
 
@@ -43,8 +45,10 @@ public:
   static RC create(CalcSqlNode &calc_sql, Stmt *&stmt)
   {
     CalcStmt *calc_stmt = new CalcStmt();
-    for (Expression * const expr : calc_sql.expressions) {
-      calc_stmt->expressions_.emplace_back(expr);
+
+
+    for (auto & expr : calc_sql.expressions) {
+      calc_stmt->expressions_.emplace_back(generate_expression(expr));
     }
     calc_sql.expressions.clear();
     stmt = calc_stmt;

@@ -17,11 +17,14 @@ See the Mulan PSL v2 for more details. */
 #include <stddef.h>
 #include <memory>
 #include <vector>
+#include <deque>
 #include <string>
 
 #include "sql/parser/value.h"
 
 class Expression;
+class Field;
+struct SelectSqlNode;
 
 /**
  * @defgroup SQLParser SQL Parser 
@@ -40,6 +43,69 @@ struct RelAttrSqlNode
   std::string attribute_name;  ///< attribute name              属性名
 };
 
+// 表名结构体
+struct RelSqlNode
+{
+  std::string relation;
+  // drop alias temporarily
+  // std::string alias;
+};
+
+// The same with Arithmetic Expr
+enum ExprNodeType {
+  E_ADD,
+  E_SUB,
+  E_MUL,
+  E_DIV,
+  E_NEGATIVE,
+  E_AGG,
+  E_FUNCTION,
+  E_VAL,
+  E_DYN,
+};
+
+enum AggragationType {
+  A_UNDEFINED,
+  A_MAX,
+  A_MIN,
+  A_COUNT,
+  A_AVG,
+  A_SUM
+};
+
+enum FunctionType {
+  F_UNDEFINED,
+  F_LENGTH,
+  F_ROUND,
+  F_FORMAT,
+};
+
+struct DynNodeSqlNode {
+  AggragationType aggType = AggragationType::A_UNDEFINED;
+  // FunctionType    funcType = FunctionType::UNDEFINED;
+  RelAttrSqlNode  node;
+  // drop alias temporarily
+  // std::string alias;
+};
+
+// Expression Node Definition
+struct ExprSqlNode {
+  ExprNodeType type;
+  ExprSqlNode* left = nullptr;
+  ExprSqlNode* right = nullptr;
+
+  Value*          value = nullptr;
+  DynNodeSqlNode* attr  = nullptr;
+
+  bool has_brace;
+
+  // other infomation
+  AttrType attrType;
+  Field *field;
+  int aggregation_num;
+  int attr_num;
+};
+
 /**
  * @brief 描述比较运算符
  * @ingroup SQLParser
@@ -52,6 +118,14 @@ enum CompOp
   LESS_THAN,    ///< "<"
   GREAT_EQUAL,  ///< ">="
   GREAT_THAN,   ///< ">"
+  LIKE_SCH,     // LIKE   6
+  UNLIKE_SCH,   // UNLIKE 7
+  IS_NULL,      // IS     8
+  IS_NOT_NULL,  // IS NOT 9
+  IN_SQ,        // in     10
+  NOT_IN_SQ,    // not in 11
+  EXISTS_SQ,    // exsits 12
+  NOT_EXISTS_SQ,// not exists 13
   NO_OP
 };
 
@@ -63,17 +137,28 @@ enum CompOp
  * 左边和右边理论上都可以是任意的数据，比如是字段（属性，列），也可以是数值常量。
  * 这个结构中记录的仅仅支持字段和值。
  */
+// struct ConditionSqlNode
+// {
+//   int             left_is_attr;    ///< TRUE if left-hand side is an attribute
+//                                    ///< 1时，操作符左边是属性名，0时，是属性值
+//   Value           left_value;      ///< left-hand side value if left_is_attr = FALSE
+//   RelAttrSqlNode  left_attr;       ///< left-hand side attribute
+//   CompOp          comp;            ///< comparison operator
+//   int             right_is_attr;   ///< TRUE if right-hand side is an attribute
+//                                    ///< 1时，操作符右边是属性名，0时，是属性值
+//   RelAttrSqlNode  right_attr;      ///< right-hand side attribute if right_is_attr = TRUE 右边的属性
+//   Value           right_value;     ///< right-hand side value if right_is_attr = FALSE
+// };
+
 struct ConditionSqlNode
 {
-  int             left_is_attr;    ///< TRUE if left-hand side is an attribute
-                                   ///< 1时，操作符左边是属性名，0时，是属性值
-  Value           left_value;      ///< left-hand side value if left_is_attr = FALSE
-  RelAttrSqlNode  left_attr;       ///< left-hand side attribute
-  CompOp          comp;            ///< comparison operator
-  int             right_is_attr;   ///< TRUE if right-hand side is an attribute
-                                   ///< 1时，操作符右边是属性名，0时，是属性值
-  RelAttrSqlNode  right_attr;      ///< right-hand side attribute if right_is_attr = TRUE 右边的属性
-  Value           right_value;     ///< right-hand side value if right_is_attr = FALSE
+  bool                           left_is_subquery;
+  ExprSqlNode*                   left_expr = nullptr;
+  SelectSqlNode*                 left_subquery = nullptr;
+  CompOp op;
+  bool                           right_is_subquery;
+  ExprSqlNode*                   right_expr = nullptr;
+  SelectSqlNode*                 right_subquery = nullptr;
 };
 
 /**
@@ -87,11 +172,40 @@ struct ConditionSqlNode
  * 甚至可以包含复杂的表达式。
  */
 
+// struct SelectSqlNode
+// {
+//   std::deque<RelAttrSqlNode>     attributes;    ///< attributes in select clause
+//   std::deque<std::string>        relations;     ///< 查询的表
+//   std::deque<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
+// };
+
+struct JoinSqlNode
+{
+  std::string                  relation;
+  std::deque<ConditionSqlNode> on_coditions;
+};
+
+struct GroupBySqlNode
+{
+  std::deque<RelAttrSqlNode>   by_attrs;
+  std::deque<ConditionSqlNode> having_conditions;
+};
+
+struct OrderBySqlNode
+{
+  RelAttrSqlNode*            by_attr = nullptr;
+  bool                       is_asc;
+};
+
 struct SelectSqlNode
 {
-  std::vector<RelAttrSqlNode>     attributes;    ///< attributes in select clause
-  std::vector<std::string>        relations;     ///< 查询的表
-  std::vector<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
+  std::deque<ExprSqlNode>        select_exprs;
+  std::deque<RelSqlNode>         relations;
+  bool                           condtion_is_or;
+  std::deque<JoinSqlNode>        joins;
+  std::deque<ConditionSqlNode>   conditions;
+  GroupBySqlNode                 group_by;
+  std::deque<OrderBySqlNode>     order_bys;
 };
 
 /**
@@ -100,7 +214,8 @@ struct SelectSqlNode
  */
 struct CalcSqlNode
 {
-  std::vector<Expression *> expressions;  ///< calc clause
+  // std::deque<Expression *> expressions;  ///< calc clause
+  std::deque<ExprSqlNode>        expressions;
 
   ~CalcSqlNode();
 };
@@ -110,10 +225,22 @@ struct CalcSqlNode
  * @ingroup SQLParser
  * @details 于Selects类似，也做了很多简化
  */
+
+struct InsertRowNode
+{
+  std::deque<Value> values;
+};
+
+// struct InsertSqlNode
+// {
+//   std::string        relation_name;  ///< Relation to insert into
+//   std::deque<Value> values;         ///< 要插入的值
+// };
+
 struct InsertSqlNode
 {
-  std::string        relation_name;  ///< Relation to insert into
-  std::vector<Value> values;         ///< 要插入的值
+  std::string                relation_name;
+  std::deque<InsertRowNode>  rows;
 };
 
 /**
@@ -123,19 +250,36 @@ struct InsertSqlNode
 struct DeleteSqlNode
 {
   std::string                   relation_name;  ///< Relation to delete from
-  std::vector<ConditionSqlNode> conditions;
+  std::deque<ConditionSqlNode>  conditions;
 };
 
 /**
  * @brief 描述一个update语句
  * @ingroup SQLParser
  */
+
+struct UpdatePairSqlNode
+{
+  RelAttrSqlNode attr;
+  bool          is_select;
+  SelectSqlNode select_value;
+  Value         value;
+};
+
+// struct UpdateSqlNode
+// {
+//   std::string                   relation_name;         ///< Relation to update
+//   std::string                   attribute_name;        ///< 更新的字段，仅支持一个字段
+//   Value                         value;                 ///< 更新的值，仅支持一个字段
+//   std::deque<ConditionSqlNode> conditions;
+// };
+
+
 struct UpdateSqlNode
 {
-  std::string                   relation_name;         ///< Relation to update
-  std::string                   attribute_name;        ///< 更新的字段，仅支持一个字段
-  Value                         value;                 ///< 更新的值，仅支持一个字段
-  std::vector<ConditionSqlNode> conditions;
+  std::string                    relation_name;
+  std::deque<UpdatePairSqlNode>  attr_values;
+  std::deque<ConditionSqlNode>   conditions;
 };
 
 /**
@@ -160,7 +304,7 @@ struct AttrInfoSqlNode
 struct CreateTableSqlNode
 {
   std::string                  relation_name;         ///< Relation name
-  std::vector<AttrInfoSqlNode> attr_infos;            ///< attributes
+  std::deque<AttrInfoSqlNode> attr_infos;            ///< attributes
 };
 
 /**

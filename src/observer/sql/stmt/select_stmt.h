@@ -42,16 +42,20 @@ public:
   }
 
 public:
-  static RC create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt);
+  static RC create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt);
 
 public:
   const std::vector<Table *> &tables() const
   {
     return tables_;
   }
-  const std::vector<Field> &query_fields() const
+  const std::vector<Expression *> &query_exprs() const
   {
-    return query_fields_;
+    return query_exprs_;
+  }
+  const std::vector<std::string> &query_alias() const
+  {
+    return query_alias_;
   }
   FilterStmt *filter_stmt() const
   {
@@ -59,7 +63,10 @@ public:
   }
 
 private:
-  std::vector<Field> query_fields_;
+  // std::vector<Field> query_fields_;
+  std::vector<Expression *> query_exprs_;
+  std::vector<Field *> query_fields_;
+  std::vector<std::string>  query_alias_;
   std::vector<Table *> tables_;
   FilterStmt *filter_stmt_ = nullptr;
 };

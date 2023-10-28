@@ -17,16 +17,20 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 
-InsertStmt::InsertStmt(Table *table, const Value *values, int value_amount)
-    : table_(table), values_(values), value_amount_(value_amount)
-{}
+InsertStmt::InsertStmt(Table *table, const std::deque<Value> &deq)
+    : table_(table)
+{
+  for (size_t i = 0; i < deq.size(); i++) {
+    values_.push_back(deq[i]);
+  }
+}
 
 RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
 {
   const char *table_name = inserts.relation_name.c_str();
-  if (nullptr == db || nullptr == table_name || inserts.values.empty()) {
+  if (nullptr == db || nullptr == table_name || inserts.rows[0].values.empty()) {
     LOG_WARN("invalid argument. db=%p, table_name=%p, value_num=%d",
-        db, table_name, static_cast<int>(inserts.values.size()));
+        db, table_name, static_cast<int>(inserts.rows[0].values.size()));
     return RC::INVALID_ARGUMENT;
   }
 
@@ -38,8 +42,8 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
   }
 
   // check the fields number
-  const Value *values = inserts.values.data();
-  const int value_num = static_cast<int>(inserts.values.size());
+  auto &values = inserts.rows[0].values;
+  const int value_num = static_cast<int>(inserts.rows[0].values.size());
   const TableMeta &table_meta = table->table_meta();
   const int field_num = table_meta.field_num() - table_meta.sys_field_num();
   if (field_num != value_num) {
@@ -61,6 +65,6 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
   }
 
   // everything alright
-  stmt = new InsertStmt(table, values, value_num);
+  stmt = new InsertStmt(table, values);
   return RC::SUCCESS;
 }

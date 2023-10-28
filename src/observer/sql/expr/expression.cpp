@@ -31,7 +31,9 @@ RC ValueExpr::get_value(const Tuple &tuple, Value &value) const
 /////////////////////////////////////////////////////////////////////////////////
 CastExpr::CastExpr(unique_ptr<Expression> child, AttrType cast_type)
     : child_(std::move(child)), cast_type_(cast_type)
-{}
+{
+  set_name(child_->name());
+}
 
 CastExpr::~CastExpr()
 {}

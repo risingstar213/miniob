@@ -107,9 +107,21 @@ class FieldExpr : public Expression
 public:
   FieldExpr() = default;
   FieldExpr(const Table *table, const FieldMeta *field) : field_(table, field)
-  {}
+  {
+    std::string name;
+    name += table->name();
+    name += ".";
+    name += field->name();
+    set_name(name);
+  }
   FieldExpr(const Field &field) : field_(field)
-  {}
+  {
+    std::string name;
+    name += field.table_name();
+    name += ".";
+    name += field.field_name();
+    set_name(name);
+  }
 
   virtual ~FieldExpr() = default;
 
@@ -139,7 +151,10 @@ class ValueExpr : public Expression
 public:
   ValueExpr() = default;
   explicit ValueExpr(const Value &value) : value_(value)
-  {}
+  {
+    std::string name = value.to_string();
+    set_name(name);
+  }
 
   virtual ~ValueExpr() = default;
 

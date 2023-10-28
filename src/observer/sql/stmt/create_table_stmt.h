@@ -29,10 +29,13 @@ class Db;
 class CreateTableStmt : public Stmt
 {
 public:
-  CreateTableStmt(const std::string &table_name, const std::vector<AttrInfoSqlNode> &attr_infos)
-        : table_name_(table_name),
-          attr_infos_(attr_infos)
-  {}
+  CreateTableStmt(const std::string &table_name, const std::deque<AttrInfoSqlNode> &attr_infos)
+        : table_name_(table_name)
+  {
+    for (size_t i = 0; i < attr_infos.size(); i++) {
+      attr_infos_.push_back(attr_infos[i]);
+    }
+  }
   virtual ~CreateTableStmt() = default;
 
   StmtType type() const override { return StmtType::CREATE_TABLE; }

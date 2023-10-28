@@ -21,9 +21,9 @@ RC parse(char *st, ParsedSqlNode *sqln);
 
 CalcSqlNode::~CalcSqlNode()
 {
-  for (Expression *expr : expressions) {
-    delete expr;
-  }
+  // for (Expression *expr : expressions) {
+  //   delete expr;
+  // }
   expressions.clear();
 }
 

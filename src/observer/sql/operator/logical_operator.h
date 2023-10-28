@@ -64,6 +64,10 @@ public:
     return expressions_;
   }
 
+  void set_expressions(std::vector<std::unique_ptr<Expression>> exprs) {
+    expressions_ = std::move(exprs);
+  } 
+
 protected:
   std::vector<std::unique_ptr<LogicalOperator>> children_;  ///< 子算子
 

@@ -69,12 +69,15 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
       SelectStmt *select_stmt = static_cast<SelectStmt *>(stmt);
       bool with_table_name = select_stmt->tables().size() > 1;
 
-      for (const Field &field : select_stmt->query_fields()) {
-        if (with_table_name) {
-          schema.append_cell(field.table_name(), field.field_name());
-        } else {
-          schema.append_cell(field.field_name());
-        }
+      // for (const Field &field : select_stmt->query_fields()) {
+      //   if (with_table_name) {
+      //     schema.append_cell(field.table_name(), field.field_name());
+      //   } else {
+      //     schema.append_cell(field.field_name());
+      //   }
+      // }
+      for (auto &alias : select_stmt->query_alias()) {
+        schema.append_cell(alias.c_str());
       }
     } break;
 

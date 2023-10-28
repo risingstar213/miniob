@@ -60,28 +60,30 @@ public:
     return comp_;
   }
 
-  void set_left(const FilterObj &obj)
+  void set_left(Expression* obj)
   {
     left_ = obj;
   }
-  void set_right(const FilterObj &obj)
+  void set_right(Expression* obj)
   {
     right_ = obj;
   }
 
-  const FilterObj &left() const
+  Expression* left() const
   {
     return left_;
   }
-  const FilterObj &right() const
+  Expression* right() const
   {
     return right_;
   }
 
 private:
   CompOp comp_ = NO_OP;
-  FilterObj left_;
-  FilterObj right_;
+  // FilterObj left_;
+  // FilterObj right_;
+  Expression* left_;
+  Expression* right_;
 };
 
 /**
@@ -102,10 +104,10 @@ public:
 
 public:
   static RC create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
-      const ConditionSqlNode *conditions, int condition_num, FilterStmt *&stmt);
+      std::deque<ConditionSqlNode> &condition_sqls, FilterStmt *&stmt);
 
   static RC create_filter_unit(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
-      const ConditionSqlNode &condition, FilterUnit *&filter_unit);
+      ConditionSqlNode &condition, FilterUnit *&filter_unit);
 
 private:
   std::vector<FilterUnit *> filter_units_;  // 默认当前都是AND关系

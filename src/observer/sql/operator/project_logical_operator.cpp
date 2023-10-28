@@ -12,7 +12,16 @@ See the Mulan PSL v2 for more details. */
 // Created by Wangyunlai on 2022/12/15
 //
 
+#include <memory>
+#include <vector>
+
 #include "sql/operator/project_logical_operator.h"
 
-ProjectLogicalOperator::ProjectLogicalOperator(const std::vector<Field> &fields) : fields_(fields)
-{}
+ProjectLogicalOperator::ProjectLogicalOperator(const std::vector<Expression *> &exprs)
+{
+    std::vector<std::unique_ptr<Expression>> expressions;
+    for (int i = 0; i < exprs.size(); i++) {
+        expressions.push_back(std::unique_ptr<Expression>(exprs[i]));
+    }
+    set_expressions(std::move(expressions));
+}

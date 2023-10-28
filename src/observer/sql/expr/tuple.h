@@ -234,13 +234,15 @@ private:
 class ProjectTuple : public Tuple 
 {
 public:
-  ProjectTuple() = default;
+  ProjectTuple(std::vector<std::unique_ptr<Expression>> &expressions) : expressions_(expressions) {
+
+  }
   virtual ~ProjectTuple()
   {
-    for (TupleCellSpec *spec : speces_) {
-      delete spec;
-    }
-    speces_.clear();
+    // for (TupleCellSpec *spec : speces_) {
+    //   delete spec;
+    // }
+    // speces_.clear();
   }
 
   void set_tuple(Tuple *tuple)
@@ -248,31 +250,44 @@ public:
     this->tuple_ = tuple;
   }
 
-  void add_cell_spec(TupleCellSpec *spec)
-  {
-    speces_.push_back(spec);
-  }
+  // void add_cell_spec(TupleCellSpec *spec)
+  // {
+  //   speces_.push_back(spec);
+  // }
   int cell_num() const override
   {
-    return speces_.size();
+    return expressions_.size();
   }
 
   RC cell_at(int index, Value &cell) const override
   {
-    if (index < 0 || index >= static_cast<int>(speces_.size())) {
-      return RC::INTERNAL;
-    }
-    if (tuple_ == nullptr) {
+    // if (index < 0 || index >= static_cast<int>(speces_.size())) {
+    //   return RC::INTERNAL;
+    // }
+    // if (tuple_ == nullptr) {
+    //   return RC::INTERNAL;
+    // }
+
+    // const TupleCellSpec *spec = speces_[index];
+    // return tuple_->find_cell(*spec, cell);
+
+    if (index < 0 || index >= static_cast<int>(expressions_.size())) {
       return RC::INTERNAL;
     }
 
-    const TupleCellSpec *spec = speces_[index];
-    return tuple_->find_cell(*spec, cell);
+    const Expression *expr = expressions_[index].get();
+    return expr->get_value(*tuple_, cell);
   }
 
   RC find_cell(const TupleCellSpec &spec, Value &cell) const override
   {
-    return tuple_->find_cell(spec, cell);
+    // return tuple_->find_cell(spec, cell);
+    for (const std::unique_ptr<Expression> &expr : expressions_) {
+      if (0 == strcmp(spec.alias(), expr->name().c_str())) {
+        return expr->get_value(*tuple_, cell);
+      }
+    }
+    return RC::NOTFOUND;
   }
 
 #if 0
@@ -286,7 +301,7 @@ public:
   }
 #endif
 private:
-  std::vector<TupleCellSpec *> speces_;
+  std::vector<std::unique_ptr<Expression>> &expressions_;
   Tuple *tuple_ = nullptr;
 };
 
