@@ -234,8 +234,8 @@ private:
 class ProjectTuple : public Tuple 
 {
 public:
-  ProjectTuple(std::vector<std::unique_ptr<Expression>> &expressions) : expressions_(expressions) {
-
+  ProjectTuple(std::vector<std::unique_ptr<Expression>> &expressions) {
+    expressions_.swap(expressions);
   }
   virtual ~ProjectTuple()
   {
@@ -301,7 +301,7 @@ public:
   }
 #endif
 private:
-  std::vector<std::unique_ptr<Expression>> &expressions_;
+  std::vector<std::unique_ptr<Expression>> expressions_;
   Tuple *tuple_ = nullptr;
 };
 

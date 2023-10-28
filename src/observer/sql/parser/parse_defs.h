@@ -100,10 +100,12 @@ struct ExprSqlNode {
   bool has_brace;
 
   // other infomation
-  AttrType attrType;
-  Field *field;
-  int aggregation_num;
-  int attr_num;
+  AttrType attrType = UNDEFINED;
+  Field *field = nullptr;
+  int aggregation_num = 0;
+  int attr_num = 0;
+
+  void release();
 };
 
 /**
@@ -159,6 +161,8 @@ struct ConditionSqlNode
   bool                           right_is_subquery;
   ExprSqlNode*                   right_expr = nullptr;
   SelectSqlNode*                 right_subquery = nullptr;
+
+  void release();
 };
 
 /**
@@ -183,18 +187,24 @@ struct JoinSqlNode
 {
   std::string                  relation;
   std::deque<ConditionSqlNode> on_coditions;
+
+  void release();
 };
 
 struct GroupBySqlNode
 {
   std::deque<RelAttrSqlNode>   by_attrs;
   std::deque<ConditionSqlNode> having_conditions;
+
+  void release();
 };
 
 struct OrderBySqlNode
 {
   RelAttrSqlNode*            by_attr = nullptr;
   bool                       is_asc;
+
+  void release();
 };
 
 struct SelectSqlNode
@@ -206,6 +216,8 @@ struct SelectSqlNode
   std::deque<ConditionSqlNode>   conditions;
   GroupBySqlNode                 group_by;
   std::deque<OrderBySqlNode>     order_bys;
+
+  void release();
 };
 
 /**
@@ -217,6 +229,7 @@ struct CalcSqlNode
   // std::deque<Expression *> expressions;  ///< calc clause
   std::deque<ExprSqlNode>        expressions;
 
+  void release();
   ~CalcSqlNode();
 };
 
@@ -251,6 +264,8 @@ struct DeleteSqlNode
 {
   std::string                   relation_name;  ///< Relation to delete from
   std::deque<ConditionSqlNode>  conditions;
+
+  void release();
 };
 
 /**
@@ -264,6 +279,8 @@ struct UpdatePairSqlNode
   bool          is_select;
   SelectSqlNode select_value;
   Value         value;
+
+  void release();
 };
 
 // struct UpdateSqlNode
@@ -280,6 +297,8 @@ struct UpdateSqlNode
   std::string                    relation_name;
   std::deque<UpdatePairSqlNode>  attr_values;
   std::deque<ConditionSqlNode>   conditions;
+
+  void release();
 };
 
 /**
@@ -451,6 +470,8 @@ public:
 
 public:
   ParsedSqlNode();
+  ~ParsedSqlNode();
+  void release();
   explicit ParsedSqlNode(SqlCommandFlag flag);
 };
 

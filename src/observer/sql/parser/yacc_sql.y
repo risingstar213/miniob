@@ -398,33 +398,35 @@ type:
     | FLOAT_T  { $$=FLOATS; }
     ;
 insert_stmt:        /*insert   语句的语法解析树*/
-    INSERT INTO ID VALUES LBRACE insert_row_list RBRACE 
+    INSERT INTO ID VALUES insert_row_list 
     {
       $$ = new ParsedSqlNode(SCF_INSERT);
       $$->insertion.relation_name = $3;
-      if ($6 != nullptr) {
-        $$->insertion.rows.swap(*$6);
+      if ($5 != nullptr) {
+        $$->insertion.rows.swap(*$5);
       }
       // $$->insertion.values.emplace_front(*$6);
       // std::reverse($$->insertion.values.begin(), $$->insertion.values.end());
-      delete $6;
+      delete $5;
       free($3);
     }
     ;
 
 value_list:
-    /* empty */
+    value
     {
       $$ = new std::deque<Value>;
+      $$->emplace_back(*$1);
+      delete $1;
     }
-    | COMMA value value_list  { 
-      if ($3 != nullptr) {
-        $$ = $3;
+    | value_list COMMA value  { 
+      if ($1 != nullptr) {
+        $$ = $1;
       } else {
         $$ = new std::deque<Value>;
       }
-      $$->emplace_front(*$2);
-      delete $2;
+      $$->emplace_back(*$3);
+      delete $3;
     }
     ;
 value:

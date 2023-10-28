@@ -22,7 +22,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
           std::unordered_map<std::string, Table *> &tables_map)
 {
   if (expr.type == E_VAL) {
-    // expr->type = expr->value->type;
+    expr.attrType = expr.value->attr_type();
     // if (expr->value->type == DATES) {
     //   Date *d = (Date *)expr->value->data;
     //   if (!d->is_valid()) {
@@ -116,6 +116,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     // }
 
     expr.attrType = expr.field->attr_type();
+    LOG_INFO("set attrType: %d", expr.attrType);
     return RC::SUCCESS;
   }
   RC rc;
@@ -179,6 +180,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
 
 static void wildcard_fields(Table *table,  std::vector<ExprSqlNode> &expressions)
 {
+  LOG_INFO("wildcard_fields");
   const TableMeta &table_meta = table->table_meta();
   const int field_num = table_meta.field_num();
   for (int i = table_meta.sys_field_num(); i < field_num; i++) {
@@ -198,7 +200,7 @@ RC append_select_expression_with_star(std::vector<Table *> tables,
       std::unordered_map<std::string, Table *> &tables_map, ExprSqlNode &expr, std::vector<ExprSqlNode> &expressions)
 {
   // TODO: The only star currently
-  if (expr.attr->node.attribute_name == "*" && expr.attr->aggType == A_UNDEFINED) {
+  if (expr.type == E_DYN && expr.attr->node.attribute_name == "*" && expr.attr->aggType == A_UNDEFINED) {
     if (expr.attr->node.relation_name.length() == 0) {
       for (auto &table_info : tables) {
         wildcard_fields(table_info, expressions);

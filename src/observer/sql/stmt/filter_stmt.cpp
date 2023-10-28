@@ -128,7 +128,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right_type = UNDEFINED;
   }
 
-    bool can_compare = true;
+  bool can_compare = true;
   bool left_cast = left_type == CHARS || left_type == INTS || left_type == FLOATS;
   bool right_cast = right_type == CHARS || right_type == INTS || right_type == FLOATS;
   if (left_cast && right_cast) {
@@ -144,7 +144,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   }
   // 检查两个类型是否能够比较
   if (!can_compare) {
-    LOG_WARN("cannot compare");
+    LOG_WARN("cannot compare left %d right %d", left_type, right_type);
     return RC::SCHEMA_FIELD_TYPE_MISMATCH;
   }
 
