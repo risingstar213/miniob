@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 #include "sql/expr/tuple.h"
+#include "sql/parser/parse_defs.h"
 
 using namespace std;
 
@@ -333,4 +334,68 @@ RC ArithmeticExpr::try_get_value(Value &value) const
   // }
 
   return calc_value(left_value, right_value, value);
+}
+
+AggregationExpr::AggregationExpr(AggregationType type, Field field)
+    : agg_type_(type), field_(field)
+{}
+
+
+AttrType AggregationExpr::value_type() const 
+{
+  if (agg_type_ == A_COUNT) {
+    return INTS;
+  } else if (agg_type_ == A_MAX || agg_type_ == A_MIN || agg_type_ == A_UNDEFINED) {
+    return field_.attr_type();
+  } else if (agg_type_ == A_SUM && field_.attr_type() == INTS) {
+    return INTS;
+  } else {
+    return FLOATS;
+  }
+}
+
+RC AggregationExpr::get_value(const Tuple &tuple, Value &value) const 
+{
+  // it must be group tuple !!!
+  const GroupTuple *group_tuple = dynamic_cast<const GroupTuple *>(&tuple);
+  
+  if (group_tuple == nullptr) {
+    LOG_ERROR("Cannot pass AggregationExpr with Tuple which is not GroupTuple");
+    return RC::INTERNAL;
+  }
+  Value temp;
+  int count;
+  TupleCellSpec cell(TupleCellSpec(field_.table_name(), field_.field_name()));
+  switch (agg_type_)
+  {
+  case A_COUNT:
+    return group_tuple->find_cell_count(cell, value);
+    break;
+  case A_SUM:
+    return group_tuple->find_cell_sum(cell, value);
+    break;
+  case A_AVG:
+    group_tuple->find_cell_count(cell, temp);
+    count = temp.get_int();
+    group_tuple->find_cell_sum(cell, temp);
+
+    value.set_float(temp.get_float() / count);
+    
+    return RC::SUCCESS;
+    break;
+  case A_MAX:
+    return group_tuple->find_cell_max(cell, value);
+    break;
+  case A_MIN:
+    return group_tuple->find_cell_min(cell, value);
+    break;
+  default:
+    return group_tuple->find_cell(cell, value);
+    break;
+  }
+}
+
+RC AggregationExpr::try_get_value(Value &value) const 
+{
+  return RC::UNIMPLENMENT;
 }

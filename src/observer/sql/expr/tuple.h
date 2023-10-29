@@ -439,3 +439,163 @@ private:
   Tuple *left_ = nullptr;
   Tuple *right_ = nullptr;
 };
+
+
+class GroupTuple : public Tuple {
+public:
+  GroupTuple(std::vector<Field> &fields)
+  {
+    for (int i = 0; i < fields.size(); i++) {
+      cells_.push_back(TupleCellSpec(fields[i].table_name(), fields[i].field_name()));
+    }
+  }
+  virtual ~GroupTuple() = default;
+
+  int cell_num() const override
+  {
+    return cells_.size();
+  }
+
+  RC cell_at(int index, Value &value) const override
+  {
+    const int cell_num = cells_.size();
+    if (index > 0 && index < cell_num) {
+      value = lasts_[index];
+      return RC::SUCCESS;
+    }
+
+    return RC::NOTFOUND;
+  }
+
+  RC find_cell(const TupleCellSpec &spec, Value &value) const override
+  {
+    const char *table_name = spec.table_name();
+    const char *field_name = spec.field_name();
+
+    for (size_t i = 0; i < cells_.size(); ++i) {
+      if (0 != strcmp(table_name, cells_[i].table_name())) {
+        return RC::NOTFOUND;
+      }
+      if (0 == strcmp(field_name, cells_[i].field_name())) {
+        value = lasts_[i];
+        return RC::SUCCESS;
+      }
+    }
+    return RC::NOTFOUND;
+  }
+
+  void update_value(Tuple *tuple) 
+  {
+    Value temp;
+    for (int i = 0; i < cells_.size(); i++) {
+      tuple->find_cell(cells_[i], temp);
+      if (count_ == 0) {
+        sums_.emplace_back(temp);
+        maxs_.emplace_back(temp);
+        mins_.emplace_back(temp);
+        lasts_.emplace_back(temp);
+      } else {
+        if (maxs_[i].compare(temp) < 0) {
+          maxs_[i] = temp;
+        }
+        if (mins_[i].compare(temp) > 0) {
+          mins_[i] = temp;
+        }
+        if (temp.attr_type() == INTS) {
+          sums_[i].set_int(sums_[i].get_int() + temp.get_int());
+        } else {
+          sums_[i].set_float(sums_[i].get_float() + temp.get_float());
+        }
+        lasts_[i] = temp;
+      }
+    }
+    count_ = count_ + 1;
+  }
+
+  void reset_value() {
+    count_ = 0;
+    sums_.clear();
+    maxs_.clear();
+    mins_.clear();
+    lasts_.clear();
+  }
+
+  RC find_cell_max(const TupleCellSpec &spec, Value &value) const
+  {
+    const char *table_name = spec.table_name();
+    const char *field_name = spec.field_name();
+
+    for (size_t i = 0; i < cells_.size(); ++i) {
+      if (0 != strcmp(table_name, cells_[i].table_name())) {
+        return RC::NOTFOUND;
+      }
+      if (0 == strcmp(field_name, cells_[i].field_name())) {
+        value = maxs_[i];
+        return RC::SUCCESS;
+      }
+    }
+    return RC::NOTFOUND;
+  }
+
+  RC find_cell_min(const TupleCellSpec &spec, Value &value) const
+  {
+    const char *table_name = spec.table_name();
+    const char *field_name = spec.field_name();
+
+    for (size_t i = 0; i < cells_.size(); ++i) {
+      if (0 != strcmp(table_name, cells_[i].table_name())) {
+        return RC::NOTFOUND;
+      }
+      if (0 == strcmp(field_name, cells_[i].field_name())) {
+        value = mins_[i];
+        return RC::SUCCESS;
+      }
+    }
+    return RC::NOTFOUND;
+  }
+
+  RC find_cell_sum(const TupleCellSpec &spec, Value &value) const
+  {
+    const char *table_name = spec.table_name();
+    const char *field_name = spec.field_name();
+
+    for (size_t i = 0; i < cells_.size(); ++i) {
+      if (0 != strcmp(table_name, cells_[i].table_name())) {
+        return RC::NOTFOUND;
+      }
+      if (0 == strcmp(field_name, cells_[i].field_name())) {
+        value = sums_[i];
+        return RC::SUCCESS;
+      }
+    }
+    return RC::NOTFOUND;
+  }
+  // there is null !!!
+  RC find_cell_count(const TupleCellSpec &spec, Value &value) const
+  {
+    const char *table_name = spec.table_name();
+    const char *field_name = spec.field_name();
+
+    for (size_t i = 0; i < cells_.size(); ++i) {
+      if (0 != strcmp(table_name, cells_[i].table_name())) {
+        return RC::NOTFOUND;
+      }
+      if (0 == strcmp(field_name, cells_[i].field_name())) {
+        value.set_int(count_);
+        return RC::SUCCESS;
+      }
+    }
+    return RC::NOTFOUND;
+  }
+
+private:
+  // A group of Tuple
+  int count_;
+  std::vector<Value> sums_;
+  std::vector<Value> maxs_;
+  std::vector<Value> mins_;
+  std::vector<Value> lasts_;
+  std::vector<TupleCellSpec> cells_;
+
+  // std::vector<Tuple *> tuples_;
+};

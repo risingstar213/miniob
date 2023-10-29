@@ -214,6 +214,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
   select_stmt->query_exprs_.swap(query_exprs);
   select_stmt->query_alias_.swap(query_alias);
   select_stmt->filter_stmt_ = filter_stmt;
+  select_stmt->has_aggregation_ = (aggregation_num > 0);
   stmt = select_stmt;
   return RC::SUCCESS;
 }

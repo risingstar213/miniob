@@ -66,6 +66,11 @@ public:
     return join_filters_;
   }
 
+  const bool has_aggregation() const
+  {
+    return has_aggregation_;
+  }
+
 private:
   // std::vector<Field> query_fields_;
   std::vector<Expression *> query_exprs_;
@@ -73,5 +78,6 @@ private:
   std::vector<std::string>  query_alias_;
   std::vector<Table *>      tables_;
   std::vector<FilterStmt *> join_filters_;
+  bool has_aggregation_;
   FilterStmt *filter_stmt_ = nullptr;
 };

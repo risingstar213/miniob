@@ -53,7 +53,8 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
       } else if (expr.attr->aggType == A_COUNT) {
         expr.attrType = INTS;
         Table *table = tables[0];
-        expr.field = new Field(table, table->table_meta().trx_field());
+        expr.table_ = table;
+        expr.field_ = table->table_meta().trx_field();
         // if (expr->attr->alias != nullptr) {
         //   expr->field->set_alias(expr->attr->alias);
         // }
@@ -100,7 +101,8 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
       LOG_WARN("no such field. field=%s.%s", table->name(), expr.attr->node.attribute_name.c_str());
       return RC::SCHEMA_FIELD_MISSING;
     }
-    expr.field = new Field(table, field_meta);
+    expr.table_ = table;
+    expr.field_ = field_meta;
     // if (expr->attr->alias != nullptr) {
     //   expr->field->set_alias(expr->attr->alias);
     // }
@@ -115,7 +117,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     //   }
     // }
 
-    expr.attrType = expr.field->attr_type();
+    expr.attrType = expr.field_->type();
     LOG_INFO("set attrType: %d", expr.attrType);
     return RC::SUCCESS;
   }
@@ -187,7 +189,8 @@ static void wildcard_fields(Table *table,  std::vector<ExprSqlNode> &expressions
     // special
     ExprSqlNode expr;
     memset(&expr, 0, sizeof(ExprSqlNode));
-    expr.field = new Field(table, table_meta.field(i));
+    expr.table_ = table;
+    expr.field_ = table_meta.field(i);
     // if (table.alias != nullptr) {
     //   expr.field->set_table_alias(table.alias);
     // }
@@ -224,7 +227,11 @@ Expression* generate_expression(ExprSqlNode &expr)
 
     // TODO: AGG
     if (expr.type == E_DYN) {
-        return new FieldExpr(*expr.field); 
+      if (expr.attr->aggType != UNDEFINED) {
+        return new AggregationExpr(expr.attr->aggType, Field(expr.table_, expr.field_));
+      } else {
+        return new FieldExpr(Field(expr.table_, expr.field_));
+      } 
     }
 
     std::unique_ptr<Expression> left, right;
@@ -251,7 +258,7 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
     // if (expr->field->get_alias() != nullptr) {
     //   str += expr->field->get_alias();
    //  } else {
-      AggragationType aggType = expr.attr == nullptr ? A_UNDEFINED: expr.attr->aggType;
+      AggregationType aggType = expr.attr == nullptr ? A_UNDEFINED: expr.attr->aggType;
       switch(aggType) {
         case A_AVG:
           str += "AVG(";
@@ -271,14 +278,14 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
         default:
           break;
       }
-      if (!expr.field->meta()->visible()) {
+      if (expr.field_ == expr.table_->table_meta().trx_field()) {
         str += "*";
       } else if (multi_tables) {
-        str += expr.field->table_name();
+        str += expr.table_->name();
         str += '.';
-        str += expr.field->meta()->name();
+        str += expr.field_->name();
       } else {
-        str += expr.field->meta()->name();
+        str += expr.field_->name();
       }
       if (aggType != A_UNDEFINED) {
         str += ")";

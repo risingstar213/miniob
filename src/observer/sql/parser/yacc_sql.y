@@ -701,31 +701,38 @@ dyn_node:
   }
   | MAX LBRACE rel_attr RBRACE {
     $$ = new DynNodeSqlNode();
-    $$->aggType = AggragationType::A_MAX;
+    $$->aggType = AggregationType::A_MAX;
     $$->node = std::move(*$3);
     delete $3;
   }
   | MIN LBRACE rel_attr RBRACE {
     $$ = new DynNodeSqlNode();
-    $$->aggType = AggragationType::A_MIN;
+    $$->aggType = AggregationType::A_MIN;
     $$->node = std::move(*$3);
     delete $3;
   }
   | COUNT LBRACE rel_attr RBRACE {
     $$ = new DynNodeSqlNode();
-    $$->aggType = AggragationType::A_COUNT;
+    $$->aggType = AggregationType::A_COUNT;
     $$->node = std::move(*$3);
     delete $3;
   }
+  | COUNT LBRACE '*' RBRACE {
+    $$ = new DynNodeSqlNode();
+    $$->aggType = AggregationType::A_COUNT;
+    $$->node.attribute_name = '*';
+    // $$->node = std::move(*$3);
+    // delete $3;
+  }
   | AVG LBRACE rel_attr RBRACE {
     $$ = new DynNodeSqlNode();
-    $$->aggType = AggragationType::A_AVG;
+    $$->aggType = AggregationType::A_AVG;
     $$->node = std::move(*$3);
     delete $3;
   }
   | SUM LBRACE rel_attr RBRACE {
     $$ = new DynNodeSqlNode();
-    $$->aggType = AggragationType::A_SUM;
+    $$->aggType = AggregationType::A_SUM;
     $$->node = std::move(*$3);
     delete $3;
   }

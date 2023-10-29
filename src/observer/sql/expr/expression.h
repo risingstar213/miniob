@@ -43,6 +43,7 @@ enum class ExprType
   COMPARISON,   ///< 需要做比较的表达式
   CONJUNCTION,  ///< 多个表达式使用同一种关系(AND或OR)来联结
   ARITHMETIC,   ///< 算术运算
+  AGGREGATION
 };
 
 /**
@@ -316,15 +317,20 @@ private:
   std::unique_ptr<Expression> right_;
 };
 
-class AggragationExpr : public Expression
+class AggregationExpr : public Expression
 {
 public:
-  // enum class Type {
-  //   UNDEFINED,
-  //   MAX,
-  //   MIN,
-  //   COUNT,
-  //   AVG,
-  //   SUM
-  // };
+  AggregationExpr(AggregationType type, Field field);
+  virtual ~AggregationExpr() = default;
+
+  ExprType type() const override { return ExprType::AGGREGATION; }
+
+  AttrType value_type() const override;
+
+  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC try_get_value(Value &value) const override;
+
+private:
+  AggregationType agg_type_;
+  Field field_;
 };

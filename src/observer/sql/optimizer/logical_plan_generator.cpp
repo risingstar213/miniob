@@ -23,6 +23,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/delete_logical_operator.h"
 #include "sql/operator/update_logical_operator.h"
 #include "sql/operator/join_logical_operator.h"
+#include "sql/operator/group_logical_operator.h"
 #include "sql/operator/project_logical_operator.h"
 #include "sql/operator/explain_logical_operator.h"
 
@@ -89,7 +90,8 @@ RC LogicalPlanGenerator::create_plan(
   unique_ptr<LogicalOperator> table_oper(nullptr);
 
   const std::vector<Table *> &tables = select_stmt->tables();
-  // const std::vector<Field> &all_fields = select_stmt->query_fields();
+  // TODO: SIMPLYFY 
+  std::vector<Field> all_fields;
   const std::vector<FilterStmt *> &join_filters = select_stmt->join_filters();
   int iter_times = 0;
   for (Table *table : tables) {
@@ -103,6 +105,7 @@ RC LogicalPlanGenerator::create_plan(
     for (int i = 0; i < table->table_meta().field_num(); i++) {
       const FieldMeta *field_meta = table->table_meta().field(i);
       fields.push_back(Field(table, field_meta));
+      all_fields.push_back(Field(table, field_meta));
     }
 
     unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, fields, true/*readonly*/));
@@ -139,17 +142,38 @@ RC LogicalPlanGenerator::create_plan(
     return rc;
   }
 
-  unique_ptr<LogicalOperator> project_oper(new ProjectLogicalOperator(select_stmt->query_exprs()));
+  unique_ptr<LogicalOperator> top_oper;
   if (predicate_oper) {
     if (table_oper) {
       predicate_oper->add_child(std::move(table_oper));
     }
-    project_oper->add_child(std::move(predicate_oper));
+    top_oper = std::move(predicate_oper);
   } else {
     if (table_oper) {
-      project_oper->add_child(std::move(table_oper));
+      top_oper = std::move(table_oper);
     }
   }
+
+  if (select_stmt->has_aggregation()) {
+    unique_ptr<LogicalOperator> group_oper(new GroupLogicalOperator(all_fields));
+    group_oper->add_child(std::move(top_oper));
+    top_oper = std::move(group_oper);
+  }
+  
+
+  unique_ptr<LogicalOperator> project_oper(new ProjectLogicalOperator(select_stmt->query_exprs()));
+  // if (predicate_oper) {
+  //   if (table_oper) {
+  //     predicate_oper->add_child(std::move(table_oper));
+  //   }
+  //   project_oper->add_child(std::move(predicate_oper));
+  // } else {
+  //   if (table_oper) {
+  //     project_oper->add_child(std::move(table_oper));
+  //   }
+  // }
+
+  project_oper->add_child(std::move(top_oper));
 
   logical_operator.swap(project_oper);
   return RC::SUCCESS;
@@ -159,8 +183,8 @@ RC LogicalPlanGenerator::create_plan(
     FilterStmt *filter_stmt, unique_ptr<LogicalOperator> &logical_operator)
 {
   std::vector<unique_ptr<Expression>> cmp_exprs;
-  const std::vector<FilterUnit *> &filter_units = filter_stmt->filter_units();
-  for (const FilterUnit *filter_unit : filter_units) {
+  auto &filter_units = filter_stmt->filter_units();
+  for (auto & filter_unit: filter_units) {
     Expression* left_ptr = filter_unit->left();
     Expression* right_ptr = filter_unit->right();
 

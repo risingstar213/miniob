@@ -23,7 +23,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/parser/value.h"
 
 class Expression;
-class Field;
+class Table;
+class FieldMeta;
 struct SelectSqlNode;
 
 /**
@@ -64,7 +65,7 @@ enum ExprNodeType {
   E_DYN,
 };
 
-enum AggragationType {
+enum AggregationType {
   A_UNDEFINED,
   A_MAX,
   A_MIN,
@@ -81,7 +82,7 @@ enum FunctionType {
 };
 
 struct DynNodeSqlNode {
-  AggragationType aggType = AggragationType::A_UNDEFINED;
+  AggregationType aggType = AggregationType::A_UNDEFINED;
   // FunctionType    funcType = FunctionType::UNDEFINED;
   RelAttrSqlNode  node;
   // drop alias temporarily
@@ -101,7 +102,9 @@ struct ExprSqlNode {
 
   // other infomation
   AttrType attrType = UNDEFINED;
-  Field *field = nullptr;
+  // Field *field = nullptr;
+  const Table *table_ = nullptr;
+  const FieldMeta *field_ = nullptr;
   int aggregation_num = 0;
   int attr_num = 0;
 
