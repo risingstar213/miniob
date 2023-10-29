@@ -16,6 +16,6 @@ RC append_select_expression_with_star(std::vector<Table *> tables,
 
 Expression* generate_expression(ExprSqlNode &expr);
 
-std::string generate_alias(bool multi_tables, ExprSqlNode *expr);
+std::string generate_alias(bool multi_tables, ExprSqlNode &expr);
 
 #endif

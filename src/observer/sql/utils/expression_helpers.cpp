@@ -192,7 +192,7 @@ static void wildcard_fields(Table *table,  std::vector<ExprSqlNode> &expressions
     //   expr.field->set_table_alias(table.alias);
     // }
     expr.type = E_DYN;
-    expressions.push_back(expr);
+    expressions.push_back(std::move(expr));
   }
 }
 
@@ -211,7 +211,7 @@ RC append_select_expression_with_star(std::vector<Table *> tables,
       wildcard_fields(table, expressions);
     }
   } else {
-    expressions.push_back(expr);
+    expressions.push_back(std::move(expr));
   }
   return RC::SUCCESS;
 }
@@ -239,19 +239,19 @@ Expression* generate_expression(ExprSqlNode &expr)
     return new ArithmeticExpr(ArithmeticExpr::Type(expr.type), std::move(left), std::move(right));
 }
 
-std::string generate_alias(bool multi_tables, ExprSqlNode *expr)
+std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
 {
   std::string str;
-  if (expr->has_brace) {
+  if (expr.has_brace) {
     str += '(';
   }
-  if (expr->type == E_VAL) {
-    str += expr->value->to_string();
-  } else if (expr->type == E_DYN) {
+  if (expr.type == E_VAL) {
+    str += expr.value->to_string();
+  } else if (expr.type == E_DYN) {
     // if (expr->field->get_alias() != nullptr) {
     //   str += expr->field->get_alias();
    //  } else {
-      AggragationType aggType = expr->attr == nullptr ? A_UNDEFINED: expr->attr->aggType;
+      AggragationType aggType = expr.attr == nullptr ? A_UNDEFINED: expr.attr->aggType;
       switch(aggType) {
         case A_AVG:
           str += "AVG(";
@@ -271,14 +271,14 @@ std::string generate_alias(bool multi_tables, ExprSqlNode *expr)
         default:
           break;
       }
-      if (!expr->field->meta()->visible()) {
+      if (!expr.field->meta()->visible()) {
         str += "*";
       } else if (multi_tables) {
-        str += expr->field->table_name();
+        str += expr.field->table_name();
         str += '.';
-        str += expr->field->meta()->name();
+        str += expr.field->meta()->name();
       } else {
-        str += expr->field->meta()->name();
+        str += expr.field->meta()->name();
       }
       if (aggType != A_UNDEFINED) {
         str += ")";
@@ -314,13 +314,13 @@ std::string generate_alias(bool multi_tables, ExprSqlNode *expr)
     // } else {
       std::string left_str;
       std::string right_str;
-      if (expr->left != nullptr) {
-        left_str = generate_alias(multi_tables, expr->left);
+      if (expr.left != nullptr) {
+        left_str = generate_alias(multi_tables, *expr.left);
       }
-      if (expr->right != nullptr) {
-        right_str = generate_alias(multi_tables, expr->right);
+      if (expr.right != nullptr) {
+        right_str = generate_alias(multi_tables, *expr.right);
       }
-      switch (expr->type) {
+      switch (expr.type) {
         case E_ADD: {
           str += left_str + "+" + right_str;
         } break;
@@ -341,7 +341,7 @@ std::string generate_alias(bool multi_tables, ExprSqlNode *expr)
       }
 //    }
   }
-  if (expr->has_brace) {
+  if (expr.has_brace) {
     str += ')';
   }
   return str;

@@ -61,12 +61,17 @@ public:
   {
     return filter_stmt_;
   }
+  const std::vector<FilterStmt *> &join_filters() const
+  {
+    return join_filters_;
+  }
 
 private:
   // std::vector<Field> query_fields_;
   std::vector<Expression *> query_exprs_;
-  std::vector<Field *> query_fields_;
+  std::vector<Field *>      query_fields_;
   std::vector<std::string>  query_alias_;
-  std::vector<Table *> tables_;
+  std::vector<Table *>      tables_;
+  std::vector<FilterStmt *> join_filters_;
   FilterStmt *filter_stmt_ = nullptr;
 };

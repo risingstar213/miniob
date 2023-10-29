@@ -90,6 +90,8 @@ RC LogicalPlanGenerator::create_plan(
 
   const std::vector<Table *> &tables = select_stmt->tables();
   // const std::vector<Field> &all_fields = select_stmt->query_fields();
+  const std::vector<FilterStmt *> &join_filters = select_stmt->join_filters();
+  int iter_times = 0;
   for (Table *table : tables) {
     std::vector<Field> fields;
     // for (const Field &field : all_fields) {
@@ -102,7 +104,6 @@ RC LogicalPlanGenerator::create_plan(
       const FieldMeta *field_meta = table->table_meta().field(i);
       fields.push_back(Field(table, field_meta));
     }
-    
 
     unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, fields, true/*readonly*/));
     if (table_oper == nullptr) {
@@ -111,8 +112,24 @@ RC LogicalPlanGenerator::create_plan(
       JoinLogicalOperator *join_oper = new JoinLogicalOperator;
       join_oper->add_child(std::move(table_oper));
       join_oper->add_child(std::move(table_get_oper));
-      table_oper = unique_ptr<LogicalOperator>(join_oper);
+      if (iter_times-1 < join_filters.size()) {
+        unique_ptr<LogicalOperator> join_pred_oper(nullptr);
+        RC rc = create_plan(join_filters[iter_times-1], join_pred_oper);
+        if (rc != RC::SUCCESS) {
+          LOG_WARN("failed to create predicate logical plan. rc=%s", strrc(rc));
+          return rc;
+        }
+        if (join_pred_oper == nullptr) {
+          LOG_INFO("join_pred_oper is nullptr !!!");
+        }
+        join_pred_oper->add_child(std::unique_ptr<LogicalOperator>(join_oper));
+        table_oper.swap(join_pred_oper);
+      } else {
+        table_oper = unique_ptr<LogicalOperator>(join_oper);
+      }
     }
+
+    iter_times += 1;
   }
 
   unique_ptr<LogicalOperator> predicate_oper;
@@ -121,8 +138,6 @@ RC LogicalPlanGenerator::create_plan(
     LOG_WARN("failed to create predicate logical plan. rc=%s", strrc(rc));
     return rc;
   }
-
-
 
   unique_ptr<LogicalOperator> project_oper(new ProjectLogicalOperator(select_stmt->query_exprs()));
   if (predicate_oper) {

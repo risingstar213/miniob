@@ -91,11 +91,11 @@ struct DynNodeSqlNode {
 // Expression Node Definition
 struct ExprSqlNode {
   ExprNodeType type;
-  ExprSqlNode* left = nullptr;
-  ExprSqlNode* right = nullptr;
+  std::unique_ptr<ExprSqlNode> left = nullptr;
+  std::unique_ptr<ExprSqlNode> right = nullptr;
 
-  Value*          value = nullptr;
-  DynNodeSqlNode* attr  = nullptr;
+  std::unique_ptr<Value>       value = nullptr;
+  std::unique_ptr<DynNodeSqlNode> attr  = nullptr;
 
   bool has_brace;
 
@@ -155,12 +155,12 @@ enum CompOp
 struct ConditionSqlNode
 {
   bool                           left_is_subquery;
-  ExprSqlNode*                   left_expr = nullptr;
-  SelectSqlNode*                 left_subquery = nullptr;
+  std::unique_ptr<ExprSqlNode>   left_expr = nullptr;
+  std::unique_ptr<SelectSqlNode> left_subquery = nullptr;
   CompOp op;
   bool                           right_is_subquery;
-  ExprSqlNode*                   right_expr = nullptr;
-  SelectSqlNode*                 right_subquery = nullptr;
+  std::unique_ptr<ExprSqlNode>   right_expr = nullptr;
+  std::unique_ptr<SelectSqlNode> right_subquery = nullptr;
 
   void release();
 };
@@ -201,7 +201,7 @@ struct GroupBySqlNode
 
 struct OrderBySqlNode
 {
-  RelAttrSqlNode*            by_attr = nullptr;
+  std::unique_ptr<RelAttrSqlNode> by_attr = nullptr;
   bool                       is_asc;
 
   void release();

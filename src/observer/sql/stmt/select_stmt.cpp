@@ -65,6 +65,39 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
     table_map.insert(std::pair<std::string, Table *>(table_name, table));
   }
 
+  // join
+  std::vector<FilterStmt *> join_filters;
+
+  for (size_t i = 0; i < select_sql.joins.size(); i++) {
+    LOG_INFO("join %d in select stmt", i);
+    const char *table_name = select_sql.joins[i].relation.c_str();
+    if (nullptr == table_name) {
+      LOG_WARN("invalid argument. relation name is null. index=%d", i);
+      return RC::INVALID_ARGUMENT;
+    }
+
+    Table *table = db->find_table(table_name);
+    if (nullptr == table) {
+      LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
+      return RC::SCHEMA_TABLE_NOT_EXIST;
+    }
+
+    tables.push_back(table);
+    table_map.insert(std::pair<std::string, Table *>(table_name, table));
+
+    FilterStmt *join_filter_stmt = nullptr;
+    RC rc = FilterStmt::create(db,
+        tables[0],
+        &table_map,
+        select_sql.joins[i].on_coditions,
+        join_filter_stmt);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("cannot construct filter stmt");
+      return rc;
+    }
+    join_filters.push_back(join_filter_stmt);
+  }
+
   // collect query fields in `select` statement
   // std::vector<Field> query_fields;
   // for (int i = static_cast<int>(select_sql.attributes.size()) - 1; i >= 0; i--) {
@@ -151,7 +184,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
   bool multi_tables = (tables.size() > 1);
   for (size_t i = 0; i < expressions.size(); i++) {
     query_exprs.push_back(generate_expression(expressions[i]));
-    query_alias.push_back(generate_alias(multi_tables, &expressions[i]));
+    query_alias.push_back(generate_alias(multi_tables, expressions[i]));
   }
 
   LOG_INFO("got %d tables in from stmt and %d fields in query stmt", tables.size(), expressions.size());
@@ -177,6 +210,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
   SelectStmt *select_stmt = new SelectStmt();
   // TODO add expression copy
   select_stmt->tables_.swap(tables);
+  select_stmt->join_filters_.swap(join_filters);
   select_stmt->query_exprs_.swap(query_exprs);
   select_stmt->query_alias_.swap(query_alias);
   select_stmt->filter_stmt_ = filter_stmt;

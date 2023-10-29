@@ -319,5 +319,12 @@ private:
 class AggragationExpr : public Expression
 {
 public:
-  
+  // enum class Type {
+  //   UNDEFINED,
+  //   MAX,
+  //   MIN,
+  //   COUNT,
+  //   AVG,
+  //   SUM
+  // };
 };

@@ -38,6 +38,7 @@ RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::stri
   stmt = nullptr;
 
   FilterStmt *tmp_stmt = new FilterStmt();
+  LOG_INFO("FilterStmt has %d filters", condition_sqls.size());
   for (int i = 0; i < condition_sqls.size(); i++) {
     FilterUnit *filter_unit = nullptr;
     rc = create_filter_unit(db, default_table, tables, condition_sqls[i], filter_unit);
