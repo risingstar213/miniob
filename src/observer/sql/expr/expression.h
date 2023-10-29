@@ -315,3 +315,9 @@ private:
   std::unique_ptr<Expression> left_;
   std::unique_ptr<Expression> right_;
 };
+
+class AggragationExpr : public Expression
+{
+public:
+  
+};

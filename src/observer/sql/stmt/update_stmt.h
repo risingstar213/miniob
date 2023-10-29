@@ -17,7 +17,10 @@ See the Mulan PSL v2 for more details. */
 #include "common/rc.h"
 #include "sql/stmt/stmt.h"
 
+#include "storage/field/field_meta.h"
+
 class Table;
+class FilterStmt;
 
 /**
  * @brief 更新语句
@@ -27,27 +30,44 @@ class UpdateStmt : public Stmt
 {
 public:
   UpdateStmt() = default;
-  UpdateStmt(Table *table, Value *values, int value_amount);
+  ~UpdateStmt() override;
+  // UpdateStmt(Table *table, std::vector);
+  StmtType type() const override
+  {
+    return StmtType::UPDATE;
+  }
 
 public:
-  static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
+  static RC create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt);
 
 public:
   Table *table() const
   {
     return table_;
   }
-  Value *values() const
+  std::vector<std::string> &update_names()
   {
-    return values_;
+    return update_names_;
   }
-  int value_amount() const
+  std::vector<Expression *> &update_exprs()
   {
-    return value_amount_;
+    return update_exprs_;
+  }
+  std::vector<const FieldMeta *> &update_fields()
+  {
+    return update_fields_;
+  }
+  FilterStmt *filter_stmt()
+  {
+    return filter_stmt_;
   }
 
 private:
   Table *table_ = nullptr;
-  Value *values_ = nullptr;
-  int value_amount_ = 0;
+  // Value *values_ = nullptr;
+  // int value_amount_ = 0;
+  std::vector<std::string>  update_names_;
+  std::vector<const FieldMeta *>  update_fields_;
+  std::vector<Expression *> update_exprs_;
+  FilterStmt *filter_stmt_ = nullptr;
 };

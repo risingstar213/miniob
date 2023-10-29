@@ -13,14 +13,79 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/stmt/update_stmt.h"
+#include "sql/stmt/filter_stmt.h"
+#include "sql/parser/parse_defs.h"
+#include "storage/db/db.h"
+#include "sql/utils/expression_helpers.h"
 
-UpdateStmt::UpdateStmt(Table *table, Value *values, int value_amount)
-    : table_(table), values_(values), value_amount_(value_amount)
-{}
+// UpdateStmt::UpdateStmt(Table *table, )
+//     : table_(table), values_(values), value_amount_(value_amount)
+// {}
 
-RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
+RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
 {
   // TODO
-  stmt = nullptr;
+  std::string table_name = update.relation_name;
+  if (nullptr == db || table_name.empty()) {
+    LOG_WARN("invalid argument. db=%p, table_name=%p", db, table_name);
+    return RC::INVALID_ARGUMENT;
+  }
+
+  // check whether the table exists
+  Table *table = db->find_table(table_name.c_str());
+  if (nullptr == table) {
+    LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
+    return RC::SCHEMA_TABLE_NOT_EXIST;
+  }
+
+  std::vector<std::string> update_names;
+  std::vector<Expression *> update_exprs;
+  std::vector<const FieldMeta *> update_fields;
+
+  for (size_t i = 0; i < update.attr_values.size(); i++) {
+    // check whether the column exists
+    const FieldMeta *field_meta = table->table_meta().field(update.attr_values[i].attr.attribute_name.c_str());
+    if (nullptr == field_meta) {
+      LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), update.attr_values[i].attr.attribute_name.c_str());
+      return RC::SCHEMA_FIELD_MISSING;
+    }
+
+    Expression *expr = nullptr;
+
+    if (!update.attr_values[i].is_select) {
+      // check whether the type of the value is correct
+
+      expr = new ValueExpr(update.attr_values[i].value);
+    } else {
+      // select
+      // Stmt *stmt;
+      // RC rc = SelectStmt::create(db, update.update_value[i].value.select, stmt);
+      // update_value.value.select = static_cast<SelectStmt *>(stmt);
+      // if (rc != RC::SUCCESS) {
+      //   LOG_WARN("cannot create sub select stmt for update");
+      //   return rc;
+      // }
+    }
+    update_names.push_back(update.attr_values[i].attr.attribute_name.c_str());
+    update_fields.push_back(field_meta);
+    update_exprs.push_back(expr);
+  }
+
+  std::unordered_map<std::string, Table *> table_map;
+  table_map.insert(std::pair<std::string, Table *>(std::string(table_name), table));
+
+  FilterStmt *filter_stmt = nullptr;
+  RC rc = FilterStmt::create(db, table, &table_map, update.conditions, filter_stmt);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
+    return rc;
+  }
+
+  UpdateStmt *update_stmt = new UpdateStmt();
+  update_stmt->table_ = table;
+  update_stmt->update_names_.swap(update_names);
+  update_stmt->update_exprs_.swap(update_exprs);
+  update_stmt->update_fields_.swap(update_fields);
+  stmt = update_stmt;
   return RC::INTERNAL;
 }
