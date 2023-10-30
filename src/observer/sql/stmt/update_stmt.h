@@ -30,8 +30,7 @@ class UpdateStmt : public Stmt
 {
 public:
   UpdateStmt() = default;
-  ~UpdateStmt() override;
-  // UpdateStmt(Table *table, std::vector);
+  // UpdateStmt(Table *table);
   StmtType type() const override
   {
     return StmtType::UPDATE;

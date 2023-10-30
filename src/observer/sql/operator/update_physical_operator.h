@@ -45,6 +45,7 @@ public:
 
   Tuple *current_tuple() override { return nullptr; }
 
+  int find_index_in_tuple(const FieldMeta* field);
 private:
   Table *table_ = nullptr;
   std::vector<const FieldMeta*> fields_;

@@ -46,6 +46,17 @@ RC UpdatePhysicalOperator::open(Trx *trx)
   return RC::SUCCESS;
 }
 
+int UpdatePhysicalOperator::find_index_in_tuple(const FieldMeta* field)
+{
+  int field_num = table_->table_meta().field_num();
+  for (int i = 0; i < field_num; i++) {
+    if (table_->table_meta().field(i)->name() == field->name()) {
+      return i;
+    }
+  }
+  return 0;
+}
+
 RC UpdatePhysicalOperator::next()
 {
   RC rc = RC::SUCCESS;
@@ -62,8 +73,43 @@ RC UpdatePhysicalOperator::next()
     }
 
     RowTuple *row_tuple = static_cast<RowTuple *>(tuple);
-    // Record &record = row_tuple->record();
-    // rc = trx_->delete_record(table_, record);
+
+    std::vector<Value> new_values;
+    int field_num = table_->table_meta().field_num();
+    for (int i = 0; i < field_num; i++) {
+      Value temp;
+      row_tuple->cell_at(i, temp);
+      new_values.emplace_back(temp);
+    }
+
+    for (int i = 0; i < fields_.size(); i++) {
+      int index = find_index_in_tuple(fields_[i]);
+      Value temp;
+      exprs_[i]->get_value(*tuple, temp, trx_);
+      new_values[index] = temp;
+    }
+
+    Record &record = row_tuple->record();
+    rc = trx_->delete_record(table_, record);
+
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to delete record in update: %s", strrc(rc));
+      return rc;
+    }
+
+    for (int i = 0; i < field_num; i++) {
+      LOG_INFO("update %d to %s", i, new_values[i].to_string());
+    }
+
+    Record new_record;
+    table_->make_record(static_cast<int>(new_values.size()), new_values.data(), new_record);
+
+    rc = trx_->insert_record(table_, new_record);
+
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to index record in update: %s", strrc(rc));
+      return rc;
+    }
 
     // (TODO): generate update row here, using exprs
 

@@ -18,8 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "sql/utils/expression_helpers.h"
 
-// UpdateStmt::UpdateStmt(Table *table, )
-//     : table_(table), values_(values), value_amount_(value_amount)
+// UpdateStmt::UpdateStmt(Table *table)
 // {}
 
 RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
@@ -86,6 +85,7 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
   update_stmt->update_names_.swap(update_names);
   update_stmt->update_exprs_.swap(update_exprs);
   update_stmt->update_fields_.swap(update_fields);
+  update_stmt->filter_stmt_ = filter_stmt;
   stmt = update_stmt;
-  return RC::INTERNAL;
+  return RC::SUCCESS;
 }

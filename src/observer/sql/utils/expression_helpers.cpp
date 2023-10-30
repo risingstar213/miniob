@@ -131,8 +131,8 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     if (rc != RC::SUCCESS) {
       return rc;
     }
-    if (expr.left->attrType == DATES || expr.left->type == CHARS || expr.left->type == TEXTS) {
-      LOG_WARN("the type %d in complex expression is not supported.", expr.left->type);
+    if (expr.left->attrType == DATES || expr.left->attrType == CHARS || expr.left->attrType == TEXTS) {
+      LOG_WARN("the type %d in complex expression is not supported.", expr.left->attrType);
       return RC::INVALID_ARGUMENT;
     }
     expr.attr_num += expr.left->attr_num;
@@ -231,7 +231,7 @@ Expression* generate_expression(ExprSqlNode &expr)
 
     // TODO: AGG
     if (expr.type == E_DYN) {
-      if (expr.attr != nullptr && expr.attr->aggType != UNDEFINED) {
+      if (expr.attr != nullptr && expr.attr->aggType != A_UNDEFINED) {
         return new AggregationExpr(expr.attr->aggType, Field(expr.table_, expr.field_));
       } else {
         return new FieldExpr(Field(expr.table_, expr.field_));

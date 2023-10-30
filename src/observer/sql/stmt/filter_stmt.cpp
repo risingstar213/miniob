@@ -120,6 +120,10 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     left_type = left->value_type();
   } else if (condition.left_expr != nullptr) {
     rc = check_select_expression_valid(*condition.left_expr, 0, table, *tables);
+    if (rc != RC::SUCCESS) {
+      LOG_INFO("left expr is not valid!");
+      return rc;
+    }
     left = std::move(generate_expression(*condition.left_expr));
     left_type = condition.left_expr->attrType;
   } else {
@@ -137,6 +141,10 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right_type = right->value_type();
   } else if (condition.right_expr != nullptr) {
     rc = check_select_expression_valid(*condition.right_expr, 0, table, *tables);
+    if (rc != RC::SUCCESS) {
+      LOG_INFO("right expr is not valid!");
+      return rc;
+    }
     right = generate_expression(*condition.right_expr);
     right_type = condition.right_expr->attrType;
   } else {
