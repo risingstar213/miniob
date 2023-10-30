@@ -29,7 +29,10 @@ RC PredicatePhysicalOperator::open(Trx *trx)
     LOG_WARN("predicate operator must has one child");
     return RC::INTERNAL;
   }
-
+  trx_ = trx;
+  if (trx == nullptr) {
+    LOG_WARN("predicate operator is initiated with nullptr txn!");
+  }
   return children_[0]->open(trx);
 }
 
@@ -47,7 +50,16 @@ RC PredicatePhysicalOperator::next()
     }
 
     Value value;
-    rc = expression_->get_value(*tuple, value);
+
+    if (ctx_tuple_ != nullptr) {
+      JoinedTuple combined;
+      combined.set_left(ctx_tuple_);
+      combined.set_right(tuple);
+      rc = expression_->get_value(combined, value, trx_);
+    } else {
+      rc = expression_->get_value(*tuple, value, trx_);
+    }
+
     if (rc != RC::SUCCESS) {
       return rc;
     }

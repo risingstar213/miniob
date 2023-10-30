@@ -165,6 +165,9 @@ struct ConditionSqlNode
   std::unique_ptr<ExprSqlNode>   right_expr = nullptr;
   std::unique_ptr<SelectSqlNode> right_subquery = nullptr;
 
+  bool                           right_is_list = false;
+  std::deque<Value>              value_list;
+
   void release();
 };
 

@@ -86,6 +86,16 @@ public:
     return children_;
   }
 
+  void set_ctx_tuple(Tuple *tuple)
+  {
+    ctx_tuple_ = tuple;
+    for (int i = 0; i < children_.size(); i++) {
+      children_[i]->set_ctx_tuple(tuple);
+    }
+  }
+
 protected:
   std::vector<std::unique_ptr<PhysicalOperator>> children_;
+
+  Tuple *ctx_tuple_ = nullptr;
 };

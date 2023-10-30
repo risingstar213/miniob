@@ -389,7 +389,7 @@ private:
 /**
  * @brief 将两个tuple合并为一个tuple
  * @ingroup Tuple
- * @details 在join算子中使用
+ * @details 在join算子中使用, 子查询时也使用该tuple
  */
 class JoinedTuple : public Tuple 
 {

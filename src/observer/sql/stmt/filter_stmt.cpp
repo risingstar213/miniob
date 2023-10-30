@@ -87,11 +87,11 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
 {
   RC rc = RC::SUCCESS;
 
-  if (condition.left_is_subquery || condition.right_is_subquery) {
-    LOG_WARN("UNIMPLENMENT");
-    rc = RC::UNIMPLENMENT;
-    return rc;
-  }
+  // if (condition.left_is_subquery || condition.right_is_subquery) {
+  //   LOG_WARN("UNIMPLENMENT");
+  //   rc = RC::UNIMPLENMENT;
+  //   return rc;
+  // }
 
   CompOp comp = condition.op;
   if (comp < EQUAL_TO || comp >= NO_OP) {
@@ -110,7 +110,14 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   Expression* left = nullptr,* right = nullptr;
   
   if (condition.left_is_subquery ) {
-
+    Stmt* left_stmt = nullptr;
+    rc = SelectStmt::create(db, *condition.left_subquery, *tables, left_stmt);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("sub query stmt failed to be initiated!");
+      return RC::INVALID_ARGUMENT;
+    }
+    left = new SQueryExpr(static_cast<SelectStmt *>(left_stmt));
+    left_type = left->value_type();
   } else if (condition.left_expr != nullptr) {
     rc = check_select_expression_valid(*condition.left_expr, 0, table, *tables);
     left = std::move(generate_expression(*condition.left_expr));
@@ -120,13 +127,21 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   }
 
   if (condition.right_is_subquery ) {
-
+    Stmt* right_stmt = nullptr;
+    rc = SelectStmt::create(db, *condition.right_subquery, *tables, right_stmt);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("sub query stmt failed to be initiated!");
+      return RC::INVALID_ARGUMENT;
+    }
+    right = new SQueryExpr(static_cast<SelectStmt *>(right_stmt));
+    right_type = right->value_type();
   } else if (condition.right_expr != nullptr) {
     rc = check_select_expression_valid(*condition.right_expr, 0, table, *tables);
     right = generate_expression(*condition.right_expr);
     right_type = condition.right_expr->attrType;
   } else {
-    right_type = UNDEFINED;
+    // right_type = UNDEFINED;
+    // right = 
   }
 
   bool can_compare = true;

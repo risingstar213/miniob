@@ -21,8 +21,11 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field.h"
 #include "sql/parser/value.h"
 #include "common/log/log.h"
+#include "sql/stmt/select_stmt.h"
+// #include "sql/operator/project_physical_operator.h"
 
 class Tuple;
+class PhysicalOperator;
 
 /**
  * @defgroup Expression
@@ -43,7 +46,8 @@ enum class ExprType
   COMPARISON,   ///< 需要做比较的表达式
   CONJUNCTION,  ///< 多个表达式使用同一种关系(AND或OR)来联结
   ARITHMETIC,   ///< 算术运算
-  AGGREGATION
+  AGGREGATION,
+  SQUERY
 };
 
 /**
@@ -66,7 +70,7 @@ public:
   /**
    * @brief 根据具体的tuple，来计算当前表达式的值。tuple有可能是一个具体某个表的行数据
    */
-  virtual RC get_value(const Tuple &tuple, Value &value) const = 0;
+  virtual RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const = 0;
 
   /**
    * @brief 在没有实际运行的情况下，也就是无法获取tuple的情况下，尝试获取表达式的值
@@ -137,7 +141,7 @@ public:
 
   const char *field_name() const { return field_.field_name(); }
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const override;
 
 private:
   Field field_;
@@ -159,7 +163,7 @@ public:
 
   virtual ~ValueExpr() = default;
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const override;
   RC try_get_value(Value &value) const override { value = value_; return RC::SUCCESS; }
 
   ExprType type() const override { return ExprType::VALUE; }
@@ -188,7 +192,7 @@ public:
   {
     return ExprType::CAST;
   }
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const override;
 
   RC try_get_value(Value &value) const override;
 
@@ -216,7 +220,7 @@ public:
 
   ExprType type() const override { return ExprType::COMPARISON; }
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const override;
 
   AttrType value_type() const override { return BOOLEANS; }
 
@@ -236,6 +240,8 @@ public:
    * @param value the result of comparison
    */
   RC compare_value(const Value &left, const Value &right, bool &value) const;
+
+  RC compare_with_set(const Tuple &tuple, Value &value, Trx *trx) const;
 
 private:
   CompOp comp_;
@@ -265,7 +271,7 @@ public:
 
   AttrType value_type() const override { return BOOLEANS; }
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const override;
 
   Type conjunction_type() const { return conjunction_type_; }
 
@@ -300,7 +306,7 @@ public:
 
   AttrType value_type() const override;
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const override;
   RC try_get_value(Value &value) const override;
 
   Type arithmetic_type() const { return arithmetic_type_; }
@@ -327,10 +333,33 @@ public:
 
   AttrType value_type() const override;
 
-  RC get_value(const Tuple &tuple, Value &value) const override;
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const override;
   RC try_get_value(Value &value) const override;
 
 private:
   AggregationType agg_type_;
   Field field_;
+};
+
+class SQueryExpr : public Expression
+{
+public:
+  SQueryExpr(SelectStmt *stmt);
+  virtual ~SQueryExpr() override;
+
+  ExprType type() const override { return ExprType::SQUERY; }
+
+  AttrType value_type() const override;
+
+  RC get_value(const Tuple &tuple, Value &value, Trx *trx = nullptr) const override;
+  RC try_get_value(Value &value) const override;
+
+  RC open_sub_query(const Tuple &tuple, Trx *trx);
+  RC next_sub_query(Value &value);
+  RC close_sub_query();
+
+private:
+  std::unique_ptr<SelectStmt> stmt_ = nullptr;
+  // 惰性，第一次获取value时初始化，之后只需要 reset
+  PhysicalOperator* operator_ = nullptr;
 };

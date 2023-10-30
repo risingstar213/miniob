@@ -16,14 +16,17 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/tuple.h"
 #include "sql/parser/parse_defs.h"
 
+#include "sql/optimizer/logical_plan_generator.h"
+#include "sql/optimizer/physical_plan_generator.h"
+
 using namespace std;
 
-RC FieldExpr::get_value(const Tuple &tuple, Value &value) const
+RC FieldExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
   return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value);
 }
 
-RC ValueExpr::get_value(const Tuple &tuple, Value &value) const
+RC ValueExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
   value = value_;
   return RC::SUCCESS;
@@ -60,9 +63,9 @@ RC CastExpr::cast(const Value &value, Value &cast_value) const
   return rc;
 }
 
-RC CastExpr::get_value(const Tuple &tuple, Value &cell) const
+RC CastExpr::get_value(const Tuple &tuple, Value &cell, Trx *trx) const
 {
-  RC rc = child_->get_value(tuple, cell);
+  RC rc = child_->get_value(tuple, cell, trx);
   if (rc != RC::SUCCESS) {
     return rc;
   }
@@ -113,6 +116,7 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
     case GREAT_THAN: {
       result = (cmp_result > 0);
     } break;
+    
     default: {
       LOG_WARN("unsupported comparison. %d", comp_);
       rc = RC::INTERNAL;
@@ -143,17 +147,85 @@ RC ComparisonExpr::try_get_value(Value &cell) const
   return RC::INVALID_ARGUMENT;
 }
 
-RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) const
+RC ComparisonExpr::compare_with_set(const Tuple &tuple, Value &value, Trx *trx) const
 {
+  LOG_INFO("compare_with_set");
+  SQueryExpr *expr = dynamic_cast<SQueryExpr *>(right_.get());
+  Value left, right;
+  if (comp_ == IN_SQ || comp_ == NOT_IN_SQ) {
+    left_->get_value(tuple, left, trx);
+  }
+
+  RC rc = expr->open_sub_query(tuple, trx);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  // TODO: NULL
+  switch (comp_) 
+  {
+    case IN_SQ: {
+      value.set_boolean(false);
+      while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
+        if (left.compare(right) == 0) {
+          value.set_boolean(true);
+          break;
+        }
+      }
+    } break;
+    case NOT_IN_SQ: {
+      value.set_boolean(true);
+      while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
+        if (left.compare(right) == 0) {
+          value.set_boolean(false);
+          break;
+        }
+      }
+    } break;
+    case EXISTS_SQ: {
+      value.set_boolean(false);
+      while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
+        value.set_boolean(true);
+        break;
+      }
+    } break;
+    case NOT_EXISTS_SQ: {
+      value.set_boolean(true);
+      while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
+        value.set_boolean(false);
+        break;
+      }
+    } break;
+  }
+
+  LOG_INFO("successfully compare_with_set %s", strrc(rc));
+
+  RC close_rc = expr->close_sub_query();
+  if (close_rc != RC::SUCCESS) {
+    return close_rc;
+  }
+
+  if (rc != RC::RECORD_EOF) {
+    return rc;
+  } else {
+    return RC::SUCCESS;
+  }
+}
+
+RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
+{
+  if (comp_ >= IN_SQ && comp_ <= NOT_EXISTS_SQ) {
+    return compare_with_set(tuple, value, trx);
+  }
+  
   Value left_value;
   Value right_value;
 
-  RC rc = left_->get_value(tuple, left_value);
+  RC rc = left_->get_value(tuple, left_value, trx);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
-  rc = right_->get_value(tuple, right_value);
+  rc = right_->get_value(tuple, right_value, trx);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
     return rc;
@@ -172,7 +244,7 @@ ConjunctionExpr::ConjunctionExpr(Type type, vector<unique_ptr<Expression>> &chil
     : conjunction_type_(type), children_(std::move(children))
 {}
 
-RC ConjunctionExpr::get_value(const Tuple &tuple, Value &value) const
+RC ConjunctionExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
   RC rc = RC::SUCCESS;
   if (children_.empty()) {
@@ -182,7 +254,7 @@ RC ConjunctionExpr::get_value(const Tuple &tuple, Value &value) const
 
   Value tmp_value;
   for (const unique_ptr<Expression> &expr : children_) {
-    rc = expr->get_value(tuple, tmp_value);
+    rc = expr->get_value(tuple, tmp_value, trx);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to get value by child expression. rc=%s", strrc(rc));
       return rc;
@@ -288,7 +360,7 @@ RC ArithmeticExpr::calc_value(const Value &left_value, const Value &right_value,
   return rc;
 }
 
-RC ArithmeticExpr::get_value(const Tuple &tuple, Value &value) const
+RC ArithmeticExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
   RC rc = RC::SUCCESS;
 
@@ -296,13 +368,13 @@ RC ArithmeticExpr::get_value(const Tuple &tuple, Value &value) const
   Value right_value;
 
   if (left_) {
-    rc = left_->get_value(tuple, left_value);
+    rc = left_->get_value(tuple, left_value, trx);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
       return rc;
     }
   }
-  rc = right_->get_value(tuple, right_value);
+  rc = right_->get_value(tuple, right_value, trx);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
     return rc;
@@ -354,7 +426,7 @@ AttrType AggregationExpr::value_type() const
   }
 }
 
-RC AggregationExpr::get_value(const Tuple &tuple, Value &value) const 
+RC AggregationExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const 
 {
   // it must be group tuple !!!
   const GroupTuple *group_tuple = dynamic_cast<const GroupTuple *>(&tuple);
@@ -398,4 +470,134 @@ RC AggregationExpr::get_value(const Tuple &tuple, Value &value) const
 RC AggregationExpr::try_get_value(Value &value) const 
 {
   return RC::UNIMPLENMENT;
+}
+
+SQueryExpr::SQueryExpr(SelectStmt *stmt)
+  : stmt_(stmt)
+{
+  if (operator_ == nullptr) {
+    std::unique_ptr<LogicalOperator> logical_oper;
+    LogicalPlanGenerator logical_generator;
+    logical_generator.create(stmt_.get(), logical_oper);
+    PhysicalPlanGenerator physical_generator;
+    std::unique_ptr<PhysicalOperator> physical_oper;
+    physical_generator.create(*logical_oper, physical_oper);
+    operator_ = physical_oper.release();
+  }
+}
+
+SQueryExpr::~SQueryExpr()
+{
+  if (operator_ != nullptr) {
+    delete operator_;
+    operator_ = nullptr;
+  }
+}
+
+AttrType SQueryExpr::value_type() const
+{
+  return stmt_->query_exprs()[0]->value_type();
+}
+
+// get only one value, used for comparison
+RC SQueryExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
+{
+  // TODO: store tuple in ctx.
+  if (operator_ == nullptr) {
+    return RC::INTERNAL;
+  }
+  RC rc = RC::SUCCESS;
+  if (trx == nullptr) {
+    LOG_ERROR("SQueryExpr should get a trx!");
+    return RC::INTERNAL;
+  }
+  // important
+  operator_->set_ctx_tuple(const_cast<Tuple *>(&tuple));
+
+  rc = operator_->open(trx);
+  if (rc != RC::SUCCESS) {
+    return RC::INTERNAL;
+  }
+  rc = operator_->next();
+  // return NULL !!!
+  if (rc == RC::RECORD_EOF) {
+    LOG_WARN("SQueryExpr::get_value should have one row, not zero");
+    operator_->close();
+    return RC::INTERNAL;
+  } else if (rc != RC::SUCCESS) {
+    operator_->close();
+    return rc;
+  }
+  Tuple *project_tuple = operator_->current_tuple();
+  if (project_tuple->cell_num() != 1) {
+     LOG_WARN("SQueryExpr::get_value should have only one column");
+    operator_->close();
+    return RC::INTERNAL;
+  }
+  // the first
+  rc = project_tuple->cell_at(0, value);
+  if (rc != RC::SUCCESS) {
+    operator_->close();
+    return rc;
+  }
+  rc = operator_->next();
+  if (rc != RC::RECORD_EOF) {
+    LOG_WARN("SQueryExpr::get_value should have only one row");
+    operator_->close();
+    return RC::INTERNAL;
+  }
+  operator_->close();
+  return RC::SUCCESS;
+}
+
+RC SQueryExpr::open_sub_query(const Tuple &tuple, Trx *trx)
+{
+  // TODO: store tuple in ctx.
+  if (operator_ == nullptr) {
+    return RC::INTERNAL;
+  }
+  RC rc = RC::SUCCESS;
+  if (trx == nullptr) {
+    LOG_ERROR("SQueryExpr should get a trx!");
+    return RC::INTERNAL;
+  }
+  // important
+  operator_->set_ctx_tuple(const_cast<Tuple *>(&tuple));
+  rc = operator_->open(trx);
+  if (rc != RC::SUCCESS) {
+    return RC::INTERNAL;
+  }
+  return RC::SUCCESS;
+}
+
+RC SQueryExpr::next_sub_query(Value &value)
+{
+  RC rc = operator_->next();
+  // return NULL !!!
+  if (rc == RC::RECORD_EOF) {
+    return RC::RECORD_EOF;
+  } else if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  Tuple *project_tuple = operator_->current_tuple();
+  if (project_tuple->cell_num() != 1) {
+     LOG_WARN("SQueryExpr::get_value should have only one column");
+    return RC::INTERNAL;
+  }
+  // the first
+  rc = project_tuple->cell_at(0, value);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  return RC::SUCCESS;
+}
+
+RC SQueryExpr::close_sub_query()
+{
+  return operator_->close();
+}
+
+RC SQueryExpr::try_get_value(Value &value) const
+{
+  return RC::SUCCESS;
 }

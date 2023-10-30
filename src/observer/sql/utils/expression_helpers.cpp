@@ -42,7 +42,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     //   return RC::INVALID_ARGUMENT;
     // }
     // select * / count(*)
-    if (expr.attr->node.attribute_name == "*") {
+    if (expr.attr->node.attribute_name == "*" && expr.attr->node.relation_name.empty()) {
       if ((depth == 0 && expr.attr->aggType == A_UNDEFINED)) {
         // if (expr->attr->alias != nullptr) {
         //   LOG_WARN("select * cannot have alias !!!");
@@ -66,7 +66,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     }
     Table * table;
     const char *table_alias;
-    if (expr.attr->node.relation_name.length() > 0) {
+    if (!expr.attr->node.relation_name.empty()) {
       auto iter = tables_map.find(expr.attr->node.relation_name);
       if (iter == tables_map.end()) {
         LOG_WARN("no such table in from list: %s", expr.attr->node.relation_name);
@@ -76,11 +76,15 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
       // table_alias = expr->attr->relation_name;
     } else {
       if (tables.size() != 1) {
-        LOG_WARN("invalid. I do not know the attr's table. attr=%s", expr.attr->node.relation_name.c_str());
+        LOG_WARN("invalid. I do not know the attr's table. table=%s", expr.attr->node.relation_name.c_str());
         return RC::SCHEMA_FIELD_MISSING;
       }
 
       table = tables[0];
+      // if (table->name() != expr.attr->node.relation_name) {
+      //   LOG_WARN("invalid. I do not know the attr's table. table=%s", expr.attr->node.relation_name.c_str());
+      //   return RC::SCHEMA_FIELD_MISSING;
+      // }
       // table_alias = (*tables)[0].alias;
     }
     if (expr.attr->node.attribute_name == "*") {
@@ -227,7 +231,7 @@ Expression* generate_expression(ExprSqlNode &expr)
 
     // TODO: AGG
     if (expr.type == E_DYN) {
-      if (expr.attr->aggType != UNDEFINED) {
+      if (expr.attr != nullptr && expr.attr->aggType != UNDEFINED) {
         return new AggregationExpr(expr.attr->aggType, Field(expr.table_, expr.field_));
       } else {
         return new FieldExpr(Field(expr.table_, expr.field_));
@@ -278,7 +282,7 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
         default:
           break;
       }
-      if (expr.field_ == expr.table_->table_meta().trx_field()) {
+      if (expr.attr != nullptr && expr.attr->node.attribute_name == "*") {
         str += "*";
       } else if (multi_tables) {
         str += expr.table_->name();

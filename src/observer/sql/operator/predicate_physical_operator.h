@@ -43,5 +43,6 @@ public:
   Tuple *current_tuple() override;
 
 private:
+  Trx *trx_ = nullptr;
   std::unique_ptr<Expression> expression_;
 };

@@ -186,37 +186,42 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
   const TupleSchema &schema = sql_result->tuple_schema();
   const int cell_num = schema.cell_num();
 
+  std::string select_send_data;
+
   for (int i = 0; i < cell_num; i++) {
     const TupleCellSpec &spec = schema.cell_at(i);
     const char *alias = spec.alias();
     if (nullptr != alias || alias[0] != 0) {
       if (0 != i) {
         const char *delim = " | ";
-        rc = writer_->writen(delim, strlen(delim));
-        if (OB_FAIL(rc)) {
-          LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-          return rc;
-        }
+        // rc = writer_->writen(delim, strlen(delim));
+        // if (OB_FAIL(rc)) {
+        //   LOG_WARN("failed to send data to client. err=%s", strerror(errno));
+        //   return rc;
+        // }
+        select_send_data += delim;
       }
 
       int len = strlen(alias);
-      rc = writer_->writen(alias, len);
-      if (OB_FAIL(rc)) {
-        LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-        sql_result->close();
-        return rc;
-      }
+      // rc = writer_->writen(alias, len);
+      // if (OB_FAIL(rc)) {
+      //   LOG_WARN("failed to send data to client. err=%s", strerror(errno));
+      //   sql_result->close();
+      //   return rc;
+      // }
+      select_send_data += alias;
     }
   }
 
   if (cell_num > 0) {
     char newline = '\n';
-    rc = writer_->writen(&newline, 1);
-    if (OB_FAIL(rc)) {
-      LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-      sql_result->close();
-      return rc;
-    }
+    // rc = writer_->writen(&newline, 1);
+    // if (OB_FAIL(rc)) {
+    //   LOG_WARN("failed to send data to client. err=%s", strerror(errno));
+    //   sql_result->close();
+    //   return rc;
+    // }
+    select_send_data += newline;
   }
 
   rc = RC::SUCCESS;
@@ -228,12 +233,13 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
     for (int i = 0; i < cell_num; i++) {
       if (i != 0) {
         const char *delim = " | ";
-        rc = writer_->writen(delim, strlen(delim));
-        if (OB_FAIL(rc)) {
-          LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-          sql_result->close();
-          return rc;
-        }
+        // rc = writer_->writen(delim, strlen(delim));
+        // if (OB_FAIL(rc)) {
+        //   LOG_WARN("failed to send data to client. err=%s", strerror(errno));
+        //   sql_result->close();
+        //   return rc;
+        // }
+        select_send_data += delim;
       }
 
       Value value;
@@ -244,22 +250,26 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
       }
 
       std::string cell_str = value.to_string();
-      rc = writer_->writen(cell_str.data(), cell_str.size());
-      if (OB_FAIL(rc)) {
-        LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-        sql_result->close();
-        return rc;
-      }
+      // rc = writer_->writen(cell_str.data(), cell_str.size());
+      // if (OB_FAIL(rc)) {
+      //   LOG_WARN("failed to send data to client. err=%s", strerror(errno));
+      //   sql_result->close();
+      //   return rc;
+      // }
+      select_send_data += cell_str;
     }
 
     char newline = '\n';
-    rc = writer_->writen(&newline, 1);
-    if (OB_FAIL(rc)) {
-      LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-      sql_result->close();
-      return rc;
-    }
+    // rc = writer_->writen(&newline, 1);
+    // if (OB_FAIL(rc)) {
+    //   LOG_WARN("failed to send data to client. err=%s", strerror(errno));
+    //   sql_result->close();
+    //   return rc;
+    // }
+    select_send_data += newline;
   }
+
+  LOG_INFO("write_result_internal, %s", strrc(rc));
 
   if (rc == RC::RECORD_EOF) {
     rc = RC::SUCCESS;
@@ -269,6 +279,7 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
     // 除了select之外，其它的消息通常不会通过operator来返回结果，表头和行数据都是空的
     // 这里针对这种情况做特殊处理，当表头和行数据都是空的时候，就返回处理的结果
     // 可能是insert/delete等操作，不直接返回给客户端数据，这里把处理结果返回给客户端
+    LOG_INFO("write_result_internal insert/delete etc");
     RC rc_close = sql_result->close();
     if (rc == RC::SUCCESS) {
       rc = rc_close;
@@ -276,12 +287,19 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
     sql_result->set_return_code(rc);
     return write_state(event, need_disconnect);
   } else {
-
-    rc = writer_->writen(send_message_delimiter_.data(), send_message_delimiter_.size());
     if (OB_FAIL(rc)) {
-      LOG_ERROR("Failed to send data back to client. ret=%s, error=%s", strrc(rc), strerror(errno));
+      writer_->writen("FAILURE\n", 8);
+      writer_->flush();
+    } else {
+      writer_->writen(select_send_data.c_str(), select_send_data.size());
+      writer_->flush();
+    }
+
+    RC writer_rc = writer_->writen(send_message_delimiter_.data(), send_message_delimiter_.size());
+    if (OB_FAIL(writer_rc)) {
+      LOG_ERROR("Failed to send data back to client. ret=%s, error=%s", strrc(writer_rc), strerror(errno));
       sql_result->close();
-      return rc;
+      return writer_rc;
     }
 
     need_disconnect = false;

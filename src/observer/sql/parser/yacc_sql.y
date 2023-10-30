@@ -863,6 +863,54 @@ condition:
       $$->op = $4;
 
     }
+    | expression IN LBRACE select RBRACE {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
+      $$->right_is_subquery = true;
+      $$->right_subquery = std::unique_ptr<SelectSqlNode>($4);
+      $$->op = CompOp::IN_SQ;
+    }
+    | expression NOT IN LBRACE select RBRACE {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
+      $$->right_is_subquery = true;
+      $$->right_subquery = std::unique_ptr<SelectSqlNode>($5);
+      $$->op = CompOp::NOT_IN_SQ;
+    }
+    | expression IN LBRACE value_list RBRACE {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
+      $$->right_is_subquery = false;
+      $$->value_list = std::move(*$4);
+      $$->op = CompOp::IN_SQ;
+      delete $4;
+    }
+    | expression NOT IN LBRACE value_list RBRACE {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
+      $$->right_is_subquery = false;
+      $$->value_list = std::move(*$5);
+      $$->op = CompOp::IN_SQ;
+      delete $5;
+    }
+    | EXISTS LBRACE select RBRACE {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->right_is_subquery = true;
+      $$->right_subquery = std::unique_ptr<SelectSqlNode>($3);
+      $$->op = CompOp::EXISTS_SQ;
+    }
+    | NOT EXISTS LBRACE select RBRACE {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->right_is_subquery = true;
+      $$->right_subquery = std::unique_ptr<SelectSqlNode>($4);
+      $$->op = CompOp::NOT_EXISTS_SQ;
+    }
     ;
 
 comp_op:
