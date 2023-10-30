@@ -24,6 +24,7 @@ RC TableScanPhysicalOperator::open(Trx *trx)
   if (rc == RC::SUCCESS) {
     tuple_.set_schema(table_, table_->table_meta().field_metas());
   }
+  LOG_INFO("TableScanPhysicalOperator : %d", tuple_.cell_num());
   trx_ = trx;
   return rc;
 }
@@ -87,8 +88,8 @@ RC TableScanPhysicalOperator::filter(RowTuple &tuple, bool &result)
   for (unique_ptr<Expression> &expr : predicates_) {
     if (ctx_tuple_ != nullptr) {
       JoinedTuple combined;
-      combined.set_left(ctx_tuple_);
-      combined.set_right(&tuple);
+      combined.set_left(&tuple);
+      combined.set_right(ctx_tuple_);
       rc = expr->get_value(combined, value, trx_);
     } else {
       rc = expr->get_value(tuple, value, trx_);

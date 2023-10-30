@@ -126,8 +126,8 @@ RC IndexScanPhysicalOperator::filter(RowTuple &tuple, bool &result)
     // rc = expr->get_value(tuple, value, trx_);
     if (ctx_tuple_ != nullptr) {
       JoinedTuple combined;
-      combined.set_left(ctx_tuple_);
-      combined.set_right(&tuple);
+      combined.set_left(&tuple);
+      combined.set_right(ctx_tuple_);
       rc = expr->get_value(combined, value, trx_);
     } else {
       rc = expr->get_value(tuple, value, trx_);

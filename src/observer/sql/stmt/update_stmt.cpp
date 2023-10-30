@@ -57,13 +57,15 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
       expr = new ValueExpr(update.attr_values[i].value);
     } else {
       // select
-      // Stmt *stmt;
-      // RC rc = SelectStmt::create(db, update.update_value[i].value.select, stmt);
+      Stmt *stmt;
+      std::unordered_map<std::string, Table *> empty;
+      RC rc = SelectStmt::create(db, update.attr_values[i].select_value, empty, stmt);
       // update_value.value.select = static_cast<SelectStmt *>(stmt);
-      // if (rc != RC::SUCCESS) {
-      //   LOG_WARN("cannot create sub select stmt for update");
-      //   return rc;
-      // }
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("cannot create sub select stmt for update");
+        return rc;
+      }
+      expr = new SQueryExpr(static_cast<SelectStmt *>(stmt));
     }
     update_names.push_back(update.attr_values[i].attr.attribute_name.c_str());
     update_fields.push_back(field_meta);

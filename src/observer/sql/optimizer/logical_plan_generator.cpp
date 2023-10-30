@@ -96,6 +96,7 @@ RC LogicalPlanGenerator::create_plan(
   int iter_times = 0;
   for (Table *table : tables) {
     std::vector<Field> fields;
+    fields.clear();
     // for (const Field &field : all_fields) {
     //   if (0 == strcmp(field.table_name(), table->name())) {
     //     fields.push_back(field);
