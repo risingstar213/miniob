@@ -435,6 +435,26 @@ bool Value::check_valid() const
   return true;
 }
 
+void Value::cast_to_null(AttrType type)
+{
+  switch (type) 
+  {
+  case INTS:
+    set_int(0);
+    break;
+  case FLOATS:
+    set_float(0.0);
+    break;
+  case CHARS:
+    set_string("");
+    break;
+  case DATES:
+    set_date("2023-01-01");
+    break;
+  }
+  is_null_ = true;
+}
+
 void Value::DateMeta::set_date(const char *s)
 {
   std::stringstream sstream(s);

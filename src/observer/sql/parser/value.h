@@ -94,6 +94,8 @@ public:
     return is_null_;
   }
 
+  void cast_to_null(AttrType type);
+
 public:
   /**
    * 获取对应的值

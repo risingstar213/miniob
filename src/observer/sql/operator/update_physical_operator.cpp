@@ -86,9 +86,12 @@ RC UpdatePhysicalOperator::next()
       int index = find_index_in_tuple(fields_[i]);
       Value temp;
       exprs_[i]->get_value(*tuple, temp, trx_);
-      if (temp.attr_type() != fields_[i]->type()) {
+      if (temp.attr_type() != fields_[i]->type() && !temp.is_null()) {
         LOG_WARN("update type is not valid!");
         return RC::INTERNAL;
+      }
+      if (temp.is_null()) {
+        temp.cast_to_null(fields_[i]->type());
       }
       new_values[index] = temp;
     }

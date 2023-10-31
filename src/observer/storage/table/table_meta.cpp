@@ -286,6 +286,9 @@ int TableMeta::deserialize(std::istream &is)
   name_.swap(table_name);
   fields_.swap(fields);
   record_size_ = fields_.back().offset() + fields_.back().len() - fields_.begin()->offset();
+  if (fields_.back().type() == CHARS) {
+    record_size_ += 1;
+  }
 
   const Json::Value &indexes_value = table_value[FIELD_INDEXES];
   if (!indexes_value.empty()) {
