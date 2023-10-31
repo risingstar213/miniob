@@ -427,10 +427,10 @@ insert_stmt:        /*insert   语句的语法解析树*/
       $$->insertion.relation_name = $3;
       if ($5 != nullptr) {
         $$->insertion.rows.swap(*$5);
+        delete $5;
       }
       // $$->insertion.values.emplace_front(std::move(*$6);
       // std::reverse($$->insertion.values.begin(), $$->insertion.values.end());
-      delete $5;
       free($3);
     }
     ;
@@ -554,10 +554,12 @@ select:
 
       if ($8 != nullptr) {
         $$->group_by = std::move(*$8);
+        delete $8;
       }
 
       if ($9 != nullptr) {
         $$->order_bys.swap(*$9);
+        delete $9;
       }
 
     }
@@ -588,10 +590,12 @@ select:
 
       if ($8 != nullptr) {
         $$->group_by = std::move(*$8);
+        delete $8;
       }
 
       if ($9 != nullptr) {
         $$->order_bys.swap(*$9);
+        delete $9;
       }
     }
     ;
@@ -1039,6 +1043,7 @@ orderby:
 	| ORDER BY orderby_col orderby_list {
 		$$ = $4;
 		$$->push_front(std::move(*$3));
+    delete $3;
 	}
 	;
 
@@ -1049,6 +1054,7 @@ orderby_list:
   | COMMA orderby_col orderby_list {
     $$ = $3;
     $$->push_front(std::move(*$2));
+    delete $2;
   }
   ;
 
@@ -1078,11 +1084,11 @@ insert_row_list:
     $$ = new std::deque<InsertRowNode>();
     $$->push_back(std::move(row));
   }
-  | LBRACE value_list RBRACE insert_row_list {
+  | LBRACE value_list RBRACE COMMA insert_row_list {
     InsertRowNode row;
     row.values = std::move(*$2);
     delete $2;
-    $$ = $4;
+    $$ = $5;
     $$->push_back(std::move(row));
   }
   ;
