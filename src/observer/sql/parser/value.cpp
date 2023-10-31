@@ -516,6 +516,7 @@ bool Value::DateMeta::check_valid() const
     case 11:
         if (day > 30)
             return false;
+        break;
     case 2:
         if (isLeap) {
             if (day > 29) 
