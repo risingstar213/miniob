@@ -590,6 +590,8 @@ public:
       if (0 == strcmp(field_name, cells_[i].field_name())) {
         if (count_ == 0) {
           value.set_null(true);
+        } else if (counts_[i].get_int() == 0) {
+          value.set_null(true);
         } else {
           value = sums_[i];
         }
