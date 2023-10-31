@@ -245,6 +245,16 @@ int Value::compare(const Value &other) const
   return -1;  // TODO return rc?
 }
 
+static int cast_float_to_int(float f)
+{
+  if (f > 0) {
+    return (f * 10 + 5) / 10;
+  } else if (f < 0) {
+    return (f * 10 - 5) / 10;
+  }
+  return 0;
+}
+
 int Value::get_int() const
 {
   switch (attr_type_) {
@@ -260,7 +270,7 @@ int Value::get_int() const
       return num_value_.int_value_;
     }
     case FLOATS: {
-      return (int)(num_value_.float_value_);
+      return cast_float_to_int(num_value_.float_value_);
     }
     case BOOLEANS: {
       return (int)(num_value_.bool_value_);
