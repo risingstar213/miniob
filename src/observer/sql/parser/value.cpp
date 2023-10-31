@@ -235,11 +235,11 @@ int Value::compare(const Value &other) const
     int right_data = other.get_int();
     return common::compare_int((void *)&this->num_value_.int_value_, &right_data);
   } else if (this->attr_type_ == CHARS && other.attr_type_ == FLOATS) {
-    int left_data = this->get_float();
-    return common::compare_int(&left_data, (void *)&other.num_value_.float_value_);
+    float left_data = this->get_float();
+    return common::compare_float(&left_data, (void *)&other.num_value_.float_value_);
   } else if (this->attr_type_ == FLOATS && other.attr_type_ == CHARS) {
-    int right_data = other.get_float();
-    return common::compare_int((void *)&this->num_value_.float_value_, &right_data);
+    float right_data = other.get_float();
+    return common::compare_float((void *)&this->num_value_.float_value_, &right_data);
   }
   LOG_WARN("not supported");
   return -1;  // TODO return rc?
