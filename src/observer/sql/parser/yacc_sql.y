@@ -357,6 +357,7 @@ create_table_stmt:    /*create table 语句的语法解析树*/
       create_table.attr_infos.emplace_front(std::move(*$5));
       // std::reverse(create_table.attr_infos.begin(), create_table.attr_infos.end());
       delete $5;
+      delete $6;
     }
     ;
 attr_def_list:
@@ -383,6 +384,9 @@ is_nullable:
     $$ = false;
   }
   | NULLABLE {
+    $$ = true;
+  }
+  | NULL_LITERAL {
     $$ = true;
   }
   ;
