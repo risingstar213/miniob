@@ -17,12 +17,10 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 
-InsertStmt::InsertStmt(Table *table, const std::deque<Value> &deq)
+InsertStmt::InsertStmt(Table *table,  std::vector<Value> &values)
     : table_(table)
 {
-  for (size_t i = 0; i < deq.size(); i++) {
-    values_.push_back(deq[i]);
-  }
+  values_.swap(values);
 }
 
 RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
@@ -58,19 +56,50 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
   }
 
   // check fields type
+  std::vector<Value> new_values;
   const int sys_field_num = table_meta.sys_field_num();
   for (int i = 0; i < value_num; i++) {
+    new_values.push_back(values[i]);
     const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
     const AttrType field_type = field_meta->type();
     const AttrType value_type = values[i].attr_type();
-    if (field_type != value_type) {  // TODO try to convert the value type to field type
+
+    bool can_compare = true;
+    bool left_cast = field_type == CHARS || field_type == INTS || field_type == FLOATS;
+    bool right_cast = value_type == CHARS || value_type == INTS || value_type == FLOATS;
+    if (left_cast && right_cast) {
+      can_compare = true;
+    } else if (field_type == value_type) {
+      can_compare = true;
+    // } else if (left->is_null() || right->is_null()) {
+    //   can_compare = true;
+    } else {
+      can_compare = false;
+    }
+    if (!can_compare) {  // TODO try to convert the value type to field type
       LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
           table_name, field_meta->name(), field_type, value_type);
       return RC::SCHEMA_FIELD_TYPE_MISMATCH;
     }
+
+    if (field_type != value_type) {
+      switch (field_type) {
+        case INTS:
+          new_values[i].set_int(values[i].get_int());
+          break;
+        case FLOATS:
+          new_values[i].set_float(values[i].get_float());
+          break;
+        case CHARS:
+          new_values[i].set_string(values[i].get_string().c_str(), values[i].get_string().length());
+          break;
+        default:
+          break;
+      }
+    }
   }
 
   // everything alright
-  stmt = new InsertStmt(table, values);
+  stmt = new InsertStmt(table, new_values);
   return RC::SUCCESS;
 }

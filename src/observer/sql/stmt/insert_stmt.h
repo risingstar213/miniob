@@ -28,7 +28,7 @@ class InsertStmt : public Stmt
 {
 public:
   InsertStmt() = default;
-  InsertStmt(Table *table, const std::deque<Value> &deq);
+  InsertStmt(Table *table, std::vector<Value> &values);
 
   StmtType type() const override
   {
