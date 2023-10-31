@@ -26,9 +26,9 @@ enum AttrType
   CHARS,          ///< 字符串类型
   INTS,           ///< 整数类型(4字节)
   FLOATS,         ///< 浮点数类型(4字节)
-  BOOLEANS,       ///< boolean类型，当前不是由parser解析出来的，是程序内部使用的
   DATES,
   TEXTS,
+  BOOLEANS,       ///< boolean类型，当前不是由parser解析出来的，是程序内部使用的
 };
 
 const char *attr_type_to_string(AttrType type);
@@ -52,6 +52,7 @@ public:
   explicit Value(float val);
   explicit Value(bool val);
   explicit Value(const char *s, int len = 0);
+  explicit Value(const char *s, bool is_date, bool check_bit);
 
   Value(const Value &other) = default;
   Value &operator=(const Value &other) = default;
@@ -69,6 +70,7 @@ public:
   void set_float(float val);
   void set_boolean(bool val);
   void set_string(const char *s, int len = 0);
+  void set_date(const char *s);
   void set_value(const Value &value);
 
   std::string to_string() const;
@@ -94,7 +96,21 @@ public:
   int get_int() const;
   float get_float() const;
   std::string get_string() const;
+  std::string get_date() const;
   bool get_boolean() const;
+
+  bool check_valid() const;
+
+  struct DateMeta {
+    int year;
+    int month;
+    int day;
+
+    void set_date(const char *s);
+    int compare(const DateMeta &meta) const;
+    bool check_valid() const;
+    std::string to_string() const;
+  };
 
 private:
   AttrType attr_type_ = UNDEFINED;
@@ -104,6 +120,7 @@ private:
     int int_value_;
     float float_value_;
     bool bool_value_;
+    DateMeta date_meta_;
   } num_value_;
   std::string str_value_;
 };

@@ -53,7 +53,6 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
 
     if (!update.attr_values[i].is_select) {
       // check whether the type of the value is correct
-
       expr = new ValueExpr(update.attr_values[i].value);
     } else {
       // select
@@ -66,6 +65,11 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
         return rc;
       }
       expr = new SQueryExpr(static_cast<SelectStmt *>(stmt));
+    }
+
+    if (expr->value_type() != field_meta->type()) {
+      LOG_WARN("update type is not valid!");
+      return RC::INTERNAL;
     }
     update_names.push_back(update.attr_values[i].attr.attribute_name.c_str());
     update_fields.push_back(field_meta);

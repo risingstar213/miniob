@@ -23,13 +23,10 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
 {
   if (expr.type == E_VAL) {
     expr.attrType = expr.value->attr_type();
-    // if (expr->value->type == DATES) {
-    //   Date *d = (Date *)expr->value->data;
-    //   if (!d->is_valid()) {
-    //     LOG_WARN("The date %s is not valid", d->toString().c_str());
-    //     return RC::SQL_SYNTAX;
-    //   }
-    // }
+    if (!expr.value->check_valid()) {
+      LOG_WARN("The date %s is not valid", expr.value->to_string().c_str());
+      return RC::SQL_SYNTAX;
+    }
     return RC::SUCCESS;
   }
   if (expr.type == E_DYN) {

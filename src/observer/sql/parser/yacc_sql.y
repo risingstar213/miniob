@@ -77,6 +77,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         INT_T
         STRING_T
         FLOAT_T
+        DATE_T
         HELP
         EXIT
         DOT //QUOTE
@@ -123,7 +124,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 		    BY 
 		    ASC
         IS
-        NULL_T
+        NULL_LITERAL
         NULLABLE
 
 
@@ -161,6 +162,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 
 %token <number> NUMBER
 %token <floats> FLOAT
+%token <string> DATE
 %token <string> ID
 %token <string> SSS
 //非终结符
@@ -169,6 +171,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <number>              type
 %type <condition>           condition
 %type <value>               value
+%type <value>               value_list_cell
 %type <number>              number
 %type <comp>                comp_op
 %type <relation>            relation
@@ -385,7 +388,11 @@ attr_def:
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = 4;
+      if ((AttrType)$2 == AttrType::DATES) {
+        $$->length = 12;
+      } else {
+        $$->length = 4;
+      }
       free($1);
     }
     ;
@@ -396,6 +403,7 @@ type:
     INT_T      { $$=INTS; }
     | STRING_T { $$=CHARS; }
     | FLOAT_T  { $$=FLOATS; }
+    | DATE_T   { $$=DATES; }
     ;
 insert_stmt:        /*insert   语句的语法解析树*/
     INSERT INTO ID VALUES insert_row_list 
@@ -412,14 +420,27 @@ insert_stmt:        /*insert   语句的语法解析树*/
     }
     ;
 
+value_list_cell:
+  value {
+    $$ = $1;
+  }
+  | '-' NUMBER {
+    $$ = new Value(-(int)$2);
+    // @$ = @1;
+  }
+  | '-' FLOAT {
+    $$ = new Value(-(float)$2);
+    // @$ = @1;
+  }
+  ;
 value_list:
-    value
+    value_list_cell
     {
       $$ = new std::deque<Value>;
       $$->emplace_back(std::move(*$1));
       delete $1;
     }
-    | value_list COMMA value  { 
+    | value_list COMMA value_list_cell  { 
       if ($1 != nullptr) {
         $$ = $1;
       } else {
@@ -437,6 +458,11 @@ value:
     |FLOAT {
       $$ = new Value((float)$1);
       @$ = @1;
+    }
+    |DATE {
+      char *tmp = common::substr($1,1,strlen($1)-2);
+      $$ = new Value(tmp, true, true);
+      free(tmp);
     }
     |SSS {
       char *tmp = common::substr($1,1,strlen($1)-2);
@@ -1044,7 +1070,7 @@ update_list:
 	;
 
 update_pair:
-	ID EQ value {
+	ID EQ value_list_cell {
 		$$ = new UpdatePairSqlNode();
     $$->attr.attribute_name = $1;
 		$$->is_select = false;

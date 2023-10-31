@@ -13,17 +13,19 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include <sstream>
+#include <iomanip>
 #include "sql/parser/value.h"
 #include "storage/field/field.h"
 #include "common/log/log.h"
 #include "common/lang/comparator.h"
 #include "common/lang/string.h"
 
-const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "booleans"};
+
+const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "dates", "texts","booleans"};
 
 const char *attr_type_to_string(AttrType type)
 {
-  if (type >= UNDEFINED && type <= FLOATS) {
+  if (type >= UNDEFINED && type <= DATES) {
     return ATTR_TYPE_NAME[type];
   }
   return "unknown";
@@ -58,6 +60,12 @@ Value::Value(const char *s, int len /*= 0*/)
   set_string(s, len);
 }
 
+Value::Value(const char *s, bool is_date, bool check_bit)
+{
+  assert(is_date == true && check_bit == true);
+  set_date(s);
+}
+
 void Value::set_data(char *data, int length)
 {
   switch (attr_type_) {
@@ -75,6 +83,9 @@ void Value::set_data(char *data, int length)
     case BOOLEANS: {
       num_value_.bool_value_ = *(int *)data != 0;
       length_ = length;
+    } break;
+    case DATES: {
+      set_date(data);
     } break;
     default: {
       LOG_WARN("unknown data type: %d", attr_type_);
@@ -112,6 +123,14 @@ void Value::set_string(const char *s, int len /*= 0*/)
   length_ = str_value_.length();
 }
 
+void Value::set_date(const char *s)
+{
+  attr_type_ = DATES;
+  num_value_.date_meta_.set_date(s);
+  str_value_ = num_value_.date_meta_.to_string();
+  length_ = 10;
+}
+
 void Value::set_value(const Value &value)
 {
   switch (value.attr_type_) {
@@ -127,6 +146,9 @@ void Value::set_value(const Value &value)
     case BOOLEANS: {
       set_boolean(value.get_boolean());
     } break;
+    case DATES: {
+      set_date(value.get_date().c_str());
+    }
     case UNDEFINED: {
       ASSERT(false, "got an invalid value type");
     } break;
@@ -137,6 +159,9 @@ const char *Value::data() const
 {
   switch (attr_type_) {
     case CHARS: {
+      return str_value_.c_str();
+    } break;
+    case DATES: {
       return str_value_.c_str();
     } break;
     default: {
@@ -159,6 +184,9 @@ std::string Value::to_string() const
       os << num_value_.bool_value_;
     } break;
     case CHARS: {
+      os << str_value_;
+    } break;
+    case DATES: {
       os << str_value_;
     } break;
     default: {
@@ -186,6 +214,9 @@ int Value::compare(const Value &other) const
       } break;
       case BOOLEANS: {
         return common::compare_int((void *)&this->num_value_.bool_value_, (void *)&other.num_value_.bool_value_);
+      }
+      case DATES: {
+        return num_value_.date_meta_.compare(other.num_value_.date_meta_);
       }
       default: {
         LOG_WARN("unsupported type: %d", this->attr_type_);
@@ -222,6 +253,11 @@ int Value::get_int() const
     case BOOLEANS: {
       return (int)(num_value_.bool_value_);
     }
+    case DATES:
+    case TEXTS: {
+      LOG_WARN("the data type. type=%d cannot be casted", attr_type_);
+      return false;
+    }
     default: {
       LOG_WARN("unknown data type. type=%d", attr_type_);
       return 0;
@@ -250,6 +286,11 @@ float Value::get_float() const
     case BOOLEANS: {
       return float(num_value_.bool_value_);
     } break;
+    case DATES:
+    case TEXTS: {
+      LOG_WARN("the data type. type=%d cannot be casted", attr_type_);
+      return false;
+    }
     default: {
       LOG_WARN("unknown data type. type=%d", attr_type_);
       return 0;
@@ -294,10 +335,129 @@ bool Value::get_boolean() const
     case BOOLEANS: {
       return num_value_.bool_value_;
     } break;
+    case DATES:
+    case TEXTS: {
+      LOG_WARN("the data type. type=%d cannot be casted", attr_type_);
+      return false;
+    }
     default: {
       LOG_WARN("unknown data type. type=%d", attr_type_);
       return false;
     }
   }
   return false;
+}
+
+std::string Value::get_date() const
+{
+  std::stringstream os;
+  if (attr_type_ == DATES) {
+    os << str_value_;
+  } else if (attr_type_ == INTS || 
+    attr_type_ == FLOATS || 
+    attr_type_ == BOOLEANS ||
+    attr_type_ == CHARS ||
+    attr_type_ == TEXTS) {
+    LOG_WARN("the type=%d cannot be casted to DATES", attr_type_);
+  } else {
+    LOG_WARN("unsupported attr type: %d", attr_type_);
+  }
+  return os.str();
+}
+
+bool Value::check_valid() const
+{
+  if (attr_type_ == DATES) {
+    return num_value_.date_meta_.check_valid();
+  }
+  return true;
+}
+
+void Value::DateMeta::set_date(const char *s)
+{
+  std::stringstream sstream(s);
+  char c;
+  sstream >> this->year >> c;
+  sstream >> this->month >> c;
+  sstream >> this->day;
+}
+
+int Value::DateMeta::compare(const DateMeta &meta) const
+{
+  if (this->year > meta.year)
+		return 1;
+	else if (this->year == meta.year) {
+    if (this->month > meta.month) {
+      return 1;
+    } else if (this->month == meta.month) {
+      if (this->day > meta.day) {
+        return 1;
+      } else if (this->day == meta.day) {
+        return 0;
+      } else {
+        return -1;
+      }
+    } else {
+      return -1;
+    }
+  }
+	return -1;
+}
+
+bool Value::DateMeta::check_valid() const
+{
+  if (year <= 0) {
+        return false;
+    }
+    if (day <= 0) {
+        return false;
+    }
+    bool isLeap = false; // if the year is a leap year
+    if ((year%4 == 0 && year%100 != 0) || year % 400 == 0 ) {
+        isLeap = true;
+    }
+    switch (month)
+    {
+    case 1:
+    case 3:
+    case 5:
+    case 7:
+    case 8:
+    case 10:
+    case 12:
+        if (day > 31)
+            return false;
+        break;
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+        if (day > 30)
+            return false;
+    case 2:
+        if (isLeap) {
+            if (day > 29) 
+                return false;
+        } else {
+            if (day > 28)
+                return false;
+        }
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
+std::string Value::DateMeta::to_string() const
+{
+  std::stringstream sstream;
+  std::string str;
+  sstream << year << '-';
+  str += sstream.str(); sstream.str("");
+  sstream << std::setw(2) << std::setfill('0') << month;
+  str += sstream.str() + '-'; sstream.str("");
+  sstream << std::setw(2) << std::setfill('0') << day;
+  str += sstream.str(); sstream.clear();
+  return str;
 }

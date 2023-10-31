@@ -44,6 +44,12 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
   // check the fields number
   auto &values = inserts.rows[0].values;
   const int value_num = static_cast<int>(inserts.rows[0].values.size());
+  for (int i = 0; i < value_num; i++) {
+    if (!values[i].check_valid()) {
+      LOG_WARN("not valid data: %s", values[i].to_string());
+      return RC::VARIABLE_NOT_VALID;
+    }
+  }
   const TableMeta &table_meta = table->table_meta();
   const int field_num = table_meta.field_num() - table_meta.sys_field_num();
   if (field_num != value_num) {
