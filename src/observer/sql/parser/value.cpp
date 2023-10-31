@@ -228,6 +228,18 @@ int Value::compare(const Value &other) const
   } else if (this->attr_type_ == FLOATS && other.attr_type_ == INTS) {
     float other_data = other.num_value_.int_value_;
     return common::compare_float((void *)&this->num_value_.float_value_, (void *)&other_data);
+  } else if (this->attr_type_ == CHARS && other.attr_type_ == INTS) {
+    int left_data = this->get_int();
+    return common::compare_int(&left_data, (void *)&other.num_value_.int_value_);
+  } else if (this->attr_type_ == INTS && other.attr_type_ == CHARS) {
+    int right_data = other.get_int();
+    return common::compare_int((void *)&this->num_value_.int_value_, &right_data);
+  } else if (this->attr_type_ == CHARS && other.attr_type_ == FLOATS) {
+    int left_data = this->get_float();
+    return common::compare_int(&left_data, (void *)&other.num_value_.float_value_);
+  } else if (this->attr_type_ == FLOATS && other.attr_type_ == CHARS) {
+    int right_data = other.get_float();
+    return common::compare_int((void *)&this->num_value_.float_value_, &right_data);
   }
   LOG_WARN("not supported");
   return -1;  // TODO return rc?
@@ -270,11 +282,18 @@ float Value::get_float() const
 {
   switch (attr_type_) {
     case CHARS: {
-      try {
-        return std::stof(str_value_);
-      } catch (std::exception const &ex) {
-        LOG_TRACE("failed to convert string to float. s=%s, ex=%s", str_value_.c_str(), ex.what());
+      // try {
+      //   return std::stof(str_value_);
+      // } catch (std::exception const &ex) {
+      //   LOG_TRACE("failed to convert string to float. s=%s, ex=%s", str_value_.c_str(), ex.what());
+      //   return 0.0;
+      // }
+      if (str_value_[0] <'0' || str_value_[0] > '9') {
         return 0.0;
+      } else {
+        float f;
+        std::sscanf(str_value_.c_str(), "%f", &f);
+        return f;
       }
     } break;
     case INTS: {
@@ -308,21 +327,28 @@ bool Value::get_boolean() const
 {
   switch (attr_type_) {
     case CHARS: {
-      try {
-        float val = std::stof(str_value_);
-        if (val >= EPSILON || val <= -EPSILON) {
-          return true;
-        }
+      // try {
+      //   float val = std::stof(str_value_);
+      //   if (val >= EPSILON || val <= -EPSILON) {
+      //     return true;
+      //   }
 
-        int int_val = std::stol(str_value_);
-        if (int_val != 0) {
-          return true;
-        }
+      //   int int_val = std::stol(str_value_);
+      //   if (int_val != 0) {
+      //     return true;
+      //   }
 
-        return !str_value_.empty();
-      } catch (std::exception const &ex) {
-        LOG_TRACE("failed to convert string to float or integer. s=%s, ex=%s", str_value_.c_str(), ex.what());
-        return !str_value_.empty();
+      //   return !str_value_.empty();
+      // } catch (std::exception const &ex) {
+      //   LOG_TRACE("failed to convert string to float or integer. s=%s, ex=%s", str_value_.c_str(), ex.what());
+      //   return !str_value_.empty();
+      // }
+      if (str_value_[0] <'0' || str_value_[0] > '9') {
+        return 0.0;
+      } else {
+        int d;
+        std::sscanf(str_value_.c_str(), "%d", &d);
+        return d;
       }
     } break;
     case INTS: {
