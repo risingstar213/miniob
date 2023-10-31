@@ -176,6 +176,11 @@ public:
     const FieldMeta *field_meta = field_expr->field().meta();
     cell.set_type(field_meta->type());
     cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
+    if (field_meta->nullable()) {
+      cell.set_null(*(bool *)(this->record_->data() + field_meta->offset() - 1));
+    } else {
+      cell.set_null(false);
+    }
     return RC::SUCCESS;
   }
 
@@ -491,21 +496,30 @@ public:
     for (int i = 0; i < cells_.size(); i++) {
       tuple->find_cell(cells_[i], temp);
       if (count_ == 0) {
-        sums_.emplace_back(temp);
+        if (temp.is_null()) {
+          sums_.emplace_back(Value(0));
+          counts_.emplace_back(Value(0));
+        } else {
+          sums_.emplace_back(temp);
+          counts_.emplace_back(Value(1));
+        }
         maxs_.emplace_back(temp);
         mins_.emplace_back(temp);
         lasts_.emplace_back(temp);
       } else {
-        if (maxs_[i].compare(temp) < 0) {
+        if (maxs_[i].is_null() || maxs_[i].compare(temp) < 0) {
           maxs_[i] = temp;
         }
-        if (mins_[i].compare(temp) > 0) {
+        if (mins_[i].is_null() || mins_[i].compare(temp) > 0) {
           mins_[i] = temp;
         }
-        if (temp.attr_type() == INTS) {
-          sums_[i].set_int(sums_[i].get_int() + temp.get_int());
-        } else {
-          sums_[i].set_float(sums_[i].get_float() + temp.get_float());
+        if (!temp.is_null()) {
+          if (temp.attr_type() == INTS) {
+            sums_[i].set_int(sums_[i].get_int() + temp.get_int());
+          } else {
+            sums_[i].set_float(sums_[i].get_float() + temp.get_float());
+          }
+          counts_[i].set_int(counts_[i].get_int() + 1);
         }
         lasts_[i] = temp;
       }
@@ -515,6 +529,7 @@ public:
 
   void reset_value() {
     count_ = 0;
+    counts_.clear();
     sums_.clear();
     maxs_.clear();
     mins_.clear();
@@ -531,7 +546,11 @@ public:
         return RC::NOTFOUND;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
-        value = maxs_[i];
+        if (count_ == 0) {
+          value.set_null(true);
+        } else {
+          value = maxs_[i];
+        }
         return RC::SUCCESS;
       }
     }
@@ -548,7 +567,11 @@ public:
         return RC::NOTFOUND;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
-        value = mins_[i];
+        if (count_ == 0) {
+          value.set_null(true);
+        } else {
+          value = mins_[i];
+        }
         return RC::SUCCESS;
       }
     }
@@ -565,7 +588,11 @@ public:
         return RC::NOTFOUND;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
-        value = sums_[i];
+        if (count_ == 0) {
+          value.set_null(true);
+        } else {
+          value = sums_[i];
+        }
         return RC::SUCCESS;
       }
     }
@@ -582,7 +609,11 @@ public:
         return RC::NOTFOUND;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
-        value.set_int(count_);
+        if (count_ == 0) {
+          value.set_int(0);
+        } else {
+          value.set_int(counts_[i].get_int());
+        }
         return RC::SUCCESS;
       }
     }
@@ -592,6 +623,7 @@ public:
 private:
   // A group of Tuple
   int count_;
+  std::vector<Value> counts_;
   std::vector<Value> sums_;
   std::vector<Value> maxs_;
   std::vector<Value> mins_;

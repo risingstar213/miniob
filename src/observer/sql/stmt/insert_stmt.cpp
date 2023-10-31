@@ -61,6 +61,12 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
   for (int i = 0; i < value_num; i++) {
     new_values.push_back(values[i]);
     const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
+
+    if (values[i].is_null() && !field_meta->nullable()) {
+      LOG_WARN("cannot insert null to not null columns!");
+      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+    }
+
     const AttrType field_type = field_meta->type();
     const AttrType value_type = values[i].attr_type();
 
@@ -71,8 +77,8 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
       can_compare = true;
     } else if (field_type == value_type) {
       can_compare = true;
-    // } else if (left->is_null() || right->is_null()) {
-    //   can_compare = true;
+    } else if (values[i].is_null()) {
+      can_compare = true;
     } else {
       can_compare = false;
     }
@@ -93,8 +99,13 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
         case CHARS:
           new_values[i].set_string(values[i].get_string().c_str(), values[i].get_string().length());
           break;
+        case DATES:
+          new_values[i].set_date("2023-01-01");
         default:
           break;
+      }
+      if (values[i].is_null()) {
+        new_values[i].set_null(true);
       }
     }
   }

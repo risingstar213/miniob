@@ -65,7 +65,7 @@ RC TableMeta::init(int32_t table_id, const char *name, int field_num, const Attr
 
     for (size_t i = 0; i < trx_fields->size(); i++) {
       const FieldMeta &field_meta = (*trx_fields)[i];
-      fields_[i] = FieldMeta(field_meta.name(), field_meta.type(), field_offset, field_meta.len(), false/*visible*/);
+      fields_[i] = FieldMeta(field_meta.name(), field_meta.type(), field_offset, field_meta.len(), false/*visible*/, false);
       field_offset += field_meta.len();
     }
 
@@ -76,14 +76,20 @@ RC TableMeta::init(int32_t table_id, const char *name, int field_num, const Attr
 
   for (int i = 0; i < field_num; i++) {
     const AttrInfoSqlNode &attr_info = attributes[i];
+    if (attr_info.nullable) {
+      field_offset += 1;
+    }
     rc = fields_[i + trx_field_num].init(attr_info.name.c_str(), 
-            attr_info.type, field_offset, attr_info.length, true/*visible*/);
+            attr_info.type, field_offset, attr_info.length, true/*visible*/, attr_info.nullable);
     if (rc != RC::SUCCESS) {
       LOG_ERROR("Failed to init field meta. table name=%s, field name: %s", name, attr_info.name.c_str());
       return rc;
     }
 
     field_offset += attr_info.length;
+    if (attr_info.type == CHARS) {
+      field_offset += 1;
+    } 
   }
 
   record_size_ = field_offset;

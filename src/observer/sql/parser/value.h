@@ -71,6 +71,7 @@ public:
   void set_boolean(bool val);
   void set_string(const char *s, int len = 0);
   void set_date(const char *s);
+  void set_null(bool is_null);
   void set_value(const Value &value);
 
   std::string to_string() const;
@@ -86,6 +87,11 @@ public:
   AttrType attr_type() const
   {
     return attr_type_;
+  }
+
+  bool is_null() const
+  {
+    return is_null_;
   }
 
 public:
@@ -123,4 +129,5 @@ private:
     DateMeta date_meta_;
   } num_value_;
   std::string str_value_;
+  bool is_null_ = false;
 };

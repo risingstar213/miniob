@@ -95,6 +95,10 @@ ComparisonExpr::~ComparisonExpr()
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
   RC rc = RC::SUCCESS;
+  if (left.is_null() || right.is_null()) {
+    result = false;
+    return rc;
+  }
   int cmp_result = left.compare(right);
   result = false;
   switch (comp_) {
@@ -128,7 +132,8 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
 
 RC ComparisonExpr::try_get_value(Value &cell) const
 {
-  if (left_->type() == ExprType::VALUE && right_->type() == ExprType::VALUE) {
+  bool simple_comp = comp_ <= GREAT_THAN;
+  if (simple_comp && left_->type() == ExprType::VALUE && right_->type() == ExprType::VALUE) {
     ValueExpr *left_value_expr = static_cast<ValueExpr *>(left_.get());
     ValueExpr *right_value_expr = static_cast<ValueExpr *>(right_.get());
     const Value &left_cell = left_value_expr->get_value();
@@ -211,10 +216,31 @@ RC ComparisonExpr::compare_with_set(const Tuple &tuple, Value &value, Trx *trx) 
   }
 }
 
+RC ComparisonExpr::compare_null(const Tuple &tuple, Value &value, Trx *trx) const
+{
+  Value left_value;
+  RC rc = left_->get_value(tuple, left_value, trx);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  if (comp_ == IS_NULL) {
+    value.set_boolean(left_value.is_null());
+  } else {
+    value.set_boolean(!left_value.is_null());
+  }
+  return rc;
+}
+
 RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
   if (comp_ >= IN_SQ && comp_ <= NOT_EXISTS_SQ) {
     return compare_with_set(tuple, value, trx);
+  }
+
+  if (comp_ == IS_NULL || comp_ == IS_NOT_NULL) {
+    return compare_null(tuple, value, trx);
   }
   
   Value left_value;
@@ -451,7 +477,11 @@ RC AggregationExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
     count = temp.get_int();
     group_tuple->find_cell_sum(cell, temp);
 
-    value.set_float(temp.get_float() / count);
+    if (count == 0) {
+      value.set_null(true);
+    } else {
+      value.set_float(temp.get_float() / count);
+    }
     
     return RC::SUCCESS;
     break;

@@ -108,6 +108,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
   AttrType right_type = UNDEFINED;
 
   Expression* left = nullptr,* right = nullptr;
+  bool left_null = false, right_null = false;
   
   if (condition.left_is_subquery ) {
     Stmt* left_stmt = nullptr;
@@ -126,8 +127,13 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     }
     left = std::move(generate_expression(*condition.left_expr));
     left_type = condition.left_expr->attrType;
+    left_null = (condition.left_expr->type == E_VAL && condition.left_expr->value->is_null());
   } else {
+    Value empty(0);
+    empty.set_null(true);
+    left = new ValueExpr(empty);
     left_type = UNDEFINED;
+    left_null = true;
   }
 
   if (condition.right_is_subquery ) {
@@ -147,9 +153,15 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     }
     right = generate_expression(*condition.right_expr);
     right_type = condition.right_expr->attrType;
-  } else {
+    right_null = (condition.right_expr->type == E_VAL && condition.right_expr->value->is_null());
+  } else if (condition.right_is_list) {
     // right_type = UNDEFINED;
     // right = 
+  } else {
+    Value empty(0);
+    empty.set_null(true);
+    right = new ValueExpr(empty);
+    right_null = true;
   }
 
   bool can_compare = true;
@@ -161,8 +173,8 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     can_compare = true;
   } else if (left_type == UNDEFINED) { // EXISTS
     can_compare = true;
-  // } else if (left->is_null() || right->is_null()) {
-  //   can_compare = true;
+  } else if (left_null || right_null) {
+    can_compare = true;
   } else {
     can_compare = false;
   }

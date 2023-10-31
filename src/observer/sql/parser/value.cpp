@@ -43,31 +43,37 @@ AttrType attr_type_from_string(const char *s)
 Value::Value(int val)
 {
   set_int(val);
+  is_null_ = false;
 }
 
 Value::Value(float val)
 {
   set_float(val);
+  is_null_ = false;
 }
 
 Value::Value(bool val)
 {
   set_boolean(val);
+  is_null_ = false;
 }
 
 Value::Value(const char *s, int len /*= 0*/)
 {
   set_string(s, len);
+  is_null_ = false;
 }
 
 Value::Value(const char *s, bool is_date, bool check_bit)
 {
   assert(is_date == true && check_bit == true);
   set_date(s);
+  is_null_ = false;
 }
 
 void Value::set_data(char *data, int length)
 {
+  is_null_ = false;
   switch (attr_type_) {
     case CHARS: {
       set_string(data, length);
@@ -94,6 +100,7 @@ void Value::set_data(char *data, int length)
 }
 void Value::set_int(int val)
 {
+  is_null_ = false;
   attr_type_ = INTS;
   num_value_.int_value_ = val;
   length_ = sizeof(val);
@@ -101,18 +108,21 @@ void Value::set_int(int val)
 
 void Value::set_float(float val)
 {
+  is_null_ = false;
   attr_type_ = FLOATS;
   num_value_.float_value_ = val;
   length_ = sizeof(val);
 }
 void Value::set_boolean(bool val)
 {
+  is_null_ = false;
   attr_type_ = BOOLEANS;
   num_value_.bool_value_ = val;
   length_ = sizeof(val);
 }
 void Value::set_string(const char *s, int len /*= 0*/)
 {
+  is_null_ = false;
   attr_type_ = CHARS;
   if (len > 0) {
     len = strnlen(s, len);
@@ -125,6 +135,7 @@ void Value::set_string(const char *s, int len /*= 0*/)
 
 void Value::set_date(const char *s)
 {
+  is_null_ = false;
   attr_type_ = DATES;
   num_value_.date_meta_.set_date(s);
   str_value_ = num_value_.date_meta_.to_string();
@@ -133,6 +144,7 @@ void Value::set_date(const char *s)
 
 void Value::set_value(const Value &value)
 {
+  is_null_ = false;
   switch (value.attr_type_) {
     case INTS: {
       set_int(value.get_int());
@@ -155,6 +167,11 @@ void Value::set_value(const Value &value)
   }
 }
 
+void Value::set_null(bool is_null)
+{
+  is_null_ = is_null;
+}
+
 const char *Value::data() const
 {
   switch (attr_type_) {
@@ -173,6 +190,10 @@ const char *Value::data() const
 std::string Value::to_string() const
 {
   std::stringstream os;
+  if (is_null_) {
+    os << "null";
+    return os.str();
+  }
   switch (attr_type_) {
     case INTS: {
       os << num_value_.int_value_;
@@ -198,6 +219,9 @@ std::string Value::to_string() const
 
 int Value::compare(const Value &other) const
 {
+  if (this->is_null_ || other.is_null_) {
+    return 0;
+  }
   if (this->attr_type_ == other.attr_type_) {
     switch (this->attr_type_) {
       case INTS: {

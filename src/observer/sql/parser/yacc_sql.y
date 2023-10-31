@@ -158,6 +158,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   char *                            string;
   int                               number;
   float                             floats;
+  bool                              bools;
 }
 
 %token <number> NUMBER
@@ -172,6 +173,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <condition>           condition
 %type <value>               value
 %type <value>               value_list_cell
+%type <bools>               is_nullable
 %type <number>              number
 %type <comp>                comp_op
 %type <relation>            relation
@@ -373,17 +375,29 @@ attr_def_list:
       delete $2;
     }
     ;
-    
+is_nullable:
+  /* empty */ {
+    $$ = false;
+  }
+  | NOT NULL_LITERAL {
+    $$ = false;
+  }
+  | NULLABLE {
+    $$ = true;
+  }
+  ;
+
 attr_def:
-    ID type LBRACE number RBRACE 
+    ID type LBRACE number RBRACE is_nullable
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
+      $$->nullable = $6;
       free($1);
     }
-    | ID type
+    | ID type is_nullable
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
@@ -393,6 +407,7 @@ attr_def:
       } else {
         $$->length = 4;
       }
+      $$->nullable = $3;
       free($1);
     }
     ;
@@ -468,6 +483,10 @@ value:
       char *tmp = common::substr($1,1,strlen($1)-2);
       $$ = new Value(tmp);
       free(tmp);
+    }
+    |NULL_LITERAL {
+      $$ = new Value(0);
+      $$->set_null(true);
     }
     ;
     
@@ -936,6 +955,20 @@ condition:
       $$->right_is_subquery = true;
       $$->right_subquery = std::unique_ptr<SelectSqlNode>($4);
       $$->op = CompOp::NOT_EXISTS_SQ;
+    }
+    | expression IS NOT NULL_LITERAL {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
+      $$->right_is_subquery = false;
+      $$->op = CompOp::IS_NOT_NULL;
+    }
+    | expression IS NULL_LITERAL {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
+      $$->right_is_subquery = false;
+      $$->op = CompOp::IS_NULL;
     }
     ;
 

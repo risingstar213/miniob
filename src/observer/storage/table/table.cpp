@@ -302,6 +302,9 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
       }
     }
     memcpy(record_data + field->offset(), value.data(), copy_len);
+    if (field->nullable()) {
+      *(bool *)(record_data + field->offset() - 1) = value.is_null();
+    }
   }
 
   record.set_data_owner(record_data, record_size);
