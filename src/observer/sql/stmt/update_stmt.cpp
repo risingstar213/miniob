@@ -50,10 +50,11 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
     }
 
     Expression *expr = nullptr;
-
+    bool is_null = false;
     if (!update.attr_values[i].is_select) {
       // check whether the type of the value is correct
       expr = new ValueExpr(update.attr_values[i].value);
+      is_null = update.attr_values[i].value.is_null();
     } else {
       // select
       Stmt *stmt;
@@ -67,7 +68,10 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
       expr = new SQueryExpr(static_cast<SelectStmt *>(stmt));
     }
 
-    if (expr->value_type() != field_meta->type()) {
+    if (is_null && !field_meta->nullable()) {
+      LOG_WARN("update null is not valid!");
+      return RC::INTERNAL;
+    } else if (expr->value_type() != field_meta->type() && !is_null) {
       LOG_WARN("update type is not valid!");
       return RC::INTERNAL;
     }
