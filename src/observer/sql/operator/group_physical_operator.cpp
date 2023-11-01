@@ -20,7 +20,7 @@ RC GroupPhysicalOperator::next()
   RC rc = RC::SUCCESS;
   PhysicalOperator *oper = children_.front().get();
   tuple_.reset_value();
-  while (RC::SUCCESS == (oper->next())) {
+  while (RC::SUCCESS == (rc = (oper->next()))) {
     rc = RC::SUCCESS;
     Tuple *tuple = oper->current_tuple();
     if (nullptr == tuple) {
@@ -32,7 +32,10 @@ RC GroupPhysicalOperator::next()
     tuple_.update_value(tuple);
   }
   is_end_ = true;
-  return rc;
+  if (rc != RC::RECORD_EOF) {
+    return rc;
+  }
+  return RC::SUCCESS;
 }
 RC GroupPhysicalOperator::close() 
 {
