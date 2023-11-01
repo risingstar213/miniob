@@ -155,8 +155,12 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right_type = condition.right_expr->attrType;
     right_null = (condition.right_expr->type == E_VAL && condition.right_expr->value->is_null());
   } else if (condition.right_is_list) {
-    // right_type = UNDEFINED;
-    // right = 
+    right_type = UNDEFINED;
+    std::vector<Value> value_list;
+    for (int i = 0; i < condition.value_list.size(); i++) {
+      value_list.push_back(condition.value_list[i]);
+    }
+    right = new SQueryExpr(value_list);
   } else {
     Value empty(0);
     empty.set_null(true);
@@ -171,7 +175,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     can_compare = true;
   } else if (left_type == right_type) {
     can_compare = true;
-  } else if (left_type == UNDEFINED) { // EXISTS
+  } else if (left_type == UNDEFINED || right_type == UNDEFINED) { // EXISTS
     can_compare = true;
   } else if (left_null || right_null) {
     can_compare = true;

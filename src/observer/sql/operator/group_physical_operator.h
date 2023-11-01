@@ -22,5 +22,6 @@ public:
   Tuple *current_tuple() override;
 private:
   GroupTuple tuple_;
-  bool all_group;
+  bool all_group_;
+  bool is_end_;
 };

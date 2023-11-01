@@ -8,12 +8,16 @@ RC GroupPhysicalOperator::open(Trx *trx)
     LOG_WARN("group operator must has one child");
     return RC::INTERNAL;
   }
+  is_end_ = false;
 
   return children_[0]->open(trx);
 }
 RC GroupPhysicalOperator::next() 
 {
-  RC rc = RC::RECORD_EOF;
+  if (is_end_) {
+    return RC::RECORD_EOF;
+  }
+  RC rc = RC::SUCCESS;
   PhysicalOperator *oper = children_.front().get();
   tuple_.reset_value();
   while (RC::SUCCESS == (oper->next())) {
@@ -27,6 +31,7 @@ RC GroupPhysicalOperator::next()
     
     tuple_.update_value(tuple);
   }
+  is_end_ = true;
   return rc;
 }
 RC GroupPhysicalOperator::close() 

@@ -512,6 +512,7 @@ RC AggregationExpr::try_get_value(Value &value) const
 SQueryExpr::SQueryExpr(SelectStmt *stmt)
   : stmt_(stmt)
 {
+  is_list_ = false;
   if (operator_ == nullptr) {
     std::unique_ptr<LogicalOperator> logical_oper;
     LogicalPlanGenerator logical_generator;
@@ -521,6 +522,13 @@ SQueryExpr::SQueryExpr(SelectStmt *stmt)
     physical_generator.create(*logical_oper, physical_oper);
     operator_ = physical_oper.release();
   }
+}
+
+SQueryExpr::SQueryExpr(std::vector<Value> &value_list)
+{
+  is_list_ = true;
+  value_list_.swap(value_list);
+  count_ = 0;
 }
 
 SQueryExpr::~SQueryExpr()
@@ -533,6 +541,9 @@ SQueryExpr::~SQueryExpr()
 
 AttrType SQueryExpr::value_type() const
 {
+  if (is_list_) {
+    return value_list_[0].attr_type();
+  }
   return stmt_->query_exprs()[0]->value_type();
 }
 
@@ -540,6 +551,11 @@ AttrType SQueryExpr::value_type() const
 RC SQueryExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
   // TODO: store tuple in ctx.
+  if (is_list_) {
+    LOG_ERROR("Value List cannot get value");
+    return RC::INTERNAL;
+  }
+
   if (operator_ == nullptr) {
     return RC::INTERNAL;
   }
@@ -558,9 +574,10 @@ RC SQueryExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
   rc = operator_->next();
   // return NULL !!!
   if (rc == RC::RECORD_EOF) {
-    LOG_WARN("SQueryExpr::get_value should have one row, not zero");
-    operator_->close();
-    return RC::INTERNAL;
+    // LOG_WARN("SQueryExpr::get_value should have one row, not zero");
+    // operator_->close();
+    value.set_null(true);
+    return RC::SUCCESS;
   } else if (rc != RC::SUCCESS) {
     operator_->close();
     return rc;
@@ -590,6 +607,10 @@ RC SQueryExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 RC SQueryExpr::open_sub_query(const Tuple &tuple, Trx *trx)
 {
   // TODO: store tuple in ctx.
+  if (is_list_) {
+    count_ = 0;
+    return RC::SUCCESS;
+  }
   if (operator_ == nullptr) {
     return RC::INTERNAL;
   }
@@ -609,6 +630,14 @@ RC SQueryExpr::open_sub_query(const Tuple &tuple, Trx *trx)
 
 RC SQueryExpr::next_sub_query(Value &value)
 {
+  if (is_list_) {
+    if (count_ >= value_list_.size()) {
+      return RC::RECORD_EOF;
+    }
+    value = value_list_[count_];
+    count_ += 1;
+    return RC::SUCCESS;
+  }
   RC rc = operator_->next();
   // return NULL !!!
   if (rc == RC::RECORD_EOF) {
@@ -631,10 +660,14 @@ RC SQueryExpr::next_sub_query(Value &value)
 
 RC SQueryExpr::close_sub_query()
 {
+  if (is_list_) {
+    count_ = 0;
+    return RC::SUCCESS;
+  }
   return operator_->close();
 }
 
 RC SQueryExpr::try_get_value(Value &value) const
 {
-  return RC::SUCCESS;
+  return RC::INTERNAL;
 }

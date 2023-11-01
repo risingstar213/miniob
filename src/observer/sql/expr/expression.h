@@ -346,6 +346,7 @@ class SQueryExpr : public Expression
 {
 public:
   SQueryExpr(SelectStmt *stmt);
+  SQueryExpr(std::vector<Value> &value_list);
   virtual ~SQueryExpr() override;
 
   ExprType type() const override { return ExprType::SQUERY; }
@@ -361,6 +362,9 @@ public:
 
 private:
   std::unique_ptr<SelectStmt> stmt_ = nullptr;
+  std::vector<Value> value_list_;
+  int count_;
+  bool is_list_;
   // 惰性，第一次获取value时初始化，之后只需要 reset
   PhysicalOperator* operator_ = nullptr;
 };
