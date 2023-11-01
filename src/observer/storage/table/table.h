@@ -82,8 +82,11 @@ public:
 
   RC recover_insert_record(Record &record);
 
+  RC resolve_unique_before_insert(Trx *trx, Record *record);
+  RC resolve_unique_before_update(Trx *trx, Record *old_record, Record *new_record);
+
   // TODO refactor
-  RC create_index(Trx *trx, const FieldMeta *field_meta, const char *index_name);
+  RC create_index(Trx *trx, std::vector<const FieldMeta *> field_metas, const char *index_name, bool is_unique);
 
   RC get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly);
 
@@ -109,7 +112,7 @@ private:
 
 public:
   Index *find_index(const char *index_name) const;
-  Index *find_index_by_field(const char *field_name) const;
+  Index *find_index_by_field(std::vector<std::string> field_name) const;
 
 private:
   std::string base_dir_;

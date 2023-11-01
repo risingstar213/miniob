@@ -156,22 +156,32 @@ RC Table::open(const char *meta_file, const char *base_dir)
   const int index_num = table_meta_.index_num();
   for (int i = 0; i < index_num; i++) {
     const IndexMeta *index_meta = table_meta_.index(i);
-    const FieldMeta *field_meta = table_meta_.field(index_meta->field());
-    if (field_meta == nullptr) {
-      LOG_ERROR("Found invalid index meta info which has a non-exists field. table=%s, index=%s, field=%s",
-                name(), index_meta->name(), index_meta->field());
-      // skip cleanup
-      //  do all cleanup action in destructive Table function
-      return RC::INTERNAL;
+    std::vector<string> field_names = index_meta->fields();
+    std::vector<FieldMeta> field_metas;
+    for (size_t i = 0; i < field_names.size(); i++) {
+      const FieldMeta *field_meta = table_meta_.field(field_names[i].c_str());
+      if (field_meta == nullptr) {
+        LOG_ERROR("Found invalid index meta info which has a non-exists field. table=%s, index=%s",
+            name(),
+            index_meta->name());
+        // skip cleanup
+        //  do all cleanup action in destructive Table function
+        return RC::INTERNAL;
+      }
+      field_metas.push_back(*field_meta);
     }
 
     BplusTreeIndex *index = new BplusTreeIndex();
     std::string index_file = table_index_file(base_dir, name(), index_meta->name());
-    rc = index->open(index_file.c_str(), *index_meta, *field_meta);
+    rc = index->open(index_file.c_str(), *index_meta, field_metas);
     if (rc != RC::SUCCESS) {
       delete index;
-      LOG_ERROR("Failed to open index. table=%s, index=%s, file=%s, rc=%s",
-                name(), index_meta->name(), index_file.c_str(), strrc(rc));
+      LOG_ERROR("Failed to open index. table=%s, index=%s, file=%s, rc=%d:%s",
+          name(),
+          index_meta->name(),
+          index_file.c_str(),
+          rc,
+          strrc(rc));
       // skip cleanup
       //  do all cleanup action in destructive Table function.
       return rc;
@@ -344,25 +354,31 @@ RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly
   return rc;
 }
 
-RC Table::create_index(Trx *trx, const FieldMeta *field_meta, const char *index_name)
+RC Table::create_index(Trx *trx, std::vector<const FieldMeta *> field_metas, const char *index_name, bool is_unique)
 {
-  if (common::is_blank(index_name) || nullptr == field_meta) {
+  if (common::is_blank(index_name) || field_metas.size() == 0) {
     LOG_INFO("Invalid input arguments, table name is %s, index_name is blank or attribute_name is blank", name());
     return RC::INVALID_ARGUMENT;
   }
 
   IndexMeta new_index_meta;
-  RC rc = new_index_meta.init(index_name, *field_meta);
+  RC rc = new_index_meta.init(index_name, field_metas, is_unique);
   if (rc != RC::SUCCESS) {
-    LOG_INFO("Failed to init IndexMeta in table:%s, index_name:%s, field_name:%s", 
-             name(), index_name, field_meta->name());
+    LOG_INFO("Failed to init IndexMeta in table:%s, index_name:%s", 
+             name(), index_name);
     return rc;
   }
 
   // 创建索引相关数据
   BplusTreeIndex *index = new BplusTreeIndex();
   std::string index_file = table_index_file(base_dir_.c_str(), name(), index_name);
-  rc = index->create(index_file.c_str(), new_index_meta, *field_meta);
+
+  std::vector<FieldMeta> field_metas_copy;
+  for (int i = 0; i < field_metas.size(); i++) {
+    field_metas_copy.emplace_back(*field_metas[i]);
+  }
+
+  rc = index->create(index_file.c_str(), new_index_meta, field_metas_copy);
   if (rc != RC::SUCCESS) {
     delete index;
     LOG_ERROR("Failed to create bplus tree index. file name=%s, rc=%d:%s", index_file.c_str(), rc, strrc(rc));
@@ -486,7 +502,7 @@ Index *Table::find_index(const char *index_name) const
   }
   return nullptr;
 }
-Index *Table::find_index_by_field(const char *field_name) const
+Index *Table::find_index_by_field(std::vector<std::string> field_name) const
 {
   const TableMeta &table_meta = this->table_meta();
   const IndexMeta *index_meta = table_meta.find_index_by_field(field_name);
@@ -512,4 +528,80 @@ RC Table::sync()
   }
   LOG_INFO("Sync table over. table=%s", name());
   return rc;
+}
+
+RC Table::resolve_unique_before_insert(Trx *trx, Record *record)
+{
+  for (size_t i = 0; i < indexes_.size(); i++) {
+    // is unique
+    if (indexes_[i]->index_meta().is_unique()) {
+      if (indexes_[i]->has_null(record->data())) {
+        continue;
+      }
+      std::list<RID> rids;
+      RC rc = indexes_[i]->get_entry(record->data(), rids);
+      if (rc != RC::SUCCESS && rc != RC::EMPTY) {
+        return rc;
+      }
+      if (rids.size() > 0) {
+        LOG_INFO("insert duplicate keys into unique index");
+        return RC::INVALID_ARGUMENT;
+      }
+    }
+  }
+  return RC::SUCCESS;
+}
+
+RC Table::resolve_unique_before_update(Trx *trx, Record *old_record, Record *new_record)
+{
+  LOG_INFO("resolve_unique_before_update");
+  for (size_t i = 0; i < indexes_.size(); i++) {
+    // is unique
+    if (indexes_[i]->index_meta().is_unique()) {
+      if (indexes_[i]->has_null(new_record->data())) {
+        continue;
+      }
+      std::vector<FieldMeta> field_metas = indexes_[i]->field_metas();
+      bool equal = true;
+      for (size_t j = 0; j < field_metas.size() && equal; j++) {
+        switch (field_metas[j].type()) {
+          case INTS: {
+            equal = common::compare_int(old_record->data() + field_metas[j].offset(), 
+                          new_record->data() + field_metas[j].offset()) == 0;
+          } break;
+          case FLOATS: {
+            equal = common::compare_float(old_record->data() + field_metas[j].offset(), 
+                          new_record->data() + field_metas[j].offset()) == 0;
+          } break;
+          case TEXTS:
+          case CHARS: {
+            equal = common::compare_string(old_record->data() + field_metas[j].offset(), field_metas[j].len(),
+                          new_record->data() + field_metas[j].offset(),field_metas[j].len()) == 0;
+          } break;
+          case DATES: {
+            Value::DateMeta left, right;
+            left.set_date(old_record->data() + field_metas[j].offset());
+            right.set_date(new_record->data() + field_metas[j].offset());
+            equal = left.compare(right) == 0;
+          } break;
+          default:
+           break;
+        }
+      }
+      if (equal) {
+        continue;
+      }
+      LOG_INFO("resolve_unique_before_update ask in b+tree");
+      std::list<RID> rids;
+      RC rc = indexes_[i]->get_entry(new_record->data(), rids);
+      if (rc != RC::SUCCESS && rc != RC::EMPTY) {
+        return rc;
+      }
+      if (rids.size() > 0) {
+        LOG_INFO("insert duplicate keys into unique index");
+        return RC::INVALID_ARGUMENT;
+      }
+    }
+  }
+  return RC::SUCCESS;
 }

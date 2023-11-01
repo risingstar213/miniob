@@ -52,45 +52,76 @@ enum class BplusTreeOperationType
 class AttrComparator 
 {
 public:
-  void init(AttrType type, int length)
+  void init(std::vector<AttrType> type, std::vector<int> offset, std::vector<uint8_t> null, int sum_length)
   {
     attr_type_ = type;
-    attr_length_ = length;
+    attr_offset_ = offset;
+    attr_null_ = null;
+    sum_attr_length_ = sum_length;
   }
 
   int attr_length() const
   {
-    return attr_length_;
+    return sum_attr_length_;
   }
 
   int operator()(const char *v1, const char *v2) const
   {
-    switch (attr_type_) {
-      case INTS: {
-        return common::compare_int((void *)v1, (void *)v2);
-      } break;
-      case FLOATS: {
-        return common::compare_float((void *)v1, (void *)v2);
+    int result = 0;
+    const char *n1, *n2;
+    int attr_length;
+    for (size_t i = 0; i < attr_type_.size(); i++) {
+      n1 = v1 + attr_offset_[i];
+      n2 = v2 + attr_offset_[i];
+      if (i == attr_type_.size() - 1) {
+        attr_length = sum_attr_length_ - attr_offset_[i];
+      } else {
+        attr_length = attr_offset_[i+1] - attr_offset_[i];
       }
-      case CHARS: {
-        return common::compare_string((void *)v1, attr_length_, (void *)v2, attr_length_);
+      if (attr_null_[i] == true) {
+        bool left_null = *(bool *)(n1-1);
+        bool right_null = *(bool *)(n2-1);
+        if (left_null && right_null) {
+          continue;
+        } else if (left_null && !right_null) {
+          return -1;
+        } else if (!left_null && right_null) {
+          return 1;
+        }
       }
-      case DATES: {
-        Value::DateMeta left, right;
-        left.set_date(v1);
-        right.set_date(v2);
-        return left.compare(right);
+      switch (attr_type_[i]) {
+        case INTS: {
+          result = common::compare_int((void *)n1, (void *)n2);
+        } break;
+        case FLOATS: {
+          result = common::compare_float((void *)n1, (void *)n2);
+        }
+        case CHARS: {
+          result = common::compare_string((void *)n1, attr_length, (void *)n2, attr_length);
+        }
+        case DATES: {
+          Value::DateMeta left, right;
+          left.set_date(n1);
+          right.set_date(n2);
+          result = left.compare(right);
+        }
+        default: {
+          ASSERT(false, "unknown attr type. %d", attr_type_);
+          return 0;
+        }
       }
-      default: {
-        ASSERT(false, "unknown attr type. %d", attr_type_);
-        return 0;
+      if (result != 0) {
+        return result;
       }
     }
+    return result;
   }
 
 private:
-  AttrType attr_type_;
-  int attr_length_;
+  std::vector<AttrType> attr_type_;
+  std::vector<int> attr_offset_;
+  std::vector<uint8_t> attr_null_;
+  int sum_attr_length_;
 };
 
 /**
@@ -98,21 +129,19 @@ private:
  * @details BplusTree的键值除了字段属性，还有RID，是为了避免属性值重复而增加的。
  * @ingroup BPlusTree
  */
-class KeyComparator 
+class KeyComparator
 {
 public:
-  void init(AttrType type, int length)
+  void init(std::vector<AttrType> type, std::vector<int> offset, std::vector<uint8_t> null, int sum_length)
   {
-    attr_comparator_.init(type, length);
+    attr_comparator_.init(type, offset, null, sum_length);
   }
 
-  const AttrComparator &attr_comparator() const
-  {
+  const AttrComparator &attr_comparator() const {
     return attr_comparator_;
   }
 
-  int operator()(const char *v1, const char *v2) const
-  {
+  int operator() (const char *v1, const char *v2) const {
     int result = attr_comparator_(v1, v2);
     if (result != 0) {
       return result;
@@ -134,56 +163,79 @@ private:
 class AttrPrinter 
 {
 public:
-  void init(AttrType type, int length)
+  void init(std::vector<AttrType> type, std::vector<int> offset, std::vector<uint8_t> null, int sum_length)
   {
     attr_type_ = type;
-    attr_length_ = length;
+    attr_offset_ = offset;
+    attr_null_ = null;
+    sum_attr_length_ = sum_length;
   }
 
   int attr_length() const
   {
-    return attr_length_;
+    return sum_attr_length_;
   }
 
   std::string operator()(const char *v) const
   {
-    switch (attr_type_) {
-      case INTS: {
-        return std::to_string(*(int *)v);
-      } break;
-      case FLOATS: {
-        return std::to_string(*(float *)v);
+    const char *n = v;
+    std::string str1;
+    int attr_length;
+    for (size_t i = 0; i < attr_type_.size(); i++) {
+      n = v + attr_offset_[i];
+      if (i == attr_type_.size() - 1) {
+        attr_length = sum_attr_length_ - attr_offset_[i];
+      } else {
+        attr_length = attr_offset_[i+1] - attr_offset_[i];
       }
-      case CHARS: {
-        std::string str;
-        for (int i = 0; i < attr_length_; i++) {
-          if (v[i] == 0) {
-            break;
-          }
-          str.push_back(v[i]);
+      if (attr_null_[i] == true) {
+        bool null = *(bool *)(n-1);
+        if (null) {
+          str1 += "null";
+          str1 += '@';
+          continue;
         }
-        return str;
       }
-      case DATES: {
-        std::string str;
-        for (int i = 0; i < attr_length_; i++) {
-          if (v[i] == 0) {
-            break;
-          }
-          str.push_back(v[i]);
+      switch (attr_type_[i]) {
+        case INTS: {
+          str1 += std::to_string(*(int *)v) + '@';
+        } break;
+        case FLOATS: {
+          str1 += std::to_string(*(float *)v) + '@';
         }
-        return str;
-      }
-      default: {
-        ASSERT(false, "unknown attr type. %d", attr_type_);
+        case CHARS: {
+          std::string str;
+          for (int i = 0; i < attr_length; i++) {
+            if (v[i] == 0) {
+              break;
+            }
+            str.push_back(v[i]);
+          }
+          str1 += str + '@';
+        }
+        case DATES: {
+          std::string str;
+          for (int i = 0; i < attr_length; i++) {
+            if (v[i] == 0) {
+              break;
+            }
+            str.push_back(v[i]);
+          }
+          str1 += str + '@';
+        }
+        default: {
+          ASSERT(false, "unknown attr type. %d", attr_type_);
+        }
       }
     }
-    return std::string();
+    return str1;
   }
 
 private:
-  AttrType attr_type_;
-  int attr_length_;
+  std::vector<AttrType> attr_type_;
+  std::vector<int> attr_offset_;
+  std::vector<uint8_t> attr_null_;
+  int sum_attr_length_;
 };
 
 /**
@@ -193,9 +245,9 @@ private:
 class KeyPrinter 
 {
 public:
-  void init(AttrType type, int length)
+  void init(std::vector<AttrType> type, std::vector<int> offset, std::vector<uint8_t> null, int sum_length)
   {
-    attr_printer_.init(type, length);
+    attr_printer_.init(type, offset, null, sum_length);
   }
 
   const AttrPrinter &attr_printer() const
@@ -233,17 +285,20 @@ struct IndexFileHeader
   PageNum root_page;          ///< 根节点在磁盘中的页号
   int32_t internal_max_size;  ///< 内部节点最大的键值对数
   int32_t leaf_max_size;      ///< 叶子节点最大的键值对数
-  int32_t attr_length;        ///< 键值的长度
+  int32_t sum_attr_length;        ///< 键值的长度
   int32_t key_length;         ///< attr length + sizeof(RID)
-  AttrType attr_type;         ///< 键值的类型
+  int32_t  attr_size;
+  int32_t  attr_offset[20];
+  int8_t  attr_null[20];
+  AttrType attr_type[20]; // MAX SIZE = 20
 
   const std::string to_string()
   {
     std::stringstream ss;
 
-    ss << "attr_length:" << attr_length << ","
+    ss << "attr_length:" << sum_attr_length << ","
        << "key_length:" << key_length << ","
-       << "attr_type:" << attr_type << ","
+       << "attr_size:" << attr_size << ","
        << "root_page:" << root_page << ","
        << "internal_max_size:" << internal_max_size << ","
        << "leaf_max_size:" << leaf_max_size << ";";
@@ -478,11 +533,8 @@ public:
    * 此函数创建一个名为fileName的索引。
    * attrType描述被索引属性的类型，attrLength描述被索引属性的长度
    */
-  RC create(const char *file_name, 
-            AttrType attr_type, 
-            int attr_length, 
-            int internal_max_size = -1, 
-            int leaf_max_size = -1);
+  RC create(const char *file_name,std::vector<AttrType> attr_type, std::vector<int> attr_length,std::vector<uint8_t> attr_null,
+	    int internal_max_size = -1, int leaf_max_size = -1);
 
   /**
    * 打开名为fileName的索引文件。

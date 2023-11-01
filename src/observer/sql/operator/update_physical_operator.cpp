@@ -96,8 +96,17 @@ RC UpdatePhysicalOperator::next()
       new_values[index] = temp;
     }
 
-    Record &record = row_tuple->record();
-    rc = trx_->delete_record(table_, record);
+
+    Record &old_record = row_tuple->record();
+    Record new_record;
+    table_->make_record(static_cast<int>(new_values.size()), new_values.data(), new_record);
+
+    rc = table_->resolve_unique_before_update(trx_, &old_record, &new_record);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+
+    rc = trx_->delete_record(table_, old_record);
 
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to delete record in update: %s", strrc(rc));
@@ -107,9 +116,6 @@ RC UpdatePhysicalOperator::next()
     for (int i = 0; i < field_num; i++) {
       LOG_INFO("update %d to %s", i, new_values[i].to_string());
     }
-
-    Record new_record;
-    table_->make_record(static_cast<int>(new_values.size()), new_values.data(), new_record);
 
     rc = trx_->insert_record(table_, new_record);
 

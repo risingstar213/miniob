@@ -154,6 +154,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::deque<InsertRowNode> *       insert_row_list;
   UpdatePairSqlNode *               update_pair;
   std::deque<UpdatePairSqlNode> *   update_pair_list;
+  std::deque<std::string> *         id_list;
   SelectSqlNode *                   select;
   char *                            string;
   int                               number;
@@ -201,6 +202,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <insert_row_list>     insert_row_list
 %type <update_pair>         update_pair
 %type <update_pair_list>    update_list
+%type <id_list>             id_list
+%type <bools>               is_unique
 %type <select>              select
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
@@ -317,17 +320,41 @@ desc_table_stmt:
     }
     ;
 
+is_unique:
+  /* empty */ {
+    $$ = false;
+  }
+  | UNIQUE {
+    $$ = true;
+  }
+  ;
+
+id_list:
+  ID {
+    $$ = new std::deque<std::string>();
+    std::string attribute_name = $1;
+    free($1);
+    $$->emplace_back(attribute_name);
+  }
+  | ID COMMA id_list {
+    $$ = $3;
+    std::string attribute_name = $1;
+    free($1);
+    $$->emplace_front(attribute_name);
+  }
+  ;
 create_index_stmt:    /*create index 语句的语法解析树*/
-    CREATE INDEX ID ON ID LBRACE ID RBRACE
+    CREATE is_unique INDEX ID ON ID LBRACE id_list RBRACE
     {
       $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
       CreateIndexSqlNode &create_index = $$->create_index;
-      create_index.index_name = $3;
-      create_index.relation_name = $5;
-      create_index.attribute_name = $7;
-      free($3);
-      free($5);
-      free($7);
+      create_index.index_name = $4;
+      create_index.relation_name = $6;
+      create_index.attribute_names = std::move(*$8);
+      create_index.is_unique = $2;
+      free($4);
+      free($6);
+      delete $8;
     }
     ;
 

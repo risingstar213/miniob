@@ -45,6 +45,11 @@ public:
     return index_meta_;
   }
 
+  std::vector<FieldMeta> field_metas() const
+  {
+    return field_metas_;
+  }
+
   /**
    * @brief 插入一条数据
    * 
@@ -80,12 +85,16 @@ public:
    */
   virtual RC sync() = 0;
 
+  virtual RC get_entry(const char *record, std::list<RID> &rids) = 0;
+  virtual bool has_null(const char *record) = 0;
+
 protected:
-  RC init(const IndexMeta &index_meta, const FieldMeta &field_meta);
+  RC init(const IndexMeta &index_meta, std::vector<FieldMeta> &field_meta);
 
 protected:
   IndexMeta index_meta_;  ///< 索引的元数据
-  FieldMeta field_meta_;  ///< 当前实现仅考虑一个字段的索引
+  std::vector<FieldMeta> field_metas_;  /// 当前实现仅考虑一个字段的索引
+  int sum_field_length_;
 };
 
 /**

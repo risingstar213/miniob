@@ -35,6 +35,11 @@ RC InsertPhysicalOperator::open(Trx *trx)
       return rc;
     }
 
+    rc = table_->resolve_unique_before_insert(trx, &record);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+
     rc = trx->insert_record(table_, record);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to insert record by transaction. rc=%s", strrc(rc));

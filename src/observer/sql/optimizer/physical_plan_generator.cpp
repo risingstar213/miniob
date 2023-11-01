@@ -132,7 +132,8 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
       }
 
       const Field &field = field_expr->field();
-      index = table->find_index_by_field(field.field_name());
+      std::vector<std::string> field_names;
+      index = table->find_index_by_field(field_names);
       if (nullptr != index) {
         break;
       }

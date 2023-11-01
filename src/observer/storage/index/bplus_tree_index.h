@@ -27,12 +27,14 @@ public:
   BplusTreeIndex() = default;
   virtual ~BplusTreeIndex() noexcept;
 
-  RC create(const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta);
-  RC open(const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta);
+  RC create(const char *file_name, const IndexMeta &index_meta, std::vector<FieldMeta> &field_metas);
+  RC open(const char *file_name, const IndexMeta &index_meta, std::vector<FieldMeta> &field_metas);
   RC close();
 
+  RC get_entry(const char *record, std::list<RID> &rids) override;
   RC insert_entry(const char *record, const RID *rid) override;
   RC delete_entry(const char *record, const RID *rid) override;
+  bool has_null(const char *record) override;
 
   /**
    * 扫描指定范围的数据

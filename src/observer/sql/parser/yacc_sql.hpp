@@ -157,13 +157,14 @@ union YYSTYPE
   std::deque<InsertRowNode> *       insert_row_list;
   UpdatePairSqlNode *               update_pair;
   std::deque<UpdatePairSqlNode> *   update_pair_list;
+  std::deque<std::string> *         id_list;
   SelectSqlNode *                   select;
   char *                            string;
   int                               number;
   float                             floats;
   bool                              bools;
 
-#line 167 "yacc_sql.hpp"
+#line 168 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
