@@ -976,6 +976,7 @@ condition:
       $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
       $$->right_is_subquery = false;
       $$->value_list = std::move(*$4);
+      $$->right_is_list = true;
       $$->op = CompOp::IN_SQ;
       delete $4;
     }
@@ -985,7 +986,8 @@ condition:
       $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
       $$->right_is_subquery = false;
       $$->value_list = std::move(*$5);
-      $$->op = CompOp::IN_SQ;
+      $$->right_is_list = true;
+      $$->op = CompOp::NOT_IN_SQ;
       delete $5;
     }
     | EXISTS LBRACE select RBRACE {
