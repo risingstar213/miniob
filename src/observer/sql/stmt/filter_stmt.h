@@ -102,13 +102,19 @@ public:
     return filter_units_;
   }
 
+  bool is_or() const
+  {
+    return is_or_;
+  }
+
 public:
   static RC create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
-      std::deque<ConditionSqlNode> &condition_sqls, FilterStmt *&stmt);
+      std::deque<ConditionSqlNode> &condition_sqls, bool is_or, FilterStmt *&stmt);
 
   static RC create_filter_unit(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
       ConditionSqlNode &condition, FilterUnit *&filter_unit);
 
 private:
   std::vector<FilterUnit *> filter_units_;  // 默认当前都是AND关系
+  bool is_or_;
 };

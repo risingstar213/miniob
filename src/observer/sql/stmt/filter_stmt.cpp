@@ -32,12 +32,13 @@ FilterStmt::~FilterStmt()
 }
 
 RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
-    std::deque<ConditionSqlNode> &condition_sqls, FilterStmt *&stmt)
+    std::deque<ConditionSqlNode> &condition_sqls, bool is_or, FilterStmt *&stmt)
 {
   RC rc = RC::SUCCESS;
   stmt = nullptr;
 
   FilterStmt *tmp_stmt = new FilterStmt();
+  tmp_stmt->is_or_ = is_or;
   LOG_INFO("FilterStmt has %d filters", condition_sqls.size());
   for (int i = 0; i < condition_sqls.size(); i++) {
     FilterUnit *filter_unit = nullptr;

@@ -90,6 +90,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
         tables[0],
         &table_map,
         select_sql.joins[i].on_coditions,
+        false,
         join_filter_stmt);
     if (rc != RC::SUCCESS) {
       LOG_WARN("cannot construct filter stmt");
@@ -204,6 +205,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
       default_table,
       &table_map,
       select_sql.conditions,
+      select_sql.condtion_is_or,
       filter_stmt);
   if (rc != RC::SUCCESS) {
     LOG_WARN("cannot construct filter stmt");
