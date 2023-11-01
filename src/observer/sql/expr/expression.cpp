@@ -169,8 +169,16 @@ RC ComparisonExpr::compare_with_set(const Tuple &tuple, Value &value, Trx *trx) 
   switch (comp_) 
   {
     case IN_SQ: {
+      if (left.is_null()) {
+        value.set_boolean(false);
+        break;
+      }
+      // if left is not null
       value.set_boolean(false);
       while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
+        if (right.is_null()) {
+          continue;
+        }
         if (left.compare(right) == 0) {
           value.set_boolean(true);
           break;
@@ -178,8 +186,16 @@ RC ComparisonExpr::compare_with_set(const Tuple &tuple, Value &value, Trx *trx) 
       }
     } break;
     case NOT_IN_SQ: {
+      if (left.is_null()) {
+        value.set_boolean(false);
+        break;
+      }
+      // if left is not null
       value.set_boolean(true);
       while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
+        if (right.is_null()) {
+          continue;
+        }
         if (left.compare(right) == 0) {
           value.set_boolean(false);
           break;
@@ -189,15 +205,19 @@ RC ComparisonExpr::compare_with_set(const Tuple &tuple, Value &value, Trx *trx) 
     case EXISTS_SQ: {
       value.set_boolean(false);
       while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
-        value.set_boolean(true);
-        break;
+        if (!right.is_null()) {
+          value.set_boolean(true);
+          break;
+        }
       }
     } break;
     case NOT_EXISTS_SQ: {
       value.set_boolean(true);
       while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
-        value.set_boolean(false);
-        break;
+        if (right.is_null()) {
+          value.set_boolean(false);
+          break;
+        }
       }
     } break;
   }
