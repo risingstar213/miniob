@@ -155,7 +155,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right = generate_expression(*condition.right_expr);
     right_type = condition.right_expr->attrType;
     right_null = (condition.right_expr->type == E_VAL && condition.right_expr->value->is_null());
-  } else if (condition.right_is_list) {
+  } else if (condition.right_is_list || condition.value_list.size() > 0) {
     right_type = UNDEFINED;
     std::vector<Value> value_list;
     for (int i = 0; i < condition.value_list.size(); i++) {

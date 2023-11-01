@@ -595,10 +595,10 @@ RC SQueryExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
   rc = operator_->next();
   // return NULL !!!
   if (rc == RC::RECORD_EOF) {
-    LOG_WARN("SQueryExpr::get_value should have one row, not zero");
+    // LOG_WARN("SQueryExpr::get_value should have one row, not zero");
     operator_->close();
     value.set_null(true);
-    return RC::INTERNAL;
+    return RC::SUCCESS;
   } else if (rc != RC::SUCCESS) {
     operator_->close();
     return rc;
@@ -629,6 +629,7 @@ RC SQueryExpr::open_sub_query(const Tuple &tuple, Trx *trx)
 {
   // TODO: store tuple in ctx.
   if (is_list_) {
+    LOG_INFO("SQueryExpr::open_sub_query is list !!!");
     count_ = 0;
     return RC::SUCCESS;
   }
