@@ -101,6 +101,10 @@ public:
 
   const TableMeta &table_meta() const;
 
+  std::vector<Index *> &indexes() {
+    return indexes_;
+  }
+
   RC sync();
 
 private:

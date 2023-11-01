@@ -333,6 +333,12 @@ struct CreateTableSqlNode
   std::deque<AttrInfoSqlNode> attr_infos;            ///< attributes
 };
 
+
+struct ShowIndexSqlNode
+{
+  std::string  relation_name;
+};
+
 /**
  * @brief 描述一个drop table语句
  * @ingroup SQLParser
@@ -442,6 +448,7 @@ enum SqlCommandFlag
   SCF_DROP_INDEX,
   SCF_SYNC,
   SCF_SHOW_TABLES,
+  SCF_SHOW_INDEX,
   SCF_DESC_TABLE,
   SCF_BEGIN,        ///< 事务开始语句，可以在这里扩展只读事务
   SCF_COMMIT,
@@ -472,6 +479,7 @@ public:
   CreateIndexSqlNode        create_index;
   DropIndexSqlNode          drop_index;
   DescTableSqlNode          desc_table;
+  ShowIndexSqlNode          show_index;
   LoadDataSqlNode           load_data;
   ExplainSqlNode            explain;
   SetVariableSqlNode        set_variable;

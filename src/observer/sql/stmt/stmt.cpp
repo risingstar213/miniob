@@ -22,6 +22,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/create_index_stmt.h"
 #include "sql/stmt/create_table_stmt.h"
 #include "sql/stmt/desc_table_stmt.h"
+#include "sql/stmt/show_index_stmt.h"
 #include "sql/stmt/help_stmt.h"
 #include "sql/stmt/show_tables_stmt.h"
 #include "sql/stmt/trx_begin_stmt.h"
@@ -64,6 +65,10 @@ RC Stmt::create_stmt(Db *db, ParsedSqlNode &sql_node, Stmt *&stmt)
 
     case SCF_DESC_TABLE: {
       return DescTableStmt::create(db, sql_node.desc_table, stmt);
+    }
+
+    case SCF_SHOW_INDEX: {
+      return ShowIndexStmt::create(db, sql_node.show_index, stmt);
     }
 
     case SCF_HELP: {
