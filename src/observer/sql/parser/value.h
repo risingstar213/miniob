@@ -96,6 +96,8 @@ public:
 
   void cast_to_null(AttrType type);
 
+  bool cast_to_other_type(AttrType type);
+
 public:
   /**
    * 获取对应的值

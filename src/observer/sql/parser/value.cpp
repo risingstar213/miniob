@@ -455,6 +455,33 @@ void Value::cast_to_null(AttrType type)
   is_null_ = true;
 }
 
+bool Value::cast_to_other_type(AttrType type)
+{
+  if (type == attr_type_) {
+    return true;
+  }
+  if (type > FLOATS || attr_type_ > FLOATS || type == UNDEFINED || attr_type_ == UNDEFINED) {
+    return false;
+  }
+
+  switch (type)
+  {
+  case CHARS: {
+    set_string(get_string().c_str());
+  } break;
+  case INTS: {
+    set_int(get_int());
+  } break;
+  case FLOATS: {
+    set_float(get_float());
+  } break;
+  default:
+    break;
+  }
+
+  return true;
+}
+
 void Value::DateMeta::set_date(const char *s)
 {
   std::stringstream sstream(s);

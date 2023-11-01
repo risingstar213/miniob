@@ -96,9 +96,11 @@ RC UpdatePhysicalOperator::next()
         LOG_WARN("update null to not nullable type is not valid!");
         return RC::INTERNAL;
       }
-      if (temp.attr_type() != fields_[i]->type() && !temp.is_null()) {
-        LOG_WARN("update type is not valid!");
-        return RC::INTERNAL;
+      if (!temp.is_null()) {
+        if (temp.cast_to_other_type(fields_[i]->type())) {
+          LOG_WARN("update type is not valid!");
+          return RC::INTERNAL;
+        }
       }
       if (temp.is_null()) {
         temp.cast_to_null(fields_[i]->type());

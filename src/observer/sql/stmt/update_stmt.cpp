@@ -68,13 +68,15 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt)
       expr = new SQueryExpr(static_cast<SelectStmt *>(stmt));
     }
 
-    if (is_null && !field_meta->nullable()) {
-      LOG_WARN("update null is not valid!");
-      return RC::INTERNAL;
-    } else if (expr->value_type() != field_meta->type() && !is_null) {
-      LOG_WARN("update type is not valid!");
-      return RC::INTERNAL;
-    }
+    // important: process type in run time
+
+    // if (is_null && !field_meta->nullable()) {
+    //   LOG_WARN("update null is not valid!");
+    //   return RC::INTERNAL;
+    // } else if (!is_null) {
+    //   LOG_WARN("update type is not valid!");
+    //   return RC::INTERNAL;
+    // }
     update_names.push_back(update.attr_values[i].attr.attribute_name.c_str());
     update_fields.push_back(field_meta);
     update_exprs.push_back(expr);
