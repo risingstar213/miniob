@@ -793,6 +793,7 @@ RC BplusTreeHandler::create(const char *file_name,std::vector<AttrType> attr_typ
     }
     file_header->attr_offset[i] = sum_attr_offset;
     sum_attr_length += attr_length[i];
+    sum_attr_offset += attr_length[i];
     if (attr_type[i] == CHARS) {
       sum_attr_offset += 1;
       sum_attr_length += 1;
