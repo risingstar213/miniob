@@ -571,6 +571,7 @@ AttrType SQueryExpr::value_type() const
 RC SQueryExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
   // TODO: store tuple in ctx.
+  LOG_INFO("SQueryExpr::get_value");
   if (is_list_) {
     LOG_ERROR("Value List cannot get value");
     return RC::INTERNAL;
@@ -594,10 +595,10 @@ RC SQueryExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
   rc = operator_->next();
   // return NULL !!!
   if (rc == RC::RECORD_EOF) {
-    // LOG_WARN("SQueryExpr::get_value should have one row, not zero");
-    // operator_->close();
+    LOG_WARN("SQueryExpr::get_value should have one row, not zero");
+    operator_->close();
     value.set_null(true);
-    return RC::SUCCESS;
+    return RC::INTERNAL;
   } else if (rc != RC::SUCCESS) {
     operator_->close();
     return rc;
@@ -667,7 +668,7 @@ RC SQueryExpr::next_sub_query(Value &value)
   }
   Tuple *project_tuple = operator_->current_tuple();
   if (project_tuple->cell_num() != 1) {
-     LOG_WARN("SQueryExpr::get_value should have only one column");
+    LOG_WARN("SQueryExpr::get_value should have only one column");
     return RC::INTERNAL;
   }
   // the first
