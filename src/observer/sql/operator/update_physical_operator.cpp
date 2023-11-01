@@ -78,14 +78,24 @@ RC UpdatePhysicalOperator::next()
     int field_num = table_->table_meta().field_num();
     for (int i = 0; i < field_num; i++) {
       Value temp;
-      row_tuple->cell_at(i, temp);
+      RC rc = row_tuple->cell_at(i, temp);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
       new_values.emplace_back(temp);
     }
 
     for (int i = 0; i < fields_.size(); i++) {
       int index = find_index_in_tuple(fields_[i]);
       Value temp;
-      exprs_[i]->get_value(*tuple, temp, trx_);
+      RC rc = exprs_[i]->get_value(*tuple, temp, trx_);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      if (!fields_[i]->nullable() && temp.is_null()) {
+        LOG_WARN("update null to not nullable type is not valid!");
+        return RC::INTERNAL;
+      }
       if (temp.attr_type() != fields_[i]->type() && !temp.is_null()) {
         LOG_WARN("update type is not valid!");
         return RC::INTERNAL;
