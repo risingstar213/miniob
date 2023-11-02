@@ -41,10 +41,10 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     // select * / count(*)
     if (expr.attr->node.attribute_name == "*" && expr.attr->node.relation_name.empty()) {
       if ((depth == 0 && expr.attr->aggType == A_UNDEFINED)) {
-        // if (expr->attr->alias != nullptr) {
-        //   LOG_WARN("select * cannot have alias !!!");
-        //   return RC::INVALID_ARGUMENT;
-        // }
+        if (!expr.alias.empty()) {
+          LOG_WARN("select * cannot have alias !!!");
+          return RC::INVALID_ARGUMENT;
+        }
         expr.attrType = INTS;
         return RC::SUCCESS;
       } else if (expr.attr->aggType == A_COUNT) {
@@ -86,10 +86,10 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     }
     if (expr.attr->node.attribute_name == "*") {
       if (depth == 0 && expr.attr->aggType == A_UNDEFINED) {
-        // if (expr->attr->alias != nullptr) {
-        //   LOG_WARN("select t.* cannot have alias !!!");
-        //   return RC::INVALID_ARGUMENT;
-        // }
+        if (!expr.alias.empty()) {
+          LOG_WARN("select t.* cannot have alias !!!");
+          return RC::INVALID_ARGUMENT;
+        }
         expr.attrType = INTS;
         return RC::SUCCESS;
       } else {
@@ -248,7 +248,7 @@ Expression* generate_expression(ExprSqlNode &expr)
     return new ArithmeticExpr(ArithmeticExpr::Type(expr.type), std::move(left), std::move(right));
 }
 
-std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
+std::string generate_alias(bool multi_tables, ExprSqlNode &expr, std::unordered_map<std::string, std::string> &alias_map)
 {
   std::string str;
   if (expr.has_brace) {
@@ -257,9 +257,9 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
   if (expr.type == E_VAL) {
     str += expr.value->to_string();
   } else if (expr.type == E_DYN) {
-    // if (expr->field->get_alias() != nullptr) {
-    //   str += expr->field->get_alias();
-   //  } else {
+    if (!expr.alias.empty()) {
+      str += expr.alias;
+    } else {
       AggregationType aggType = expr.attr == nullptr ? A_UNDEFINED: expr.attr->aggType;
       switch(aggType) {
         case A_AVG:
@@ -283,7 +283,8 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
       if (expr.attr != nullptr && expr.attr->node.attribute_name == "*") {
         str += "*";
       } else if (multi_tables) {
-        str += expr.table_->name();
+        // 一定访问的到
+        str += alias_map[expr.table_->name()];
         str += '.';
         str += expr.field_->name();
       } else {
@@ -292,7 +293,7 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
       if (aggType != A_UNDEFINED) {
         str += ")";
       }
-    // }
+    }
   } else {
 //    if (expr->function != nullptr) {
     //   if (expr->alias != nullptr) {
@@ -324,10 +325,10 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr)
       std::string left_str;
       std::string right_str;
       if (expr.left != nullptr) {
-        left_str = generate_alias(multi_tables, *expr.left);
+        left_str = generate_alias(multi_tables, *expr.left, alias_map);
       }
       if (expr.right != nullptr) {
-        right_str = generate_alias(multi_tables, *expr.right);
+        right_str = generate_alias(multi_tables, *expr.right, alias_map);
       }
       switch (expr.type) {
         case E_ADD: {

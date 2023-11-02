@@ -48,8 +48,7 @@ struct RelAttrSqlNode
 struct RelSqlNode
 {
   std::string relation;
-  // drop alias temporarily
-  // std::string alias;
+  std::string alias;
 };
 
 // The same with Arithmetic Expr
@@ -97,6 +96,8 @@ struct ExprSqlNode {
 
   std::unique_ptr<Value>       value = nullptr;
   std::unique_ptr<DynNodeSqlNode> attr  = nullptr;
+
+  std::string alias;
 
   bool has_brace;
 

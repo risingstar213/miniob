@@ -176,6 +176,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <value>               value_list_cell
 %type <number>              is_nullable
 %type <number>              number
+%type <string>              alias
 %type <comp>                comp_op
 %type <relation>            relation
 %type <rel_attr>            rel_attr
@@ -462,6 +463,19 @@ type:
     | FLOAT_T  { $$=FLOATS; }
     | DATE_T   { $$=DATES; }
     ;
+
+alias:
+  /* empty */ {
+    $$ = nullptr;
+  }
+  | ID {
+    $$ = $1;
+  }
+  | AS ID {
+    $$ = $2;
+  }
+  ;
+
 insert_stmt:        /*insert   语句的语法解析树*/
     INSERT INTO ID VALUES insert_row_list 
     {
@@ -653,18 +667,26 @@ calc_stmt:
 
 // not empty
 expression_list:
-    expression
+    expression alias
     {
       $$ = new std::deque<ExprSqlNode>;
+      if ($2 != nullptr) {
+        $1->alias = $2;
+        free($2);
+      }
       $$->emplace_back(std::move(*$1));
       delete $1;
     }
-    | expression COMMA expression_list
+    | expression alias COMMA expression_list
     {
-      if ($3 != nullptr) {
-        $$ = $3;
+      if ($4 != nullptr) {
+        $$ = $4;
       } else {
         $$ = new std::deque<ExprSqlNode>;
+      }
+      if ($2 != nullptr) {
+        $1->alias = $2;
+        free($2);
       }
       $$->emplace_front(std::move(*$1));
       delete $1;
@@ -830,10 +852,14 @@ dyn_node:
   ;
 
 relation: 
-  ID {
+  ID alias {
     $$ = new RelSqlNode;
     $$->relation = $1;
     free($1);
+    if ($2 != nullptr) {
+      $$->alias    = $2;
+      free($2);
+    }
   }
   ;
 

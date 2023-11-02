@@ -48,6 +48,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   // collect tables in `from` statement
   std::vector<Table *> tables;
   std::unordered_map<std::string, Table *> table_map;
+  std::unordered_map<std::string, std::string> alias_map;
   for (size_t i = 0; i < select_sql.relations.size(); i++) {
     const char *table_name = select_sql.relations[i].relation.c_str();
     if (nullptr == table_name) {
@@ -61,8 +62,20 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
       return RC::SCHEMA_TABLE_NOT_EXIST;
     }
 
+    std::string alias;
+    if (select_sql.relations[i].alias.empty()) {
+      alias = select_sql.relations[i].relation;
+    } else {
+      alias = select_sql.relations[i].alias;
+    }
+    if (table_map.count(alias) > 0) {
+      LOG_WARN("duplicate alias !!!!");
+      return RC::INVALID_ARGUMENT;
+    }
+
     tables.push_back(table);
-    table_map.insert(std::pair<std::string, Table *>(table_name, table));
+    table_map.insert(std::pair<std::string, Table *>(alias, table));
+    alias_map.insert(std::pair<std::string, std::string>(table->name(), alias));
   }
 
   // join
@@ -84,6 +97,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
 
     tables.push_back(table);
     table_map.insert(std::pair<std::string, Table *>(table_name, table));
+    alias_map.insert(std::pair<std::string, std::string>(table_name, table_name));
 
     FilterStmt *join_filter_stmt = nullptr;
     RC rc = FilterStmt::create(db,
@@ -169,7 +183,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   bool multi_tables = (tables.size() > 1);
   for (size_t i = 0; i < expressions.size(); i++) {
     query_exprs.push_back(generate_expression(expressions[i]));
-    query_alias.push_back(generate_alias(multi_tables, expressions[i]));
+    query_alias.push_back(generate_alias(multi_tables, expressions[i], alias_map));
   }
 
   LOG_INFO("got %d tables in from stmt and %d fields in query stmt", tables.size(), expressions.size());
