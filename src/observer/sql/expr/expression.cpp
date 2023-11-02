@@ -194,7 +194,8 @@ RC ComparisonExpr::compare_with_set(const Tuple &tuple, Value &value, Trx *trx) 
       value.set_boolean(true);
       while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
         if (right.is_null()) {
-          continue;
+          value.set_boolean(false);
+          break;
         }
         if (left.compare(right) == 0) {
           value.set_boolean(false);
