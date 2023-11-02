@@ -39,7 +39,7 @@ RC OrderPhysicalOperator::open(Trx *trx)
     values.clear();
     for (int i = 0; i < all_fields_num_; i++) {
       // rc = tuple->find_cell(tuple_.get_speces_()[i], value);
-      LOG_INFO("get %d value", i);
+      // LOG_INFO("get %d value", i);
       rc = tuple->cell_at(i, value);
       if (rc != RC::SUCCESS) {
         LOG_INFO("Order Operator cannot get data from children[0]");
