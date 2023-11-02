@@ -99,70 +99,54 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
     join_filters.push_back(join_filter_stmt);
   }
 
-  // collect query fields in `select` statement
-  // std::vector<Field> query_fields;
-  // for (int i = static_cast<int>(select_sql.attributes.size()) - 1; i >= 0; i--) {
-  //   const RelAttrSqlNode &relation_attr = select_sql.attributes[i];
+  Table *default_table = nullptr;
+  if (tables.size() == 1) {
+    default_table = tables[0];
+  }
 
-  //   if (common::is_blank(relation_attr.relation_name.c_str()) &&
-  //       0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {
-  //     for (Table *table : tables) {
-  //       wildcard_fields(table, query_fields);
-  //     }
+  // group fields
+  std::vector<Field> group_fields;
+  FilterStmt *having_filter_stmt = nullptr;
+  for (int i = 0; i < select_sql.group_by.by_attrs.size(); i++) {
+    std::string table_name = select_sql.group_by.by_attrs[i].relation_name;
+    std::string field_name = select_sql.group_by.by_attrs[i].attribute_name;
+    Table *table;
+    if (table_name.empty()) {
+      table = default_table;
+    } else {
+      auto iter = table_map.find(table_name);
+      if (iter == table_map.end()) {
+        LOG_WARN("===order check: no such table in from list: %s", table_name);
+        return RC::SCHEMA_FIELD_MISSING;
+      }
+      table = iter->second;
+    }
 
-  //   } else if (!common::is_blank(relation_attr.relation_name.c_str())) {
-  //     const char *table_name = relation_attr.relation_name.c_str();
-  //     const char *field_name = relation_attr.attribute_name.c_str();
-
-  //     if (0 == strcmp(table_name, "*")) {
-  //       if (0 != strcmp(field_name, "*")) {
-  //         LOG_WARN("invalid field name while table is *. attr=%s", field_name);
-  //         return RC::SCHEMA_FIELD_MISSING;
-  //       }
-  //       for (Table *table : tables) {
-  //         wildcard_fields(table, query_fields);
-  //       }
-  //     } else {
-  //       auto iter = table_map.find(table_name);
-  //       if (iter == table_map.end()) {
-  //         LOG_WARN("no such table in from list: %s", table_name);
-  //         return RC::SCHEMA_FIELD_MISSING;
-  //       }
-
-  //       Table *table = iter->second;
-  //       if (0 == strcmp(field_name, "*")) {
-  //         wildcard_fields(table, query_fields);
-  //       } else {
-  //         const FieldMeta *field_meta = table->table_meta().field(field_name);
-  //         if (nullptr == field_meta) {
-  //           LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), field_name);
-  //           return RC::SCHEMA_FIELD_MISSING;
-  //         }
-
-  //         query_fields.push_back(Field(table, field_meta));
-  //       }
-  //     }
-  //   } else {
-  //     if (tables.size() != 1) {
-  //       LOG_WARN("invalid. I do not know the attr's table. attr=%s", relation_attr.attribute_name.c_str());
-  //       return RC::SCHEMA_FIELD_MISSING;
-  //     }
-
-  //     Table *table = tables[0];
-  //     const FieldMeta *field_meta = table->table_meta().field(relation_attr.attribute_name.c_str());
-  //     if (nullptr == field_meta) {
-  //       LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), relation_attr.attribute_name.c_str());
-  //       return RC::SCHEMA_FIELD_MISSING;
-  //     }
-
-  //     query_fields.push_back(Field(table, field_meta));
-  //   }
-  // }
+    const FieldMeta *field_meta = table->table_meta().field(field_name.c_str());
+    if (nullptr == field_meta) {
+      LOG_WARN("===order check: no such field. field=%s.%s.%s", db->name(), table->name(), field_name);
+      return RC::SCHEMA_FIELD_MISSING;
+    }
+    Field field(table, field_meta);
+    group_fields.push_back(field);
+  }
+  if (select_sql.group_by.having_conditions.size() > 0) {
+    RC rc = FilterStmt::create(db,
+      default_table,
+      &table_map,
+      select_sql.group_by.having_conditions,
+      false,
+      having_filter_stmt);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("cannot construct filter stmt");
+      return rc;
+    }
+  }
 
   int attr_num = 0;
   int aggregation_num = 0;
   for (size_t i = 0; i < select_sql.select_exprs.size(); i++) {
-    RC rc = check_select_expression_valid(select_sql.select_exprs[i], 0, tables, table_map);
+    RC rc = check_select_expression_valid(select_sql.select_exprs[i], 0, tables, table_map, &group_fields);
     if (rc != RC::SUCCESS) {
       return rc;
     }
@@ -189,11 +173,6 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   }
 
   LOG_INFO("got %d tables in from stmt and %d fields in query stmt", tables.size(), expressions.size());
-
-  Table *default_table = nullptr;
-  if (tables.size() == 1) {
-    default_table = tables[0];
-  }
 
   // order fields
   std::vector<Field> order_fields;
@@ -249,6 +228,8 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   select_stmt->query_alias_.swap(query_alias);
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->has_aggregation_ = (aggregation_num > 0);
+  select_stmt->group_fields_.swap(group_fields);
+  select_stmt->having_filter_stmt_ = having_filter_stmt;
   select_stmt->order_fields_.swap(order_fields);
   select_stmt->order_ascs_.swap(order_ascs);
   stmt = select_stmt;

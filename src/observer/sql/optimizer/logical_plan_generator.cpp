@@ -85,6 +85,42 @@ RC LogicalPlanGenerator::create_plan(CalcStmt *calc_stmt, std::unique_ptr<Logica
   return RC::SUCCESS;
 }
 
+static Expression * generate_conj_expression(FilterStmt *filter_stmt)
+{
+  if (filter_stmt == nullptr) {
+    return nullptr;
+  }
+  std::vector<unique_ptr<Expression>> cmp_exprs;
+  auto &filter_units = filter_stmt->filter_units();
+  for (auto & filter_unit: filter_units) {
+    Expression* left_ptr = filter_unit->left();
+    Expression* right_ptr = filter_unit->right();
+
+    std::unique_ptr<Expression> left(left_ptr);
+    std::unique_ptr<Expression> right(right_ptr);
+    // const FilterObj &filter_obj_left = filter_unit->left();
+    // const FilterObj &filter_obj_right = filter_unit->right();
+
+    // unique_ptr<Expression> left(filter_obj_left.is_attr
+    //                                      ? static_cast<Expression *>(new FieldExpr(filter_obj_left.field))
+    //                                      : static_cast<Expression *>(new ValueExpr(filter_obj_left.value)));
+
+    // unique_ptr<Expression> right(filter_obj_right.is_attr
+    //                                       ? static_cast<Expression *>(new FieldExpr(filter_obj_right.field))
+    //                                       : static_cast<Expression *>(new ValueExpr(filter_obj_right.value)));
+
+    ComparisonExpr *cmp_expr = new ComparisonExpr(filter_unit->comp(), std::move(left), std::move(right));
+    cmp_exprs.emplace_back(cmp_expr);
+  }
+
+  if (!cmp_exprs.empty()) {
+    ConjunctionExpr::Type conj_type = (filter_stmt->is_or()) ? ConjunctionExpr::Type::OR : ConjunctionExpr::Type::AND;
+    return new ConjunctionExpr(conj_type, cmp_exprs);
+  } else {
+    return nullptr;
+  }
+}
+
 RC LogicalPlanGenerator::create_plan(
     SelectStmt *select_stmt, unique_ptr<LogicalOperator> &logical_operator)
 {
@@ -156,8 +192,23 @@ RC LogicalPlanGenerator::create_plan(
     }
   }
 
-  if (select_stmt->has_aggregation()) {
-    unique_ptr<LogicalOperator> group_oper(new GroupLogicalOperator(all_fields));
+  if (select_stmt->group_fields().size() > 0) {
+    auto &group_fields = select_stmt->group_fields();
+    std::vector<uint8_t> empty_ascs;
+    for (int i = 0; i < group_fields.size(); i++) {
+      empty_ascs.push_back(false);
+    }
+    unique_ptr<LogicalOperator> order_oper(new OrderLogicalOperator(all_fields, group_fields, empty_ascs));
+    order_oper->add_child(std::move(top_oper));
+
+    Expression *conj_expr = generate_conj_expression(select_stmt->having_filter_stmt());
+    unique_ptr<LogicalOperator> group_oper(new GroupLogicalOperator(all_fields, group_fields, conj_expr));
+    group_oper->add_child(std::move(order_oper));
+
+    top_oper = std::move(group_oper);
+  } else if (select_stmt->has_aggregation()) {
+    std::vector<Field> empty;
+    unique_ptr<LogicalOperator> group_oper(new GroupLogicalOperator(all_fields, empty, nullptr));
     group_oper->add_child(std::move(top_oper));
     top_oper = std::move(group_oper);
   }

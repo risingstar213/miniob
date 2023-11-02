@@ -19,7 +19,7 @@ static bool check_field(Field &rel_field, Field &target_field)
 
 
 RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table *> &tables, 
-          std::unordered_map<std::string, Table *> &tables_map)
+          std::unordered_map<std::string, Table *> &tables_map, std::vector<Field> *group_fields)
 {
   if (expr.type == E_VAL) {
     expr.attrType = expr.value->attr_type();
@@ -110,13 +110,14 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     // expr->field->set_table_alias(table_alias);
 
     // check group by field
-    // if (group_fields != nullptr) {
-    //   for (auto &field : *group_fields) {
-    //     if (check_field(*expr->field, field)) {
-    //       expr->aggregation_num += 1;
-    //     }
-    //   }
-    // }
+    if (group_fields != nullptr) {
+      for (auto &field : *group_fields) {
+        Field expr_field = Field(expr.table_, expr.field_);
+        if (check_field(expr_field, field)) {
+          expr.aggregation_num += 1;
+        }
+      }
+    }
 
     expr.attrType = expr.field_->type();
     LOG_INFO("set attrType: %d", expr.attrType);

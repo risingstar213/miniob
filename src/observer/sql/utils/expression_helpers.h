@@ -9,7 +9,7 @@
 
 
 RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table *> &tables, 
-          std::unordered_map<std::string, Table *> &tables_map);
+          std::unordered_map<std::string, Table *> &tables_map, std::vector<Field> *group_fields = nullptr);
 
 RC append_select_expression_with_star(std::vector<Table *> tables, 
             std::unordered_map<std::string, Table *> &tables_map, ExprSqlNode &expr, std::vector<ExprSqlNode> &expressions);

@@ -480,13 +480,14 @@ public:
 
     for (size_t i = 0; i < cells_.size(); ++i) {
       if (0 != strcmp(table_name, cells_[i].table_name())) {
-        return RC::NOTFOUND;
+        continue;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
         value = lasts_[i];
         return RC::SUCCESS;
       }
     }
+    LOG_INFO("not found find_cell");
     return RC::NOTFOUND;
   }
 
@@ -494,7 +495,10 @@ public:
   {
     Value temp;
     for (int i = 0; i < cells_.size(); i++) {
-      tuple->find_cell(cells_[i], temp);
+      RC rc = tuple->find_cell(cells_[i], temp);
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("cannot find from group tuples!!!");
+      }
       if (count_ == 0) {
         if (temp.is_null()) {
           sums_.emplace_back(Value(0));
@@ -543,7 +547,7 @@ public:
 
     for (size_t i = 0; i < cells_.size(); ++i) {
       if (0 != strcmp(table_name, cells_[i].table_name())) {
-        return RC::NOTFOUND;
+        continue;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
         if (count_ == 0) {
@@ -554,6 +558,7 @@ public:
         return RC::SUCCESS;
       }
     }
+    LOG_INFO("not found find_cell_max");
     return RC::NOTFOUND;
   }
 
@@ -564,7 +569,7 @@ public:
 
     for (size_t i = 0; i < cells_.size(); ++i) {
       if (0 != strcmp(table_name, cells_[i].table_name())) {
-        return RC::NOTFOUND;
+        continue;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
         if (count_ == 0) {
@@ -575,6 +580,7 @@ public:
         return RC::SUCCESS;
       }
     }
+    LOG_INFO("not found find_cell_min");
     return RC::NOTFOUND;
   }
 
@@ -585,7 +591,7 @@ public:
 
     for (size_t i = 0; i < cells_.size(); ++i) {
       if (0 != strcmp(table_name, cells_[i].table_name())) {
-        return RC::NOTFOUND;
+        continue;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
         if (count_ == 0) {
@@ -598,6 +604,7 @@ public:
         return RC::SUCCESS;
       }
     }
+    LOG_INFO("not found find_cell_sum");
     return RC::NOTFOUND;
   }
   // there is null !!!
@@ -608,7 +615,7 @@ public:
 
     for (size_t i = 0; i < cells_.size(); ++i) {
       if (0 != strcmp(table_name, cells_[i].table_name())) {
-        return RC::NOTFOUND;
+        continue;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
         if (count_ == 0) {
@@ -619,7 +626,13 @@ public:
         return RC::SUCCESS;
       }
     }
+    LOG_INFO("not found find_cell_count");
     return RC::NOTFOUND;
+  }
+
+  std::vector<TupleCellSpec> get_speces_()
+  {
+    return cells_;
   }
 
 private:

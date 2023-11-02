@@ -341,7 +341,7 @@ RC PhysicalPlanGenerator::create_plan(GroupLogicalOperator &group_oper, std::uni
     return RC::INTERNAL;
   }
 
-  unique_ptr<PhysicalOperator> group_physical_oper(new GroupPhysicalOperator(group_oper.fields()));
+  unique_ptr<PhysicalOperator> group_physical_oper(new GroupPhysicalOperator(group_oper.all_fields(), group_oper.group_fields(), group_oper.having_filters()));
   for (auto &child_oper : child_opers) {
     unique_ptr<PhysicalOperator> child_physical_oper;
     rc = create(*child_oper, child_physical_oper);
