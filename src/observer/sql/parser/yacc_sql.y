@@ -174,7 +174,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <condition>           condition
 %type <value>               value
 %type <value>               value_list_cell
-%type <bools>               is_nullable
+%type <number>              is_nullable
 %type <number>              number
 %type <comp>                comp_op
 %type <relation>            relation
@@ -416,16 +416,16 @@ attr_def_list:
     ;
 is_nullable:
   /* empty */ {
-    $$ = true;
+    $$ = -1;
   }
   | NOT NULL_LITERAL {
-    $$ = false;
+    $$ = 0;
   }
   | NULLABLE {
-    $$ = true;
+    $$ = 1;
   }
   | NULL_LITERAL {
-    $$ = true;
+    $$ = 1;
   }
   ;
 
@@ -436,7 +436,7 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
-      $$->nullable = $6;
+      $$->unsolved = $6;
       free($1);
     }
     | ID type is_nullable
@@ -449,7 +449,7 @@ attr_def:
       } else {
         $$->length = 4;
       }
-      $$->nullable = $3;
+      $$->unsolved = $3;
       free($1);
     }
     ;

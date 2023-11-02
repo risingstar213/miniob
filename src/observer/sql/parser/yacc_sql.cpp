@@ -2007,7 +2007,7 @@ yyreduce:
   case 43:
 #line 418 "yacc_sql.y"
               {
-    (yyval.bools) = true;
+    (yyval.number) = -1;
   }
 #line 2013 "yacc_sql.cpp"
     break;
@@ -2015,7 +2015,7 @@ yyreduce:
   case 44:
 #line 421 "yacc_sql.y"
                      {
-    (yyval.bools) = false;
+    (yyval.number) = 0;
   }
 #line 2021 "yacc_sql.cpp"
     break;
@@ -2023,7 +2023,7 @@ yyreduce:
   case 45:
 #line 424 "yacc_sql.y"
              {
-    (yyval.bools) = true;
+    (yyval.number) = 1;
   }
 #line 2029 "yacc_sql.cpp"
     break;
@@ -2031,7 +2031,7 @@ yyreduce:
   case 46:
 #line 427 "yacc_sql.y"
                  {
-    (yyval.bools) = true;
+    (yyval.number) = 1;
   }
 #line 2037 "yacc_sql.cpp"
     break;
@@ -2043,7 +2043,7 @@ yyreduce:
       (yyval.attr_info)->type = (AttrType)(yyvsp[-4].number);
       (yyval.attr_info)->name = (yyvsp[-5].string);
       (yyval.attr_info)->length = (yyvsp[-2].number);
-      (yyval.attr_info)->nullable = (yyvsp[0].bools);
+      (yyval.attr_info)->unsolved = (yyvsp[0].number);
       free((yyvsp[-5].string));
     }
 #line 2050 "yacc_sql.cpp"
@@ -2060,7 +2060,7 @@ yyreduce:
       } else {
         (yyval.attr_info)->length = 4;
       }
-      (yyval.attr_info)->nullable = (yyvsp[0].bools);
+      (yyval.attr_info)->unsolved = (yyvsp[0].number);
       free((yyvsp[-2].string));
     }
 #line 2067 "yacc_sql.cpp"
