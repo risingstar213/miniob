@@ -215,7 +215,7 @@ RC ComparisonExpr::compare_with_set(const Tuple &tuple, Value &value, Trx *trx) 
     case NOT_EXISTS_SQ: {
       value.set_boolean(true);
       while ((rc = expr->next_sub_query(right)) == RC::SUCCESS) {
-        if (right.is_null()) {
+        if (!right.is_null()) {
           value.set_boolean(false);
           break;
         }
