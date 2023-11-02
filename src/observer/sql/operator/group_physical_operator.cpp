@@ -16,7 +16,7 @@ RC GroupPhysicalOperator::open(Trx *trx)
   }
   is_first_= true;
   is_end_ = false;
-  has_new_group_ = true;
+  has_group_ = false;
 
   trx_ = trx;
   return children_[0]->open(trx);
@@ -51,6 +51,7 @@ RC GroupPhysicalOperator::next()
     }
     while (RC::SUCCESS == (rc = (oper->next()))) {
       // LOG_INFO("get tuple !!!, group num: %d", group_fields_.size());
+      has_group_ = true;
       rc = RC::SUCCESS;
       tuple = oper->current_tuple();
       if (nullptr == tuple) {
@@ -111,7 +112,14 @@ RC GroupPhysicalOperator::next()
 
       if (having_filters_ == nullptr) {
         // LOG_INFO("end with one group");
-        return RC::SUCCESS;
+        if (has_group_) {
+          return RC::SUCCESS;
+        } else if (group_fields_.size() == 0) {
+          // aggregation
+          return RC::SUCCESS;
+        } else {
+          return RC::RECORD_EOF;
+        }
       }
 
       rc = having_filters_->get_value(tuple_, value, trx_);

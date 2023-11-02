@@ -25,7 +25,7 @@ private:
   Trx *trx_;
   GroupTuple tuple_;
   bool is_first_;
-  bool has_new_group_;
+  bool has_group_;
   bool is_end_;
   std::vector<Field>          group_fields_;
   std::vector<Value>          group_values_;
