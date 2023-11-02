@@ -35,6 +35,7 @@ public:
     for (size_t i = 0; i < attr_infos.size(); i++) {
       attr_infos_.push_back(attr_infos[i]);
     }
+    attr_infos_[0].nullable = false;
   }
   virtual ~CreateTableStmt() = default;
 
