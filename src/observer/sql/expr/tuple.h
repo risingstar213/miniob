@@ -483,7 +483,11 @@ public:
         continue;
       }
       if (0 == strcmp(field_name, cells_[i].field_name())) {
-        value = lasts_[i];
+        if (count_ == 0) {
+          value.set_null(true);
+        } else {
+          value = lasts_[i];
+        }
         return RC::SUCCESS;
       }
     }
