@@ -2007,7 +2007,7 @@ yyreduce:
   case 43:
 #line 418 "yacc_sql.y"
               {
-    (yyval.bools) = false;
+    (yyval.bools) = true;
   }
 #line 2013 "yacc_sql.cpp"
     break;

@@ -416,7 +416,7 @@ attr_def_list:
     ;
 is_nullable:
   /* empty */ {
-    $$ = false;
+    $$ = true;
   }
   | NOT NULL_LITERAL {
     $$ = false;
