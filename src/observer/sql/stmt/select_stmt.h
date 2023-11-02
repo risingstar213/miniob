@@ -67,6 +67,16 @@ public:
     return join_filters_;
   }
 
+  std::vector<Field> &order_fields() 
+  {
+    return order_fields_;
+  }
+
+  std::vector<uint8_t> &order_ascs()
+  {
+    return order_ascs_;
+  }
+
   const bool has_aggregation() const
   {
     return has_aggregation_;
@@ -79,6 +89,8 @@ private:
   std::vector<std::string>  query_alias_;
   std::vector<Table *>      tables_;
   std::vector<FilterStmt *> join_filters_;
+  std::vector<Field>        order_fields_;
+  std::vector<uint8_t>       order_ascs_;
   bool has_aggregation_;
   FilterStmt *filter_stmt_ = nullptr;
 };

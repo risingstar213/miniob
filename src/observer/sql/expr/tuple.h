@@ -634,3 +634,68 @@ private:
 
   // std::vector<Tuple *> tuples_;
 };
+
+// Order Operator 使用， 将多表 Join 结果拍扁输出
+// 一种简化实现，目前 OrderTuple 中只实现了对 Field 的索引
+// 不能与 sub-query 和 group-by 兼容
+class OrderTuple : public Tuple 
+{
+public:
+  OrderTuple(std::vector<Field> &fields)
+  {
+    for (int i = 0; i < fields.size(); i++) {
+      cells_.push_back(TupleCellSpec(fields[i].table_name(), fields[i].field_name()));
+    }
+  }
+  virtual ~OrderTuple() = default;
+
+  int cell_num() const override
+  {
+    return cells_.size();
+  }
+
+  RC cell_at(int index, Value &value) const override
+  {
+    const int cell_num = cells_.size();
+    if (index > 0 && index < cell_num) {
+      value = values_[index];
+      return RC::SUCCESS;
+    }
+
+    return RC::NOTFOUND;
+  }
+
+  RC find_cell(const TupleCellSpec &spec, Value &value) const override
+  {
+    const char *table_name = spec.table_name();
+    const char *field_name = spec.field_name();
+
+    for (size_t i = 0; i < cells_.size(); ++i) {
+      if (0 != strcmp(table_name, cells_[i].table_name())) {
+        continue;
+      }
+      if (0 == strcmp(field_name, cells_[i].field_name())) {
+        value = values_[i];
+        return RC::SUCCESS;
+      }
+    }
+    LOG_INFO("Not found in OrderTuple !");
+    return RC::NOTFOUND;
+  }
+
+  // Order Operator 用于放入values
+  void set_values(std::vector<Value> &values)
+  {
+    values_.clear();
+    values_.swap(values);
+  }
+
+  std::vector<TupleCellSpec> get_speces_()
+  {
+    return cells_;
+  }
+
+private:
+  std::vector<TupleCellSpec> cells_;
+  std::vector<Value>         values_;
+};

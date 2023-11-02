@@ -24,6 +24,7 @@ class TableGetLogicalOperator;
 class PredicateLogicalOperator;
 class ProjectLogicalOperator;
 class GroupLogicalOperator;
+class OrderLogicalOperator;
 class InsertLogicalOperator;
 class DeleteLogicalOperator;
 class UpdateLogicalOperator;
@@ -50,6 +51,7 @@ private:
   RC create_plan(PredicateLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
   RC create_plan(ProjectLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
   RC create_plan(GroupLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  RC create_plan(OrderLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
   RC create_plan(InsertLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
   RC create_plan(DeleteLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
   RC create_plan(UpdateLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);

@@ -195,6 +195,34 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
     default_table = tables[0];
   }
 
+  // order fields
+  std::vector<Field> order_fields;
+  std::vector<uint8_t> order_ascs;
+  for (int i = 0; i < select_sql.order_bys.size(); i++) {
+    std::string table_name = select_sql.order_bys[i].by_attr->relation_name;
+    std::string field_name = select_sql.order_bys[i].by_attr->attribute_name;
+    Table *table;
+    if (table_name.empty()) {
+      table = default_table;
+    } else {
+      auto iter = table_map.find(table_name);
+      if (iter == table_map.end()) {
+        LOG_WARN("===order check: no such table in from list: %s", table_name);
+        return RC::SCHEMA_FIELD_MISSING;
+      }
+      table = iter->second;
+    }
+
+    const FieldMeta *field_meta = table->table_meta().field(field_name.c_str());
+    if (nullptr == field_meta) {
+      LOG_WARN("===order check: no such field. field=%s.%s.%s", db->name(), table->name(), field_name);
+      return RC::SCHEMA_FIELD_MISSING;
+    }
+    Field field(table, field_meta);
+    order_fields.push_back(field);
+    order_ascs.push_back(select_sql.order_bys[i].is_asc);
+  }
+
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
 
@@ -221,6 +249,8 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   select_stmt->query_alias_.swap(query_alias);
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->has_aggregation_ = (aggregation_num > 0);
+  select_stmt->order_fields_.swap(order_fields);
+  select_stmt->order_ascs_.swap(order_ascs);
   stmt = select_stmt;
   return RC::SUCCESS;
 }

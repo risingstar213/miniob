@@ -1,6 +1,6 @@
 #include "sql/operator/group_physical_operator.h"
 
-GroupPhysicalOperator::GroupPhysicalOperator(std::vector<Field> &fields) : tuple_(fields) {};
+GroupPhysicalOperator::GroupPhysicalOperator(std::vector<Field> &fields) : tuple_(fields) {}
 
 RC GroupPhysicalOperator::open(Trx *trx) 
 {
