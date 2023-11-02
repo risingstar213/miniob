@@ -420,7 +420,7 @@ public:
   RC cell_at(int index, Value &value) const override
   {
     const int left_cell_num = left_->cell_num();
-    if (index > 0 && index < left_cell_num) {
+    if (index >= 0 && index < left_cell_num) {
       return left_->cell_at(index, value);
     }
 
@@ -465,7 +465,7 @@ public:
   RC cell_at(int index, Value &value) const override
   {
     const int cell_num = cells_.size();
-    if (index > 0 && index < cell_num) {
+    if (index >= 0 && index < cell_num) {
       value = lasts_[index];
       return RC::SUCCESS;
     }
@@ -657,7 +657,7 @@ public:
   RC cell_at(int index, Value &value) const override
   {
     const int cell_num = cells_.size();
-    if (index > 0 && index < cell_num) {
+    if (index >= 0 && index < cell_num) {
       value = values_[index];
       return RC::SUCCESS;
     }
