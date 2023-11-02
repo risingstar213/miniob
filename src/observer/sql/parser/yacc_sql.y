@@ -1018,6 +1018,22 @@ condition:
       $$->right_is_subquery = false;
       $$->op = CompOp::IS_NULL;
     }
+    | expression LIKE expression {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
+      $$->right_is_subquery = false;
+      $$->right_expr = std::unique_ptr<ExprSqlNode>($3);
+      $$->op = LIKE_SCH;
+    }
+    | expression NOT LIKE expression {
+      $$ = new ConditionSqlNode;
+      $$->left_is_subquery = false;
+      $$->left_expr = std::unique_ptr<ExprSqlNode>($1);
+      $$->right_is_subquery = false;
+      $$->right_expr = std::unique_ptr<ExprSqlNode>($4);
+      $$->op = NOT_LIKE_SCH;
+    }
     ;
 
 comp_op:

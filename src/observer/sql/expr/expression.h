@@ -244,6 +244,8 @@ public:
   RC compare_with_set(const Tuple &tuple, Value &value, Trx *trx) const;
 
   RC compare_null(const Tuple &tuple, Value &value, Trx *trx) const;
+
+  RC compare_like(const Tuple &tuple, Value &value, Trx *trx) const;
 private:
   CompOp comp_;
   std::unique_ptr<Expression> left_;

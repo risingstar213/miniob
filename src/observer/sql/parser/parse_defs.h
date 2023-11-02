@@ -124,7 +124,7 @@ enum CompOp
   GREAT_EQUAL,  ///< ">="
   GREAT_THAN,   ///< ">"
   LIKE_SCH,     // LIKE   6
-  UNLIKE_SCH,   // UNLIKE 7
+  NOT_LIKE_SCH, // NOT LIKE 7
   IS_NULL,      // IS     8
   IS_NOT_NULL,  // IS NOT 9
   IN_SQ,        // in     10

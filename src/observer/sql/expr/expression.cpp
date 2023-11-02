@@ -19,6 +19,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/optimizer/logical_plan_generator.h"
 #include "sql/optimizer/physical_plan_generator.h"
 
+#include "sql/utils/like.h"
+
 using namespace std;
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
@@ -254,8 +256,42 @@ RC ComparisonExpr::compare_null(const Tuple &tuple, Value &value, Trx *trx) cons
   return rc;
 }
 
+RC ComparisonExpr::compare_like(const Tuple &tuple, Value &value, Trx *trx) const
+{
+  Value left_value;
+  Value right_value;
+  RC rc = left_->get_value(tuple, left_value, trx);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
+    return rc;
+  }
+  if (right_->type() != ExprType::VALUE) {
+    LOG_WARN("right expr is not schema in like!" );
+    return RC::INVALID_ARGUMENT;
+  }
+  rc = right_->get_value(tuple, right_value, trx);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  std::string left_str = left_value.get_string();
+  std::string right_str = right_value.get_string();
+
+  if (comp_ == LIKE_SCH) {
+    value.set_boolean(LikeUnit::like_schema(left_str.c_str(), left_str.length(), right_str.c_str(), right_str.length()));
+  } else {
+    value.set_boolean(LikeUnit::unlike_schema(left_str.c_str(), left_str.length(), right_str.c_str(), right_str.length()));
+  }
+  return RC::SUCCESS;
+}
+
 RC ComparisonExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
+  if (comp_ == LIKE_SCH || comp_ == NOT_LIKE_SCH) {
+    return compare_like(tuple, value, trx);
+  }
+  
   if (comp_ >= IN_SQ && comp_ <= NOT_EXISTS_SQ) {
     return compare_with_set(tuple, value, trx);
   }
