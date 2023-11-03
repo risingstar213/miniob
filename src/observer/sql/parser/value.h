@@ -70,6 +70,7 @@ public:
   void set_float(float val);
   void set_boolean(bool val);
   void set_string(const char *s, int len = 0);
+  void set_text(const char *s, int len = 0);
   void set_date(const char *s);
   void set_null(bool is_null);
   void set_value(const Value &value);
@@ -106,6 +107,7 @@ public:
   int get_int() const;
   float get_float() const;
   std::string get_string() const;
+  std::string get_text() const;
   std::string get_date() const;
   bool get_boolean() const;
 

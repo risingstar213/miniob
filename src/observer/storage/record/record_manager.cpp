@@ -167,6 +167,36 @@ RC RecordPageHandler::init_empty_page(DiskBufferPool &buffer_pool, PageNum page_
   return RC::SUCCESS;
 }
 
+RC RecordPageHandler::init_text_data_page(DiskBufferPool &buffer_pool, PageNum page_num)
+{
+  RC ret = init(buffer_pool, page_num, false /*readonly*/);
+  if (ret != RC::SUCCESS) {
+    LOG_ERROR("");
+    // LOG_ERROR("Failed to init empty page page_num:record_size %d:%d.", page_num, record_size);
+    return ret;
+  }
+
+  page_header_->record_num          = 1;
+  page_header_->record_real_size    = BP_PAGE_DATA_SIZE - PAGE_HEADER_SIZE - 16;
+  page_header_->record_size         = BP_PAGE_DATA_SIZE - PAGE_HEADER_SIZE - 16;
+  page_header_->record_capacity     = 1;
+  page_header_->first_record_offset = align8(PAGE_HEADER_SIZE + page_bitmap_size(page_header_->record_capacity));
+  // 暂时不考虑对齐修正
+  // this->fix_record_capacity();
+  ASSERT(page_header_->first_record_offset + 
+         page_header_->record_capacity * page_header_->record_size <= BP_PAGE_DATA_SIZE, "Record overflow the page size");
+
+  bitmap_ = frame_->data() + PAGE_HEADER_SIZE;
+  memset(bitmap_, 0, page_bitmap_size(page_header_->record_capacity));
+
+  if ((ret = buffer_pool.flush_page(*frame_)) != RC::SUCCESS) {
+    LOG_ERROR("Failed to flush page header %d:%d.", buffer_pool.file_desc(), page_num);
+    return ret;
+  }
+
+  return RC::SUCCESS;
+}
+
 RC RecordPageHandler::cleanup()
 {
   if (disk_buffer_pool_ != nullptr) {
@@ -210,6 +240,26 @@ RC RecordPageHandler::insert_record(const char *data, RID *rid)
 
   // LOG_TRACE("Insert record. rid page_num=%d, slot num=%d", get_page_num(), index);
   return RC::SUCCESS;
+}
+
+RC RecordPageHandler::insert_text_data(const char *data, int length)
+{
+  ASSERT(readonly_ == false, "cannot insert record into page while the page is readonly");
+  
+  if (length > page_header_->record_real_size) {
+    LOG_WARN("insert more bytes(%d) into text page!", length);
+  }
+  char *record_data = frame_->data() + page_header_->first_record_offset;
+  memcpy(record_data, data, length + 1);
+
+  frame_->mark_dirty();
+  return RC::SUCCESS;
+}
+
+const char * RecordPageHandler::get_text_data()
+{
+  char *record_data = frame_->data() + page_header_->first_record_offset;
+  return record_data;
 }
 
 RC RecordPageHandler::recover_insert_record(const char *data, const RID &rid)
@@ -412,6 +462,50 @@ RC RecordFileHandler::insert_record(const char *data, int record_size, RID *rid)
   return record_page_handler.insert_record(data, rid);
 }
 
+RC RecordFileHandler::insert_text(std::string text_data, TextDataMeta *meta)
+{
+
+  RC ret = RC::SUCCESS;
+
+  RecordPageHandler record_page_handler;
+  // bool              page_found       = false;
+  PageNum           current_page_num = 0;
+
+  for (int i = 0; i < MAX_TEXT_DATA_PAGE; i++) {
+    Frame *frame = nullptr;
+    if ((ret = disk_buffer_pool_->allocate_page(&frame)) != RC::SUCCESS) {
+      LOG_ERROR("Failed to allocate page while inserting record. ret:%d", ret);
+      return ret;
+    }
+
+    current_page_num = frame->page_num();
+
+    ret = record_page_handler.init_text_data_page(*disk_buffer_pool_, current_page_num);
+
+    if (ret != RC::SUCCESS) {
+      frame->unpin();
+      LOG_ERROR("Failed to init empty page. ret:%d", ret);
+      // this is for allocate_page
+      return ret;
+    }
+
+    // frame 在allocate_page的时候，是有一个pin的，在init_empty_page时又会增加一个，所以这里手动释放一个
+    frame->unpin();
+
+    meta->used_page = i+1;
+    meta->data_page_nums[i] = current_page_num;
+    const int page_max_length = BP_PAGE_DATA_SIZE - PAGE_HEADER_SIZE - 16;
+    if (text_data.size() < page_max_length) {
+      record_page_handler.insert_text_data(text_data.c_str(), text_data.size());
+      break;
+    } else {
+      std::string sub_str = text_data.substr(0, page_max_length);
+      record_page_handler.insert_text_data(sub_str.c_str(), sub_str.size());
+      text_data = text_data.substr(page_max_length);
+    }
+  }
+  return RC::SUCCESS;
+}
 RC RecordFileHandler::recover_insert_record(const char *data, int record_size, const RID &rid)
 {
   RC ret = RC::SUCCESS;
@@ -468,6 +562,28 @@ RC RecordFileHandler::get_record(RecordPageHandler &page_handler, const RID *rid
 
   return page_handler.get_record(rid, rec);
 }
+
+RC RecordFileHandler::get_text(TextDataMeta *meta, std::string &text_data)
+{
+  if (nullptr == meta) {
+    LOG_ERROR("Invalid text data meta is null.");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  RecordPageHandler page_handler;
+
+  text_data.clear();
+  for (int i = 0; i < meta->used_page; i++) {
+    RC ret = page_handler.init(*disk_buffer_pool_, meta->data_page_nums[i], true);
+    if (OB_FAIL(ret) && ret != RC::RECORD_OPENNED) {
+      LOG_ERROR("Failed to init record page handler.page number=%d", meta->data_page_nums[i]);
+      return ret;
+    }
+    text_data += page_handler.get_text_data();
+  }
+  return RC::SUCCESS;
+}
+
 
 RC RecordFileHandler::visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor)
 {

@@ -352,6 +352,19 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   for (int i = 0; i < value_num; i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
+    if (field->type() == TEXTS) {
+      if (value.get_text().size() > 65535) {
+        return RC::INVALID_ARGUMENT;
+      }
+
+      TextDataMeta *meta = (TextDataMeta *)(record_data + field->offset());
+      record_handler_->insert_text(value.get_text(), meta);
+      
+      if (field->nullable()) {
+        *(bool *)(record_data + field->offset() - 1) = value.is_null();
+      }
+      continue;
+    }
     size_t copy_len = field->len();
     if (field->type() == CHARS || field->type() == DATES) {
       const size_t data_len = value.length();
@@ -576,6 +589,11 @@ RC Table::sync()
   }
   LOG_INFO("Sync table over. table=%s", name());
   return rc;
+}
+
+RC Table::get_text_record(TextDataMeta *meta, std::string &text_data) const
+{
+  return record_handler_->get_text(meta, text_data);
 }
 
 RC Table::resolve_unique_before_insert(Trx *trx, Record *record)

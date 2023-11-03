@@ -60,6 +60,8 @@ class Table;
  * 从这个页头描述的信息来看，当前仅支持定长行/记录。如果要支持变长记录，
  * 或者超长（超出一页）的记录，这么做是不合适的。
  */
+
+// record_num == record_capacity == -1 TEXT 数据页
 struct PageHeader
 {
   int32_t record_num;           ///< 当前页面记录的个数
@@ -153,6 +155,8 @@ public:
    */
   RC init_empty_page(DiskBufferPool &buffer_pool, PageNum page_num, int record_size);
 
+  RC init_text_data_page(DiskBufferPool &buffer_pool, PageNum page_num);
+
   /**
    * @brief 操作结束后做的清理工作，比如释放页面、解锁
    */
@@ -165,6 +169,10 @@ public:
    * @param rid  如果插入成功，通过这个参数返回插入的位置
    */
   RC insert_record(const char *data, RID *rid);
+
+  RC insert_text_data(const char *data, int length);
+
+  const char * get_text_data();
 
   /**
    * @brief 数据库恢复时，在指定位置插入数据
@@ -274,6 +282,10 @@ public:
    * @param rid         返回该记录的标识符
    */
   RC insert_record(const char *data, int record_size, RID *rid);
+
+  RC insert_text(std::string text_data, TextDataMeta *meta);
+
+  RC get_text(TextDataMeta *meta, std::string &text_data);
 
    /**
    * @brief 数据库恢复时，在指定文件指定位置插入数据

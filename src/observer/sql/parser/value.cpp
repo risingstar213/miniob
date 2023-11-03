@@ -25,7 +25,7 @@ const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "dates",
 
 const char *attr_type_to_string(AttrType type)
 {
-  if (type >= UNDEFINED && type <= DATES) {
+  if (type >= UNDEFINED && type <= TEXTS) {
     return ATTR_TYPE_NAME[type];
   }
   return "unknown";
@@ -93,6 +93,9 @@ void Value::set_data(char *data, int length)
     case DATES: {
       set_date(data);
     } break;
+    case TEXTS: {
+      set_text(data, length);
+    } break;
     default: {
       LOG_WARN("unknown data type: %d", attr_type_);
     } break;
@@ -124,6 +127,19 @@ void Value::set_string(const char *s, int len /*= 0*/)
 {
   is_null_ = false;
   attr_type_ = CHARS;
+  if (len > 0) {
+    len = strnlen(s, len);
+    str_value_.assign(s, len);
+  } else {
+    str_value_.assign(s);
+  }
+  length_ = str_value_.length();
+}
+
+void Value::set_text(const char *s, int len)
+{
+  is_null_ = false;
+  attr_type_ = TEXTS;
   if (len > 0) {
     len = strnlen(s, len);
     str_value_.assign(s, len);
@@ -210,6 +226,9 @@ std::string Value::to_string() const
     case DATES: {
       os << str_value_;
     } break;
+    case TEXTS: {
+      os << str_value_;
+    } break;
     default: {
       LOG_WARN("unsupported attr type: %d", attr_type_);
     } break;
@@ -242,6 +261,12 @@ int Value::compare(const Value &other) const
       case DATES: {
         return num_value_.date_meta_.compare(other.num_value_.date_meta_);
       }
+      case TEXTS: {
+        return common::compare_string((void *)this->str_value_.c_str(),
+            this->str_value_.length(),
+            (void *)other.str_value_.c_str(),
+            other.str_value_.length());
+      };
       default: {
         LOG_WARN("unsupported type: %d", this->attr_type_);
       }
@@ -427,6 +452,11 @@ std::string Value::get_date() const
   return os.str();
 }
 
+std::string Value::get_text() const
+{
+  return this->to_string();
+}
+
 bool Value::check_valid() const
 {
   if (attr_type_ == DATES) {
@@ -458,6 +488,10 @@ void Value::cast_to_null(AttrType type)
 bool Value::cast_to_other_type(AttrType type)
 {
   if (type == attr_type_) {
+    return true;
+  }
+  if (type == TEXTS && attr_type_ == CHARS) {
+    attr_type_ = TEXTS;
     return true;
   }
   if (type > FLOATS || attr_type_ > FLOATS || type == UNDEFINED || attr_type_ == UNDEFINED) {

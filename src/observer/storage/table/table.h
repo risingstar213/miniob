@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 
 struct RID;
 class Record;
+class TextDataMeta;
 class DiskBufferPool;
 class RecordFileHandler;
 class RecordFileScanner;
@@ -96,6 +97,8 @@ public:
   {
     return record_handler_;
   }
+
+  RC get_text_record(TextDataMeta *meta, std::string &text_data) const;
 
 public:
   int32_t table_id() const { return table_meta_.table_id(); }

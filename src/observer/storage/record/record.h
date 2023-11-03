@@ -82,6 +82,14 @@ struct RID
   }
 };
 
+#define MAX_TEXT_DATA_PAGE 10
+
+struct TextDataMeta {
+  int32_t used_page = 0;
+  PageNum data_page_nums[MAX_TEXT_DATA_PAGE];
+};
+
+
 /**
  * @brief 表示一个记录
  * 当前的记录都是连续存放的空间（内存或磁盘上）。
