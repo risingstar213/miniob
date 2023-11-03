@@ -782,8 +782,9 @@ expression:
       $$->left = std::unique_ptr<ExprSqlNode>($3);
       FunctionSqlNode func;
       func.funcType = F_FORMAT;
-      func.format = $5;
-      free($5);
+      char *tmp = common::substr($5,1,strlen($5)-2);
+      func.format = tmp;
+      free(tmp);
       $$->func = std::make_unique<FunctionSqlNode>(func);
     }
     ;
