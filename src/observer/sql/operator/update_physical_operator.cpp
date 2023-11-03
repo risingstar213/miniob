@@ -111,7 +111,11 @@ RC UpdatePhysicalOperator::next()
 
     Record &old_record = row_tuple->record();
     Record new_record;
-    table_->make_record(static_cast<int>(new_values.size()), new_values.data(), new_record);
+    rc = table_->make_record(static_cast<int>(new_values.size()), new_values.data(), new_record);
+
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
 
     rc = table_->resolve_unique_before_update(trx_, &old_record, &new_record);
     if (rc != RC::SUCCESS) {
