@@ -351,10 +351,11 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
 
   for (int i = 0; i < value_num; i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
-    const Value &value = values[i];
+    Value value = values[i];
     if (field->type() == TEXTS) {
-      if (value.get_text().size() > 65535) {
-        return RC::INVALID_ARGUMENT;
+      if (value.get_text().size() > 4096) {
+        // return RC::INVALID_ARGUMENT;
+        value.set_string(value.get_string().substr(0, 4096).c_str());
       }
 
       TextDataMeta *meta = (TextDataMeta *)(record_data + field->offset());
