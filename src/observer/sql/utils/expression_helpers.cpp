@@ -291,6 +291,9 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr, std::unordered_
         default:
           break;
       }
+      if ( expr.field_ == nullptr || expr.table_ == nullptr) {
+        return std::string();
+      }
       if (expr.attr != nullptr && expr.attr->node.attribute_name == "*") {
         str += "*";
       } else if (multi_tables) {

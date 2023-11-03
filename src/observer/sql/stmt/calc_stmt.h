@@ -45,12 +45,17 @@ public:
   static RC create(CalcSqlNode &calc_sql, Stmt *&stmt)
   {
     CalcStmt *calc_stmt = new CalcStmt();
-
-
     for (auto & expr : calc_sql.expressions) {
+      std::vector<Table *> empty_tables;
+      std::unordered_map<std::string, Table *> empty_tables_map;
+
+      RC rc = check_select_expression_valid(expr, 0, empty_tables, empty_tables_map);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
       calc_stmt->expressions_.emplace_back(generate_expression(expr));
-      std::unordered_map<std::string, std::string> empty;
-      calc_stmt->alias_.emplace_back(generate_alias(false, expr, empty));
+      std::unordered_map<std::string, std::string> empty_alias_map;
+      calc_stmt->alias_.emplace_back(generate_alias(false, expr, empty_alias_map));
     }
     calc_stmt->is_select_ = calc_sql.is_select;
     calc_sql.expressions.clear();

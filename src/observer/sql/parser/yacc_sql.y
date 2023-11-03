@@ -768,7 +768,7 @@ expression:
       func.funcType = F_ROUND;
       $$->func = std::make_unique<FunctionSqlNode>(func);
     }
-    | ROUND LBRACE expression COMMA NUMBER {
+    | ROUND LBRACE expression COMMA NUMBER RBRACE {
       $$ = new ExprSqlNode();
       $$->left = std::unique_ptr<ExprSqlNode>($3);
       FunctionSqlNode func;
@@ -1286,7 +1286,7 @@ set_variable_stmt:
     ;
 
 opt_semicolon: /*empty*/
-    | SEMICOLON
+    SEMICOLON
     ;
 %%
 //_____________________________________________________________________
