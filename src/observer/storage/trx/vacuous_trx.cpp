@@ -66,6 +66,15 @@ RC VacuousTrx::visit_record(Table *table, Record &record, bool readonly)
   return RC::SUCCESS;
 }
 
+RC VacuousTrx::update_record(Table *table, Record &old_record, Record &new_record)
+{
+  RC rc = table->delete_record(old_record);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  return table->insert_record(new_record);
+}
+
 RC VacuousTrx::start_if_need()
 {
   return RC::SUCCESS;

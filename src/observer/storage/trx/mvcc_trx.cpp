@@ -185,6 +185,55 @@ RC MvccTrx::delete_record(Table * table, Record &record)
   return RC::SUCCESS;
 }
 
+RC MvccTrx::update_record(Table *table, Record &old_record, Record &new_record)
+{
+  Field begin_field;
+  Field end_field;
+  trx_fields(table, begin_field, end_field);
+
+  [[maybe_unused]] int32_t end_xid = end_field.get_int(old_record);
+  /// 在删除之前，第一次获取record时，就已经对record做了对应的检查，并且保证不会有其它的事务来访问这条数据
+  ASSERT(end_xid > 0, "concurrency conflit: other transaction is updating this record. end_xid=%d, current trx id=%d, rid=%s",
+         end_xid, trx_id_, old_record.rid().to_string().c_str());
+  if (end_xid != trx_kit_.max_trx_id()) {
+    // 当前不是多版本数据中的最新记录，不需要删除
+    return RC::SUCCESS;
+  }
+  
+  end_field.set_int(old_record, -trx_id_);
+  RC rc = log_manager_->append_log(CLogType::DELETE, trx_id_, table->table_id(), old_record.rid(), 0, 0, nullptr);
+  ASSERT(rc == RC::SUCCESS, "failed to append delete record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s",
+      trx_id_, table->table_id(), old_record.rid().to_string().c_str(), old_record.len(), strrc(rc));
+
+  operations_.insert(Operation(Operation::Type::DELETE, table, old_record.rid()));
+////////////////////////////////////////////////////////////////////
+  // Field begin_field;
+  // Field end_field;
+  trx_fields(table, begin_field, end_field);
+
+  begin_field.set_int(new_record, -trx_id_);
+  end_field.set_int(new_record, trx_kit_.max_trx_id());
+
+  rc = table->insert_record(new_record);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to insert record into table. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  rc = log_manager_->append_log(CLogType::INSERT, trx_id_, table->table_id(), new_record.rid(), new_record.len(), 0/*offset*/, new_record.data());
+  ASSERT(rc == RC::SUCCESS, "failed to append insert record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s",
+      trx_id_, table->table_id(), new_record.rid().to_string().c_str(), new_record.len(), strrc(rc));
+
+  pair<OperationSet::iterator, bool> ret = 
+        operations_.insert(Operation(Operation::Type::INSERT, table, new_record.rid()));
+  if (!ret.second) {
+    rc = RC::INTERNAL;
+    LOG_WARN("failed to insert operation(insertion) into operation set: duplicate");
+  }
+  return rc;
+
+}
+
 RC MvccTrx::visit_record(Table *table, Record &record, bool readonly)
 {
   Field begin_field;

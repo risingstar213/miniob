@@ -182,6 +182,8 @@ public:
    */
   RC recover_insert_record(const char *data, const RID &rid);
 
+  RC recover_update_record(const char *data, RID *rid);
+
   /**
    * @brief 删除指定的记录
    *
@@ -295,6 +297,7 @@ public:
    * @param rid         要插入记录的指定标识符
    */
   RC recover_insert_record(const char *data, int record_size, const RID &rid);
+  RC recover_update_record(const char *data, int record_size, RID *rid);
 
   /**
    * @brief 获取指定文件中标识符为rid的记录内容到rec指向的记录结构中

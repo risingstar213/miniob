@@ -124,10 +124,17 @@ RC UpdatePhysicalOperator::next()
       return rc;
     }
 
-    rc = trx_->delete_record(table_, old_record);
+    // rc = trx_->delete_record(table_, old_record);
+
+    // if (rc != RC::SUCCESS) {
+    //   LOG_WARN("failed to delete record in update: %s", strrc(rc));
+    //   return rc;
+    // }
+
+    rc = trx_->update_record(table_, old_record, new_record);
 
     if (rc != RC::SUCCESS) {
-      LOG_WARN("failed to delete record in update: %s", strrc(rc));
+      LOG_WARN("failed to update record: %s", strrc(rc));
       return rc;
     }
 
@@ -135,14 +142,12 @@ RC UpdatePhysicalOperator::next()
       LOG_INFO("update %d to %s", i, new_values[i].to_string());
     }
 
-    rc = trx_->insert_record(table_, new_record);
+    // rc = trx_->insert_record(table_, new_record);
 
-    if (rc != RC::SUCCESS) {
-      LOG_WARN("failed to index record in update: %s", strrc(rc));
-      return rc;
-    }
-
-    // (TODO): generate update row here, using exprs
+    // if (rc != RC::SUCCESS) {
+    //   LOG_WARN("failed to index record in update: %s", strrc(rc));
+    //   return rc;
+    // }
 
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to update record: %s", strrc(rc));
