@@ -254,7 +254,11 @@ RC MvccTrx::visit_record(Table *table, Record &record, bool readonly)
     }
   } else if (begin_xid < 0) {
     // begin xid 小于0说明是刚插入而且没有提交的数据
-    rc = (-begin_xid == trx_id_) ? RC::SUCCESS : RC::RECORD_INVISIBLE;
+    if (end_xid < 0) {
+      rc = RC::RECORD_INVISIBLE;
+    } else {
+      rc = (-begin_xid == trx_id_) ? RC::SUCCESS : RC::RECORD_INVISIBLE;
+    }
   } else if (end_xid < 0) {
     // end xid 小于0 说明是正在删除但是还没有提交的数据
     if (readonly) {
@@ -322,9 +326,9 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
         Field begin_xid_field, end_xid_field;
         trx_fields(table, begin_xid_field, end_xid_field);
 
-        auto record_updater = [ this, &begin_xid_field, commit_xid](Record &record) {
-          LOG_DEBUG("before commit insert record. trx id=%d, begin xid=%d, commit xid=%d, lbt=%s",
-                    trx_id_, begin_xid_field.get_int(record), commit_xid, lbt());
+        auto record_updater = [ this, &begin_xid_field, &end_xid_field, commit_xid](Record &record) {
+          LOG_DEBUG("before commit insert record. trx id=%d, begin xid=%d, commit xid=%d, end xid=%d, lbt=%s",
+                    trx_id_, begin_xid_field.get_int(record), commit_xid, end_xid_field.get_int(record), lbt());
           ASSERT(begin_xid_field.get_int(record) == -this->trx_id_, 
                  "got an invalid record while committing. begin xid=%d, this trx id=%d", 
                  begin_xid_field.get_int(record), trx_id_);
@@ -344,8 +348,10 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
         Field begin_xid_field, end_xid_field;
         trx_fields(table, begin_xid_field, end_xid_field);
 
-        auto record_updater = [this, &end_xid_field, commit_xid](Record &record) {
+        auto record_updater = [this, &end_xid_field, &begin_xid_field, commit_xid](Record &record) {
           (void)this;
+          LOG_DEBUG("before commit delete record. trx id=%d, end xid=%d, commit xid=%d,  begin xid=%d, lbt=%s",
+                    trx_id_, end_xid_field.get_int(record), commit_xid, begin_xid_field.get_int(record), lbt());
           ASSERT(end_xid_field.get_int(record) == -trx_id_, 
                  "got an invalid record while committing. end xid=%d, this trx id=%d", 
                  end_xid_field.get_int(record), trx_id_);

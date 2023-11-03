@@ -83,7 +83,7 @@ class OperationHasher
 public:
   size_t operator()(const Operation &op) const
   {
-    return (((size_t)op.page_num()) << 32) | (op.slot_num());
+    return ((((size_t)op.page_num()) << 32) | (op.slot_num()) | (size_t)op.type());
   }
 };
 
