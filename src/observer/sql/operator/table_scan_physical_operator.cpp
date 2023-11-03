@@ -40,6 +40,7 @@ RC TableScanPhysicalOperator::next()
   while (record_scanner_.has_next()) {
     rc = record_scanner_.next(current_record_);
     if (rc != RC::SUCCESS) {
+      LOG_INFO("TableScanPhysicalOperator get error %s", strrc(rc));
       return rc;
     }
 

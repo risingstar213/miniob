@@ -194,6 +194,8 @@ RC MvccTrx::visit_record(Table *table, Record &record, bool readonly)
   int32_t begin_xid = begin_field.get_int(record);
   int32_t end_xid = end_field.get_int(record);
 
+  LOG_INFO("visit_record, begin: %d, end: %d, this: %d", begin_xid, end_xid, trx_id_);
+
   RC rc = RC::SUCCESS;
   if (begin_xid > 0 && end_xid > 0) {
     if (trx_id_ >= begin_xid && trx_id_ <= end_xid) {

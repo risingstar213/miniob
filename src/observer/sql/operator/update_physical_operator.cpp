@@ -49,8 +49,9 @@ RC UpdatePhysicalOperator::open(Trx *trx)
 int UpdatePhysicalOperator::find_index_in_tuple(const FieldMeta* field)
 {
   int field_num = table_->table_meta().field_num();
+  int sys_field_num = table_->table_meta().sys_field_num();
   for (int i = 0; i < field_num; i++) {
-    if (table_->table_meta().field(i)->name() == field->name()) {
+    if (table_->table_meta().field(i + sys_field_num)->name() == field->name()) {
       return i;
     }
   }
@@ -76,7 +77,8 @@ RC UpdatePhysicalOperator::next()
 
     std::vector<Value> new_values;
     int field_num = table_->table_meta().field_num();
-    for (int i = 0; i < field_num; i++) {
+    int sys_field_num = table_->table_meta().sys_field_num();
+    for (int i = sys_field_num; i < field_num; i++) {
       Value temp;
       RC rc = row_tuple->cell_at(i, temp);
       if (rc != RC::SUCCESS) {
@@ -129,7 +131,7 @@ RC UpdatePhysicalOperator::next()
       return rc;
     }
 
-    for (int i = 0; i < field_num; i++) {
+    for (int i = 0; i < field_num - sys_field_num; i++) {
       LOG_INFO("update %d to %s", i, new_values[i].to_string());
     }
 
@@ -148,7 +150,8 @@ RC UpdatePhysicalOperator::next()
     }
   }
 
-  return RC::RECORD_EOF;
+  return rc;
+  // return RC::RECORD_EOF;
 }
 
 RC UpdatePhysicalOperator::close()

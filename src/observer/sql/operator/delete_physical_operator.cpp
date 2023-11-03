@@ -59,9 +59,11 @@ RC DeletePhysicalOperator::next()
       LOG_WARN("failed to delete record: %s", strrc(rc));
       return rc;
     }
+
+    LOG_INFO("delete : %d", trx_->id());
   }
 
-  return RC::RECORD_EOF;
+  return rc;
 }
 
 RC DeletePhysicalOperator::close()
