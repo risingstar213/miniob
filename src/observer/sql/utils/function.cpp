@@ -49,7 +49,8 @@ std::string execute_format(std::string data, std::string format)
   std::stringstream sstream;
 
   std::string Y = std::to_string(meta.year);
-  std::string y = std::to_string(meta.year % 100);
+  sstream << std::setw(2) << std::setfill('0') << meta.year % 100;
+  std::string y = sstream.str(); sstream.str("");
 
   std::string M = month_name[meta.month];
   sstream << std::setw(2) << std::setfill('0') << meta.month;
