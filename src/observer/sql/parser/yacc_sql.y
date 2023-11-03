@@ -663,6 +663,14 @@ calc_stmt:
       $$->calc.expressions.swap(*$2);
       delete $2;
     }
+    | SELECT expression_list
+    {
+      $$ = new ParsedSqlNode(SCF_CALC);
+      // std::reverse($2->begin(), $2->end());
+      $$->calc.expressions.swap(*$2);
+      $$->calc.is_select = true;
+      delete $2;
+    }
     ;
 
 // not empty
@@ -745,6 +753,38 @@ expression:
       $$ = new ExprSqlNode();
       $$->type = ExprNodeType::E_DYN;
       $$->attr = std::unique_ptr<DynNodeSqlNode>($1);
+    }
+    | LENGTH LBRACE expression RBRACE {
+      $$ = new ExprSqlNode();
+      $$->left = std::unique_ptr<ExprSqlNode>($3);
+      FunctionSqlNode func;
+      func.funcType = F_LENGTH;
+      $$->func = std::make_unique<FunctionSqlNode>(func);
+    }
+    | ROUND LBRACE expression RBRACE {
+      $$ = new ExprSqlNode();
+      $$->right = std::unique_ptr<ExprSqlNode>($3);
+      FunctionSqlNode func;
+      func.funcType = F_ROUND;
+      $$->func = std::make_unique<FunctionSqlNode>(func);
+    }
+    | ROUND LBRACE expression COMMA NUMBER {
+      $$ = new ExprSqlNode();
+      $$->right = std::unique_ptr<ExprSqlNode>($3);
+      FunctionSqlNode func;
+      func.funcType = F_ROUND;
+      func.round_has = true;
+      func.round_number = $5;
+      $$->func = std::make_unique<FunctionSqlNode>(func);
+    }
+    | DATE_FORMAT LBRACE expression COMMA SSS RBRACE {
+      $$ = new ExprSqlNode();
+      $$->right = std::unique_ptr<ExprSqlNode>($3);
+      FunctionSqlNode func;
+      func.funcType = F_FORMAT;
+      func.format = $5;
+      free($5);
+      $$->func = std::make_unique<FunctionSqlNode>(func);
     }
     ;
 

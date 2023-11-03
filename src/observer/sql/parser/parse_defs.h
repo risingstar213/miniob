@@ -58,7 +58,6 @@ enum ExprNodeType {
   E_MUL,
   E_DIV,
   E_NEGATIVE,
-  E_AGG,
   E_FUNCTION,
   E_VAL,
   E_DYN,
@@ -82,10 +81,14 @@ enum FunctionType {
 
 struct DynNodeSqlNode {
   AggregationType aggType = AggregationType::A_UNDEFINED;
-  // FunctionType    funcType = FunctionType::UNDEFINED;
   RelAttrSqlNode  node;
-  // drop alias temporarily
-  // std::string alias;
+};
+
+struct FunctionSqlNode {
+  FunctionType funcType = FunctionType::F_UNDEFINED;
+  std::string format;
+  int round_number = 0;
+  bool round_has = false;
 };
 
 // Expression Node Definition
@@ -96,6 +99,7 @@ struct ExprSqlNode {
 
   std::unique_ptr<Value>       value = nullptr;
   std::unique_ptr<DynNodeSqlNode> attr  = nullptr;
+  std::unique_ptr<FunctionSqlNode> func = nullptr;
 
   std::string alias;
 
@@ -235,7 +239,7 @@ struct CalcSqlNode
 {
   // std::deque<Expression *> expressions;  ///< calc clause
   std::deque<ExprSqlNode>        expressions;
-
+  bool is_select = false;
   void release();
   ~CalcSqlNode();
 };

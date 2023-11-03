@@ -129,56 +129,59 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     if (rc != RC::SUCCESS) {
       return rc;
     }
-    if (expr.left->attrType == DATES || expr.left->attrType == CHARS || expr.left->attrType == TEXTS) {
+    if (expr.func == nullptr && (expr.left->attrType == DATES || expr.left->attrType == CHARS || expr.left->attrType == TEXTS)) {
       LOG_WARN("the type %d in complex expression is not supported.", expr.left->attrType);
       return RC::INVALID_ARGUMENT;
     }
     expr.attr_num += expr.left->attr_num;
     expr.aggregation_num += expr.left->aggregation_num;
   }
-  rc = check_select_expression_valid(*expr.right, depth+1, tables, tables_map);
-  if (rc != RC::SUCCESS) {
-    return rc;
+  if (expr.right != nullptr) {
+    rc = check_select_expression_valid(*expr.right, depth+1, tables, tables_map);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+    if (expr.right->attrType == DATES || expr.right->attrType == CHARS || expr.right->attrType == TEXTS) {
+      LOG_WARN("the type %d in complex expression is not supported.", expr.right->attrType);
+      return RC::INVALID_ARGUMENT;
+    }
+
+    expr.attr_num += expr.right->attr_num;
+    expr.aggregation_num += expr.right->aggregation_num;
   }
-//   if (expr->function == nullptr && (expr->right->type == DATES || expr->right->type == CHARS || expr->right->type == TEXTS)) {
-//       LOG_WARN("the type %d in complex expression is not supported.", expr->right->type);
-//       return RC::INVALID_ARGUMENT;
-//   }
-  expr.attr_num += expr.right->attr_num;
-  expr.aggregation_num += expr.right->aggregation_num;
-//   if (expr->function != nullptr) {
-//     switch (expr->function->op) {
-//       case FUNC_LENGTH: {
-//         if (expr->right->type != CHARS) {
-//           LOG_INFO("The type %d doesn't match FUNC_LENGTH", expr->right->type);
-//           return RC::INVALID_ARGUMENT;
-//         }
-//         expr->type = INTS;
-//       } break;
-//       case FUNC_ROUND: {
-//         if (expr->right->type != FLOATS) {
-//           LOG_INFO("The type %d doesn't match FUNC_ROUND", expr->right->type);
-//           return RC::INVALID_ARGUMENT;
-//         }
-//         expr->type = FLOATS;
-//       } break;
-//       case FUNC_FORMAT: {
-//         if (expr->right->type != DATES) {
-//           LOG_INFO("The type %d doesn't match FUNC_FORMAT", expr->right->type);
-//           return RC::INVALID_ARGUMENT;
-//         }
-//         expr->type = CHARS;
-//       } break;
-//       default: {
-//         if (expr->right->type != CHARS) {
-//           return RC::INVALID_ARGUMENT;
-//         }
-//       } break;
-//     }
-//   } else {
-//     expr->type = FLOATS;
-//   }
-  expr.attrType = FLOATS;
+  if (expr.func != nullptr) {
+    switch (expr.func->funcType) {
+      case F_LENGTH: {
+        if (expr.left->attrType != CHARS) {
+          LOG_INFO("The type %d doesn't match FUNC_LENGTH", expr.left->type);
+          return RC::INVALID_ARGUMENT;
+        }
+        expr.attrType = INTS;
+      } break;
+      case F_ROUND: {
+        if (expr.left->attrType != FLOATS) {
+          LOG_INFO("The type %d doesn't match FUNC_ROUND", expr.left->type);
+          return RC::INVALID_ARGUMENT;
+        }
+        expr.attrType = FLOATS;
+      } break;
+      case F_FORMAT: {
+        if (expr.left->attrType != DATES) {
+          LOG_INFO("The type %d doesn't match FUNC_FORMAT", expr.left->type);
+          return RC::INVALID_ARGUMENT;
+        }
+        expr.attrType = CHARS;
+      } break;
+      default: {
+        if (expr.left->attrType != CHARS) {
+          return RC::INVALID_ARGUMENT;
+        }
+      } break;
+    }
+  } else {
+    expr.attrType = FLOATS;
+  }
+  // expr.attrType = FLOATS;
   return RC::SUCCESS;
 }
 
@@ -245,12 +248,20 @@ Expression* generate_expression(ExprSqlNode &expr)
         right.reset(generate_expression(*expr.right));
     }
 
+    if (expr.type == E_FUNCTION || expr.func != nullptr) {
+      return new ArithmeticExpr(expr.func->funcType, std::move(left), expr.func->format, expr.func->round_number);
+    }
+
     return new ArithmeticExpr(ArithmeticExpr::Type(expr.type), std::move(left), std::move(right));
 }
 
 std::string generate_alias(bool multi_tables, ExprSqlNode &expr, std::unordered_map<std::string, std::string> &alias_map)
 {
   std::string str;
+  if (!expr.alias.empty()) {
+    str += expr.alias;
+    return str;
+  }
   if (expr.has_brace) {
     str += '(';
   }
@@ -295,33 +306,33 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr, std::unordered_
       }
     }
   } else {
-//    if (expr->function != nullptr) {
-    //   if (expr->alias != nullptr) {
-    //     str += expr->alias;
-    //   } else {
-    //     std::string right_str = generate_alias(multi_tables, expr->right);
-    //     switch (expr->function->op) {
-    //       case FUNC_LENGTH: {
-    //         str += "length(" + right_str + ")";
-    //       } break;
-    //       case FUNC_ROUND: {
-    //         str += "round(" + right_str;
-    //         if (expr->function->data != nullptr) {
-    //           str += "," + std::to_string(*(int *)expr->function->data);
-    //         }
-    //         str += ")";
-    //       } break;
-    //       case FUNC_FORMAT: {
-    //         str += "data_format(" + right_str + ",";
-    //         str += (expr->function->data);
-    //         str += ")";
-    //       } break;
-    //       default:
-    //         break;
-    //     }
-    //     return str;
-    //   }
-    // } else {
+   if (expr.func != nullptr) {
+      if (!expr.alias.empty()) {
+        str += expr.alias;
+      } else {
+        std::string left_str = generate_alias(multi_tables, *expr.left, alias_map);
+        switch (expr.func->funcType) {
+          case F_LENGTH: {
+            str += "length(" + left_str + ")";
+          } break;
+          case F_ROUND: {
+            str += "round(" + left_str;
+            if (expr.func->round_has) {
+              str += "," + std::to_string(expr.func->round_number);
+            }
+            str += ")";
+          } break;
+          case F_FORMAT: {
+            str += "data_format(" + left_str  + ",";
+            str += (expr.func->format);
+            str += ")";
+          } break;
+          default:
+            break;
+        }
+        return str;
+      }
+    } else {
       std::string left_str;
       std::string right_str;
       if (expr.left != nullptr) {
@@ -349,7 +360,7 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr, std::unordered_
         default:
           break;
       }
-//    }
+    }
   }
   if (expr.has_brace) {
     str += ')';

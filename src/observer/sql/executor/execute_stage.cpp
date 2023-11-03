@@ -24,6 +24,7 @@ See the Mulan PSL v2 for more details. */
 #include "event/session_event.h"
 #include "sql/stmt/stmt.h"
 #include "sql/stmt/select_stmt.h"
+#include "sql/stmt/calc_stmt.h"
 #include "storage/default/default_handler.h"
 #include "sql/executor/command_executor.h"
 #include "sql/operator/calc_physical_operator.h"
@@ -83,8 +84,12 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent *sql_event)
 
     case StmtType::CALC: {
       CalcPhysicalOperator *calc_operator = static_cast<CalcPhysicalOperator *>(physical_operator.get());
-      for (const unique_ptr<Expression> & expr : calc_operator->expressions()) {
-        schema.append_cell(expr->name().c_str());
+      // for (const unique_ptr<Expression> & expr : calc_operator->expressions()) {
+      //   schema.append_cell(expr->name().c_str());
+      // }
+      CalcStmt *calc_stmt = static_cast<CalcStmt *>(stmt);
+      for (auto &alias : calc_stmt->alias()) {
+        schema.append_cell(alias.c_str());
       }
     } break;
 

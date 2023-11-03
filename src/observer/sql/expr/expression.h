@@ -298,11 +298,13 @@ public:
     MUL,
     DIV,
     NEGATIVE,
+    FUNCTION
   };
 
 public:
   ArithmeticExpr(Type type, Expression *left, Expression *right);
   ArithmeticExpr(Type type, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
+  ArithmeticExpr(FunctionType func_type, std::unique_ptr<Expression> left, std::string format, int round_number);
   virtual ~ArithmeticExpr() = default;
 
   ExprType type() const override { return ExprType::ARITHMETIC; }
@@ -322,6 +324,9 @@ private:
   
 private:
   Type arithmetic_type_;
+  FunctionType func_type_;
+  std::string format_;
+  int round_number_ = 0;
   std::unique_ptr<Expression> left_;
   std::unique_ptr<Expression> right_;
 };

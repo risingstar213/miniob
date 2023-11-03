@@ -20,6 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/optimizer/physical_plan_generator.h"
 
 #include "sql/utils/like.h"
+#include "sql/utils/function.h"
 
 using namespace std;
 
@@ -363,8 +364,25 @@ ArithmeticExpr::ArithmeticExpr(ArithmeticExpr::Type type, unique_ptr<Expression>
     : arithmetic_type_(type), left_(std::move(left)), right_(std::move(right))
 {}
 
+ArithmeticExpr::ArithmeticExpr(FunctionType func_type, std::unique_ptr<Expression> left, std::string format, int round_number)
+    : arithmetic_type_(ArithmeticExpr::Type::FUNCTION), func_type_(func_type), left_(std::move(left)), format_(format), round_number_(round_number)
+{}
+
 AttrType ArithmeticExpr::value_type() const
 {
+  if (arithmetic_type_ == ArithmeticExpr::Type::FUNCTION) {
+    switch (func_type_)
+    {
+    case F_ROUND:
+      return FLOATS;
+    case F_LENGTH:
+      return INTS;
+    case F_FORMAT:
+      return CHARS;
+    default:
+      return UNDEFINED;
+    }
+  }
   if (!left_) {
     return right_->value_type();
   }
@@ -442,6 +460,23 @@ RC ArithmeticExpr::calc_value(const Value &left_value, const Value &right_value,
       }
     } break;
 
+    case Type::FUNCTION: {
+      if (func_type_ == F_LENGTH) {
+        if (left_value.attr_type() != CHARS) {
+          return RC::INVALID_ARGUMENT;
+        }
+        value.set_int(left_value.get_string().length());
+      } else if (func_type_ == F_ROUND) {
+        value.set_float(execute_round(left_value.get_float(), round_number_));
+      } else {
+        if (left_value.attr_type() != DATES) {
+          return RC::INVALID_ARGUMENT;
+        }
+        std::string format = execute_format(left_value.get_string(), format_);
+        value.set_string(format.c_str());
+      }
+    } break;
+
     default: {
       rc = RC::INTERNAL;
       LOG_WARN("unsupported arithmetic type. %d", arithmetic_type_);
@@ -464,10 +499,12 @@ RC ArithmeticExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
       return rc;
     }
   }
-  rc = right_->get_value(tuple, right_value, trx);
-  if (rc != RC::SUCCESS) {
-    LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
-    return rc;
+  if (right_) {
+    rc = right_->get_value(tuple, right_value, trx);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
+      return rc;
+    }
   }
   return calc_value(left_value, right_value, value);
 }
@@ -487,13 +524,13 @@ RC ArithmeticExpr::try_get_value(Value &value) const
     }
   }
 
-  // if (right_) {
-  rc = right_->try_get_value(right_value);
-  if (rc != RC::SUCCESS) {
-    LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
-    return rc;
+  if (right_) {
+    rc = right_->try_get_value(right_value);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
+      return rc;
+    }
   }
-  // }
 
   return calc_value(left_value, right_value, value);
 }

@@ -49,7 +49,10 @@ public:
 
     for (auto & expr : calc_sql.expressions) {
       calc_stmt->expressions_.emplace_back(generate_expression(expr));
+      std::unordered_map<std::string, std::string> empty;
+      calc_stmt->alias_.emplace_back(generate_alias(false, expr, empty));
     }
+    calc_stmt->is_select_ = calc_sql.is_select;
     calc_sql.expressions.clear();
     stmt = calc_stmt;
     return RC::SUCCESS;
@@ -61,6 +64,18 @@ public:
     return expressions_;
   }
 
+  std::vector<std::string> &alias()
+  {
+    return alias_;
+  }
+
+  bool is_select()
+  {
+    return is_select_;
+  }
+
 private:
   std::vector<std::unique_ptr<Expression>> expressions_;
+  std::vector<std::string>                 alias_;
+  bool is_select_;
 };
