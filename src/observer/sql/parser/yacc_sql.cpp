@@ -2545,7 +2545,7 @@ yyreduce:
 #line 764 "yacc_sql.y"
                                      {
       (yyval.expression) = new ExprSqlNode();
-      (yyval.expression)->right = std::unique_ptr<ExprSqlNode>((yyvsp[-1].expression));
+      (yyval.expression)->left = std::unique_ptr<ExprSqlNode>((yyvsp[-1].expression));
       FunctionSqlNode func;
       func.funcType = F_ROUND;
       (yyval.expression)->func = std::make_unique<FunctionSqlNode>(func);
@@ -2557,7 +2557,7 @@ yyreduce:
 #line 771 "yacc_sql.y"
                                            {
       (yyval.expression) = new ExprSqlNode();
-      (yyval.expression)->right = std::unique_ptr<ExprSqlNode>((yyvsp[-2].expression));
+      (yyval.expression)->left = std::unique_ptr<ExprSqlNode>((yyvsp[-2].expression));
       FunctionSqlNode func;
       func.funcType = F_ROUND;
       func.round_has = true;
@@ -2571,7 +2571,7 @@ yyreduce:
 #line 780 "yacc_sql.y"
                                                      {
       (yyval.expression) = new ExprSqlNode();
-      (yyval.expression)->right = std::unique_ptr<ExprSqlNode>((yyvsp[-3].expression));
+      (yyval.expression)->left = std::unique_ptr<ExprSqlNode>((yyvsp[-3].expression));
       FunctionSqlNode func;
       func.funcType = F_FORMAT;
       func.format = (yyvsp[-1].string);

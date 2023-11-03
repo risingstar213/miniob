@@ -763,14 +763,14 @@ expression:
     }
     | ROUND LBRACE expression RBRACE {
       $$ = new ExprSqlNode();
-      $$->right = std::unique_ptr<ExprSqlNode>($3);
+      $$->left = std::unique_ptr<ExprSqlNode>($3);
       FunctionSqlNode func;
       func.funcType = F_ROUND;
       $$->func = std::make_unique<FunctionSqlNode>(func);
     }
     | ROUND LBRACE expression COMMA NUMBER {
       $$ = new ExprSqlNode();
-      $$->right = std::unique_ptr<ExprSqlNode>($3);
+      $$->left = std::unique_ptr<ExprSqlNode>($3);
       FunctionSqlNode func;
       func.funcType = F_ROUND;
       func.round_has = true;
@@ -779,7 +779,7 @@ expression:
     }
     | DATE_FORMAT LBRACE expression COMMA SSS RBRACE {
       $$ = new ExprSqlNode();
-      $$->right = std::unique_ptr<ExprSqlNode>($3);
+      $$->left = std::unique_ptr<ExprSqlNode>($3);
       FunctionSqlNode func;
       func.funcType = F_FORMAT;
       func.format = $5;
