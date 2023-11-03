@@ -538,11 +538,13 @@ value:
       char *tmp = common::substr($1,1,strlen($1)-2);
       $$ = new Value(tmp, true, true);
       free(tmp);
+      free($1);
     }
     |SSS {
       char *tmp = common::substr($1,1,strlen($1)-2);
       $$ = new Value(tmp);
       free(tmp);
+      free($1);
     }
     |NULL_LITERAL {
       $$ = new Value(0);
@@ -789,6 +791,7 @@ expression:
       char *tmp = common::substr($5,1,strlen($5)-2);
       func.format = tmp;
       free(tmp);
+      free($5);
       $$->func = std::make_unique<FunctionSqlNode>(func);
     }
     ;

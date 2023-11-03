@@ -470,7 +470,7 @@ RC RecordFileHandler::insert_text(std::string text_data, TextDataMeta *meta)
   RecordPageHandler record_page_handler;
   // bool              page_found       = false;
   PageNum           current_page_num = 0;
-
+  LOG_INFO("size of TextDataMeta: %d", sizeof(TextDataMeta));
   for (int i = 0; i < MAX_TEXT_DATA_PAGE; i++) {
     Frame *frame = nullptr;
     if ((ret = disk_buffer_pool_->allocate_page(&frame)) != RC::SUCCESS) {

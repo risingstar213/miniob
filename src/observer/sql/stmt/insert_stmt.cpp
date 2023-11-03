@@ -107,8 +107,10 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
             break;
           case DATES:
             new_values[i].set_date("2023-01-01");
+            break;
           case TEXTS:
             new_values[i].set_text(values[i].get_string().c_str());
+            break;
           default:
             break;
         }
