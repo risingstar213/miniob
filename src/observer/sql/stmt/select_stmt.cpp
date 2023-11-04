@@ -38,7 +38,7 @@ static void wildcard_fields(Table *table, std::vector<Field> &field_metas)
   }
 }
 
-RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std::string, Table *> &ctx_tables_map, Stmt *&stmt)
+RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std::string, Table *> &ctx_tables_map, Stmt *&stmt, bool create_table)
 {
   if (nullptr == db) {
     LOG_WARN("invalid argument. db is null");
@@ -180,7 +180,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   std::vector<Expression *> query_exprs;
   std::vector<std::string>  query_alias;
   std::vector<Field *>      query_fields;
-  bool multi_tables = (tables.size() > 1);
+  bool multi_tables = (tables.size() > 1) && !create_table;
   for (size_t i = 0; i < expressions.size(); i++) {
     query_exprs.push_back(generate_expression(expressions[i]));
     query_alias.push_back(generate_alias(multi_tables, expressions[i], alias_map));

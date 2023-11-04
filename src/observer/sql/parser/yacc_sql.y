@@ -399,6 +399,15 @@ create_table_stmt:    /*create table 语句的语法解析树*/
       delete $5;
       delete $6;
     }
+    | CREATE TABLE ID AS select
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
+      CreateTableSqlNode &create_table = $$->create_table;
+      create_table.relation_name = $3;
+      free($3);
+
+      create_table.as_select = std::unique_ptr<SelectSqlNode>($5);
+    }
     ;
 attr_def_list:
     /* empty */

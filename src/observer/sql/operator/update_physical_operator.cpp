@@ -139,7 +139,7 @@ RC UpdatePhysicalOperator::next()
     }
 
     for (int i = 0; i < field_num - sys_field_num; i++) {
-      LOG_INFO("update %d to %s", i, new_values[i].to_string());
+      LOG_INFO("update %d to %s", i, new_values[i].to_string().c_str());
     }
 
     // rc = trx_->insert_record(table_, new_record);

@@ -335,8 +335,9 @@ struct AttrInfoSqlNode
  */
 struct CreateTableSqlNode
 {
-  std::string                  relation_name;         ///< Relation name
+  std::string                 relation_name;         ///< Relation name
   std::deque<AttrInfoSqlNode> attr_infos;            ///< attributes
+  std::unique_ptr<SelectSqlNode> as_select;
 };
 
 
