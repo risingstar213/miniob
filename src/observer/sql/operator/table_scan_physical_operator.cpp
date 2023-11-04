@@ -39,7 +39,7 @@ RC TableScanPhysicalOperator::next()
   bool filter_result = false;
   while (record_scanner_.has_next()) {
     rc = record_scanner_.next(current_record_);
-    if (rc != RC::SUCCESS) {
+    if (rc != RC::SUCCESS && rc != RC::LOCKED_CONCURRENCY_CONFLICT) {
       LOG_INFO("TableScanPhysicalOperator get error %s", strrc(rc));
       return rc;
     }

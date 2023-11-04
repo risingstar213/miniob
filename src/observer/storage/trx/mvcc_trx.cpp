@@ -167,6 +167,11 @@ RC MvccTrx::delete_record(Table * table, Record &record)
   trx_fields(table, begin_field, end_field);
 
   [[maybe_unused]] int32_t end_xid = end_field.get_int(record);
+
+  if (end_xid < 0 && -end_xid != trx_id_) {
+    return RC::LOCKED_CONCURRENCY_CONFLICT;
+  }
+
   /// 在删除之前，第一次获取record时，就已经对record做了对应的检查，并且保证不会有其它的事务来访问这条数据
   ASSERT(end_xid > 0, "concurrency conflit: other transaction is updating this record. end_xid=%d, current trx id=%d, rid=%s",
          end_xid, trx_id_, record.rid().to_string().c_str());
@@ -192,6 +197,10 @@ RC MvccTrx::update_record(Table *table, Record &old_record, Record &new_record)
   trx_fields(table, begin_field, end_field);
 
   [[maybe_unused]] int32_t end_xid = end_field.get_int(old_record);
+
+  if (end_xid < 0 && -end_xid != trx_id_) {
+    return RC::LOCKED_CONCURRENCY_CONFLICT;
+  }
   /// 在删除之前，第一次获取record时，就已经对record做了对应的检查，并且保证不会有其它的事务来访问这条数据
   ASSERT(end_xid > 0, "concurrency conflit: other transaction is updating this record. end_xid=%d, current trx id=%d, rid=%s",
          end_xid, trx_id_, old_record.rid().to_string().c_str());
@@ -257,7 +266,12 @@ RC MvccTrx::visit_record(Table *table, Record &record, bool readonly)
     if (end_xid < 0) {
       rc = RC::RECORD_INVISIBLE;
     } else {
-      rc = (-begin_xid == trx_id_) ? RC::SUCCESS : RC::RECORD_INVISIBLE;
+      // 这里简单拒绝修改
+      if (readonly) {
+        rc = (-begin_xid == trx_id_) ? RC::SUCCESS : RC::RECORD_INVISIBLE;
+      } else {
+        rc = RC::RECORD_INVISIBLE;
+      }
     }
   } else if (end_xid < 0) {
     // end xid 小于0 说明是正在删除但是还没有提交的数据
