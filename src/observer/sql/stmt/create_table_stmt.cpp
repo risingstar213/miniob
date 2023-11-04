@@ -23,6 +23,7 @@ RC CreateTableStmt::create(Db *db, const CreateTableSqlNode &create_table, Stmt 
 {
   SelectStmt* as_select_stmt = nullptr;
   std::deque<AttrInfoSqlNode> attr_infos = create_table.attr_infos;
+  bool has_attr_defs = attr_infos.size() > 0;
   if (create_table.as_select != nullptr) {
     Stmt* as_stmt = nullptr;
     std::unordered_map<std::string, Table *> empty_table_map;
@@ -35,8 +36,18 @@ RC CreateTableStmt::create(Db *db, const CreateTableSqlNode &create_table, Stmt 
     auto &exprs = as_select_stmt->query_exprs();
     auto &alias = as_select_stmt->query_alias();
 
+    if (has_attr_defs && exprs.size() != attr_infos.size()) {
+      return RC::INVALID_ARGUMENT;
+    }
+
     for (int i = 0; i < exprs.size(); i++) {
       AttrType type = exprs[i]->value_type();
+      if (has_attr_defs && type == attr_infos[i].type) {
+        continue;
+      } else if (has_attr_defs) {
+        return RC::INVALID_ARGUMENT;
+      }
+
       size_t length = 4;
       if (type == DATES) {
         length = 12;

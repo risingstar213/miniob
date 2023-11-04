@@ -207,6 +207,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <id_list>             id_list
 %type <bools>               is_unique
 %type <select>              select
+%type <select>              create_table_select
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
 %type <sql_node>            insert_stmt
@@ -381,6 +382,15 @@ drop_index_stmt:      /*drop index 语句的语法解析树*/
       free($5);
     }
     ;
+
+create_table_select:
+  AS select {
+    $$ = $2;
+  }
+  | select {
+    $$ = $1;
+  }
+  ;
 create_table_stmt:    /*create table 语句的语法解析树*/
     CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE
     {
@@ -399,14 +409,33 @@ create_table_stmt:    /*create table 语句的语法解析树*/
       delete $5;
       delete $6;
     }
-    | CREATE TABLE ID AS select
+    | CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE create_table_select
     {
       $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
       CreateTableSqlNode &create_table = $$->create_table;
       create_table.relation_name = $3;
       free($3);
 
-      create_table.as_select = std::unique_ptr<SelectSqlNode>($5);
+      std::deque<AttrInfoSqlNode> *src_attrs = $6;
+
+      if (src_attrs != nullptr) {
+        create_table.attr_infos.swap(*src_attrs);
+      }
+      create_table.attr_infos.emplace_front(std::move(*$5));
+      // std::reverse(create_table.attr_infos.begin(), create_table.attr_infos.end());
+      delete $5;
+      delete $6;
+
+      create_table.as_select = std::unique_ptr<SelectSqlNode>($8);
+    }
+    | CREATE TABLE ID create_table_select
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
+      CreateTableSqlNode &create_table = $$->create_table;
+      create_table.relation_name = $3;
+      free($3);
+
+      create_table.as_select = std::unique_ptr<SelectSqlNode>($4);
     }
     ;
 attr_def_list:
