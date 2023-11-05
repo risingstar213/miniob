@@ -2338,7 +2338,7 @@ yyreduce:
   case 66: /* alias: AS DATA  */
 #line 560 "yacc_sql.y"
             {
-    (yyval.string) = new string("data");
+    (yyval.string) = strdup("data");
   }
 #line 2344 "yacc_sql.cpp"
     break;

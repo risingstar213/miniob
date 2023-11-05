@@ -558,7 +558,7 @@ alias:
     $$ = $2;
   }
   | AS DATA {
-    $$ = new string("data");
+    $$ = strdup("data");
   }
   ;
 

@@ -172,17 +172,20 @@ RC Table::create_view(int table_id,
     return rc;  // delete table file
   }
 
-  Table *table = view_stmt->tables()[0];
-  auto &exprs = view_stmt->query_exprs();
-  for (int i = 0; i < exprs.size(); i++) {
-    FieldExpr *expr = dynamic_cast<FieldExpr *>(exprs[i]);
-    view_field_metas_.emplace_back(expr->field().meta());
+  view_can_update_ = view_check_can_update(view_stmt);
+
+  if (view_can_update_) {
+    Table *table = view_stmt->tables()[0];
+    auto &exprs = view_stmt->query_exprs();
+    for (int i = 0; i < exprs.size(); i++) {
+      FieldExpr *expr = dynamic_cast<FieldExpr *>(exprs[i]);
+      view_field_metas_.emplace_back(expr->field().meta());
+    }
   }
 
   is_view_ = true;
   // view_stmt_ = view_stmt;
 
-  view_can_update_ = view_check_can_update(view_stmt);
   view_table_ = view_stmt->tables()[0];
 
   std::unique_ptr<LogicalOperator> logical_oper;
