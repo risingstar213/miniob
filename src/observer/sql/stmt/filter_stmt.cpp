@@ -31,7 +31,7 @@ FilterStmt::~FilterStmt()
   filter_units_.clear();
 }
 
-RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+RC FilterStmt::create(Db *db, Table *default_table,  std::string default_name, std::unordered_map<std::string, Table *> *tables,
     std::deque<ConditionSqlNode> &condition_sqls, bool is_or, FilterStmt *&stmt)
 {
   RC rc = RC::SUCCESS;
@@ -42,7 +42,7 @@ RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::stri
   LOG_INFO("FilterStmt has %d filters", condition_sqls.size());
   for (int i = 0; i < condition_sqls.size(); i++) {
     FilterUnit *filter_unit = nullptr;
-    rc = create_filter_unit(db, default_table, tables, condition_sqls[i], filter_unit);
+    rc = create_filter_unit(db, default_table, default_name, tables, condition_sqls[i], filter_unit);
     if (rc != RC::SUCCESS) {
       delete tmp_stmt;
       LOG_WARN("failed to create filter unit. condition index=%d", i);
@@ -83,7 +83,7 @@ RC get_table_and_field(Db *db, Table *default_table, std::unordered_map<std::str
   return RC::SUCCESS;
 }
 
-RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::string default_name, std::unordered_map<std::string, Table *> *tables,
     ConditionSqlNode &condition, FilterUnit *&filter_unit)
 {
   RC rc = RC::SUCCESS;
@@ -121,7 +121,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     left = new SQueryExpr(static_cast<SelectStmt *>(left_stmt));
     left_type = left->value_type();
   } else if (condition.left_expr != nullptr) {
-    rc = check_select_expression_valid(*condition.left_expr, 0, table, *tables);
+    rc = check_select_expression_valid(*condition.left_expr, 0, table, default_name, *tables);
     if (rc != RC::SUCCESS) {
       LOG_INFO("left expr is not valid!");
       return rc;
@@ -147,7 +147,7 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     right = new SQueryExpr(static_cast<SelectStmt *>(right_stmt));
     right_type = right->value_type();
   } else if (condition.right_expr != nullptr) {
-    rc = check_select_expression_valid(*condition.right_expr, 0, table, *tables);
+    rc = check_select_expression_valid(*condition.right_expr, 0, table, default_name, *tables);
     if (rc != RC::SUCCESS) {
       LOG_INFO("right expr is not valid!");
       return rc;

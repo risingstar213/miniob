@@ -49,7 +49,7 @@ public:
       std::vector<Table *> empty_tables;
       std::unordered_map<std::string, Table *> empty_tables_map;
 
-      RC rc = check_select_expression_valid(expr, 0, empty_tables, empty_tables_map);
+      RC rc = check_select_expression_valid(expr, 0, empty_tables, "",empty_tables_map);
       if (rc != RC::SUCCESS) {
         return rc;
       }

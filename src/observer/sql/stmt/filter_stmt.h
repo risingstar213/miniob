@@ -108,10 +108,10 @@ public:
   }
 
 public:
-  static RC create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+  static RC create(Db *db, Table *default_table,  std::string default_name, std::unordered_map<std::string, Table *> *tables,
       std::deque<ConditionSqlNode> &condition_sqls, bool is_or, FilterStmt *&stmt);
 
-  static RC create_filter_unit(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+  static RC create_filter_unit(Db *db, Table *default_table,  std::string default_name, std::unordered_map<std::string, Table *> *tables,
       ConditionSqlNode &condition, FilterUnit *&filter_unit);
 
 private:

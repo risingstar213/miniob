@@ -105,6 +105,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
     FilterStmt *join_filter_stmt = nullptr;
     RC rc = FilterStmt::create(db,
         tables[0],
+        table_alias[0],
         &table_map,
         select_sql.joins[i].on_coditions,
         false,
@@ -130,6 +131,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
     Table *table;
     if (table_name.empty()) {
       table = default_table;
+      table_name = table_alias[0];
     } else {
       auto iter = table_map.find(table_name);
       if (iter == table_map.end()) {
@@ -151,6 +153,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   if (select_sql.group_by.having_conditions.size() > 0) {
     RC rc = FilterStmt::create(db,
       default_table,
+      table_alias[0],
       &table_map,
       select_sql.group_by.having_conditions,
       false,
@@ -164,7 +167,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   int attr_num = 0;
   int aggregation_num = 0;
   for (size_t i = 0; i < select_sql.select_exprs.size(); i++) {
-    RC rc = check_select_expression_valid(select_sql.select_exprs[i], 0, tables, table_map, &group_fields);
+    RC rc = check_select_expression_valid(select_sql.select_exprs[i], 0, tables, table_alias[0], table_map, &group_fields);
     if (rc != RC::SUCCESS) {
       return rc;
     }
@@ -201,6 +204,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
     Table *table;
     if (table_name.empty()) {
       table = default_table;
+      table_name = table_alias[0];
     } else {
       auto iter = table_map.find(table_name);
       if (iter == table_map.end()) {
@@ -229,6 +233,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
 
   RC rc = FilterStmt::create(db,
       default_table,
+      table_alias[0],
       &table_map,
       select_sql.conditions,
       select_sql.condtion_is_or,

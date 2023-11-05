@@ -18,7 +18,7 @@ static bool check_field(Field &rel_field, Field &target_field)
 }
 
 
-RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table *> &tables, 
+RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table *> &tables, std::string default_name,
           std::unordered_map<std::string, Table *> &tables_map, std::vector<Field> *group_fields)
 {
   if (expr.type == E_VAL) {
@@ -78,7 +78,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
       }
 
       table = tables[0];
-      expr.attr->node.relation_name = tables_map.begin()->first;
+      expr.attr->node.relation_name = default_name;
       // if (table->name() != expr.attr->node.relation_name) {
       //   LOG_WARN("invalid. I do not know the attr's table. table=%s", expr.attr->node.relation_name.c_str());
       //   return RC::SCHEMA_FIELD_MISSING;
@@ -127,7 +127,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
   }
   RC rc;
   if (expr.left != nullptr) {
-    rc = check_select_expression_valid(*expr.left, depth+1, tables, tables_map);
+    rc = check_select_expression_valid(*expr.left, depth+1, tables, default_name, tables_map);
     if (rc != RC::SUCCESS) {
       return rc;
     }
@@ -139,7 +139,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     expr.aggregation_num += expr.left->aggregation_num;
   }
   if (expr.right != nullptr) {
-    rc = check_select_expression_valid(*expr.right, depth+1, tables, tables_map);
+    rc = check_select_expression_valid(*expr.right, depth+1, tables, default_name, tables_map);
     if (rc != RC::SUCCESS) {
       return rc;
     }

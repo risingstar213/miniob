@@ -49,7 +49,7 @@ RC DeleteStmt::create(Db *db, DeleteSqlNode &delete_sql, Stmt *&stmt)
 
   FilterStmt *filter_stmt = nullptr;
   RC rc = FilterStmt::create(
-      db, table, &table_map, delete_sql.conditions, false, filter_stmt);
+      db, table, table->name(), &table_map, delete_sql.conditions, false, filter_stmt);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
     return rc;
