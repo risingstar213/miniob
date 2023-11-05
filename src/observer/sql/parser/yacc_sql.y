@@ -557,6 +557,9 @@ alias:
   | AS ID {
     $$ = $2;
   }
+  | AS DATA {
+    $$ = new string("data");
+  }
   ;
 
 insert_stmt:        /*insert   语句的语法解析树*/

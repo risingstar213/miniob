@@ -32,7 +32,8 @@ RC CreateViewStmt::create(Db *db, const CreateViewSqlNode &create_view, Stmt *&s
         if (attr_infos[i].type != type) {
             return RC::INVALID_ARGUMENT;
         } else {
-            return RC::SUCCESS;
+            // return RC::SUCCESS;
+            continue;
         }
       }
 
