@@ -60,6 +60,14 @@ public:
   {
     this->field_ = field;
   }
+  void set_table_alias(std::string alias)
+  {
+    this->alias_ = alias;
+  }
+  const std::string &get_table_alias() const
+  {
+    return alias_;
+  }
 
   void set_int(Record &record, int value);
   int  get_int(const Record &record);
@@ -69,4 +77,5 @@ public:
 private:
   const Table *table_ = nullptr;
   const FieldMeta *field_ = nullptr;
+  std::string alias_;
 };

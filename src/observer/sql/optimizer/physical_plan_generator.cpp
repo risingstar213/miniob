@@ -105,6 +105,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
   vector<unique_ptr<Expression>> &predicates = table_get_oper.predicates();
   // 看看是否有可以用于索引查找的表达式
   Table *table = table_get_oper.table();
+  std::string table_alias = table_get_oper.table_alias();
 
   Index *index = nullptr;
   ValueExpr *value_expr = nullptr;
@@ -152,7 +153,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
     const Value &value = value_expr->get_value();
     IndexScanPhysicalOperator *index_scan_oper = new IndexScanPhysicalOperator(
-          table, index, table_get_oper.readonly(), 
+          table, table_alias, index, table_get_oper.readonly(), 
           &value, true /*left_inclusive*/, 
           &value, true /*right_inclusive*/);
           
@@ -160,12 +161,12 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
     oper = unique_ptr<PhysicalOperator>(index_scan_oper);
     LOG_TRACE("use index scan");
   } else if (table->is_view()) {
-    auto view_scan_oper = new ViewScanPhysicalOperator(table, table->view_operator());
+    auto view_scan_oper = new ViewScanPhysicalOperator(table, table_alias, table->view_operator());
     view_scan_oper->set_predicates(std::move(predicates));
     oper = unique_ptr<PhysicalOperator>(view_scan_oper);
     LOG_TRACE("use view scan");
   } else {
-    auto table_scan_oper = new TableScanPhysicalOperator(table, table_get_oper.readonly());
+    auto table_scan_oper = new TableScanPhysicalOperator(table, table_alias, table_get_oper.readonly());
     table_scan_oper->set_predicates(std::move(predicates));
     oper = unique_ptr<PhysicalOperator>(table_scan_oper);
     LOG_TRACE("use table scan");

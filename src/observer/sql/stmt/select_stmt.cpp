@@ -47,6 +47,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
 
   // collect tables in `from` statement
   std::vector<Table *> tables;
+  std::vector<std::string> table_alias;
   std::unordered_map<std::string, Table *> table_map;
   std::unordered_map<std::string, std::string> alias_map;
   for (size_t i = 0; i < select_sql.relations.size(); i++) {
@@ -74,6 +75,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
     }
 
     tables.push_back(table);
+    table_alias.push_back(alias);
     table_map.insert(std::pair<std::string, Table *>(alias, table));
     alias_map.insert(std::pair<std::string, std::string>(table->name(), alias));
   }
@@ -142,6 +144,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
       return RC::SCHEMA_FIELD_MISSING;
     }
     Field field(table, field_meta);
+    field.set_table_alias(table_name);
     group_fields.push_back(field);
   }
   if (select_sql.group_by.having_conditions.size() > 0) {
@@ -174,7 +177,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
 
   std::vector<ExprSqlNode> expressions;
   for (size_t i = 0; i < select_sql.select_exprs.size(); i++) {
-    append_select_expression_with_star(tables, table_map, select_sql.select_exprs[i], expressions);
+    append_select_expression_with_star(tables, table_alias, table_map, select_sql.select_exprs[i], expressions);
   }
 
   std::vector<Expression *> query_exprs;
@@ -212,6 +215,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
       return RC::SCHEMA_FIELD_MISSING;
     }
     Field field(table, field_meta);
+    field.set_table_alias(table_name);
     order_fields.push_back(field);
     order_ascs.push_back(select_sql.order_bys[i].is_asc);
   }
@@ -237,6 +241,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
   SelectStmt *select_stmt = new SelectStmt();
   // TODO add expression copy
   select_stmt->tables_.swap(tables);
+  select_stmt->table_alias_.swap(table_alias);
   select_stmt->join_filters_.swap(join_filters);
   select_stmt->query_exprs_.swap(query_exprs);
   select_stmt->query_alias_.swap(query_alias);

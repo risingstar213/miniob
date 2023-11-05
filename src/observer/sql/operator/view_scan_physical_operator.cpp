@@ -6,8 +6,8 @@
 
 #include "event/sql_debug.h"
 
-ViewScanPhysicalOperator::ViewScanPhysicalOperator(Table *table, PhysicalOperator *view_operator)
-  : table_(table), view_operator_(view_operator)
+ViewScanPhysicalOperator::ViewScanPhysicalOperator(Table *table, std::string table_alias, PhysicalOperator *view_operator)
+  : table_(table), table_alias_(table_alias), view_operator_(view_operator)
 {
   if (view_operator_ == nullptr) {
     // std::unique_ptr<LogicalOperator> logical_oper;
@@ -34,7 +34,7 @@ RC ViewScanPhysicalOperator::open(Trx *trx)
   // RC rc = table_->get_record_scanner(record_scanner_, trx, readonly_);
   RC rc = view_operator_->open(trx);
   if (rc == RC::SUCCESS) {
-    tuple_.set_schema(table_, table_->table_meta().field_metas());
+    tuple_.set_schema(table_, table_->table_meta().field_metas(), table_alias_);
   }
   // LOG_INFO("TableScanPhysicalOperator : %d", tuple_.cell_num());
   trx_ = trx;

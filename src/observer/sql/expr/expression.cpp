@@ -26,7 +26,7 @@ using namespace std;
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
 {
-  return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value);
+  return tuple.find_cell(TupleCellSpec(field_.get_table_alias().c_str(), field_name()), value);
 }
 
 RC ValueExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
@@ -564,7 +564,7 @@ RC AggregationExpr::get_value(const Tuple &tuple, Value &value, Trx *trx) const
   }
   Value temp;
   int count;
-  TupleCellSpec cell(TupleCellSpec(field_.table_name(), field_.field_name()));
+  TupleCellSpec cell(TupleCellSpec(field_.get_table_alias().c_str(), field_.field_name()));
   switch (agg_type_)
   {
   case A_COUNT:

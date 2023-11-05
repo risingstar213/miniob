@@ -152,14 +152,15 @@ public:
     this->record_ = record;
   }
 
-  void set_schema(const Table *table, const std::vector<FieldMeta> *fields)
+  void set_schema(const Table *table, const std::vector<FieldMeta> *fields, std::string table_alias)
   {
     table_ = table;
     this->speces_.clear();
     this->speces_.reserve(fields->size());
     for (const FieldMeta &field : *fields) {
-      speces_.push_back(new FieldExpr(table, &field));
+      speces_.push_back(new FieldExpr(table, &field, table_alias));
     }
+    table_alias_ = table_alias;
   }
 
   int cell_num() const override
@@ -198,7 +199,7 @@ public:
   {
     const char *table_name = spec.table_name();
     const char *field_name = spec.field_name();
-    if (0 != strcmp(table_name, table_->name())) {
+    if (0 != strcmp(table_name, table_alias_.c_str())) {
       return RC::NOTFOUND;
     }
 
@@ -247,6 +248,7 @@ public:
 private:
   Record *record_ = nullptr;
   const Table *table_ = nullptr;
+  std::string table_alias_;
   std::vector<FieldExpr *> speces_;
 };
 
@@ -497,7 +499,7 @@ public:
   GroupTuple(std::vector<Field> &fields)
   {
     for (int i = 0; i < fields.size(); i++) {
-      cells_.push_back(TupleCellSpec(fields[i].table_name(), fields[i].field_name()));
+      cells_.push_back(TupleCellSpec(fields[i].get_table_alias().c_str(), fields[i].field_name()));
     }
   }
   virtual ~GroupTuple() = default;
@@ -711,7 +713,7 @@ public:
   OrderTuple(std::vector<Field> &fields)
   {
     for (int i = 0; i < fields.size(); i++) {
-      cells_.push_back(TupleCellSpec(fields[i].table_name(), fields[i].field_name()));
+      cells_.push_back(TupleCellSpec(fields[i].get_table_alias().c_str(), fields[i].field_name()));
     }
   }
   virtual ~OrderTuple() = default;

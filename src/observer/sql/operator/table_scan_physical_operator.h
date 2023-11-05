@@ -27,8 +27,8 @@ class Table;
 class TableScanPhysicalOperator : public PhysicalOperator
 {
 public:
-  TableScanPhysicalOperator(Table *table, bool readonly) 
-      : table_(table), readonly_(readonly)
+  TableScanPhysicalOperator(Table *table, std::string table_alias, bool readonly) 
+      : table_(table), table_alias_(table_alias), readonly_(readonly)
   {}
 
   virtual ~TableScanPhysicalOperator() = default;
@@ -53,6 +53,7 @@ private:
 
 private:
   Table *                                  table_ = nullptr;
+  std::string                              table_alias_;
   Trx *                                    trx_ = nullptr;
   bool                                     readonly_ = false;
   RecordFileScanner                        record_scanner_;

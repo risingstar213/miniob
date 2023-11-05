@@ -6,7 +6,7 @@
 class ViewScanPhysicalOperator : public PhysicalOperator
 {
 public:
-  ViewScanPhysicalOperator(Table *table, PhysicalOperator *view_operator);
+  ViewScanPhysicalOperator(Table *table, std::string table_alias, PhysicalOperator *view_operator);
 
   ~ViewScanPhysicalOperator() override;
 
@@ -30,6 +30,7 @@ private:
 
 private:
   Table *                                  table_ = nullptr;
+  std::string                              table_alias_;
   // SelectStmt *                             view_stmt_ = nullptr;
   PhysicalOperator *                       view_operator_ = nullptr;
   Trx *                                    trx_ = nullptr;

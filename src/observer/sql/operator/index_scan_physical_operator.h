@@ -25,7 +25,7 @@ See the Mulan PSL v2 for more details. */
 class IndexScanPhysicalOperator : public PhysicalOperator
 {
 public:
-  IndexScanPhysicalOperator(Table *table, Index *index, bool readonly, 
+  IndexScanPhysicalOperator(Table *table, std::string table_alias, Index *index, bool readonly, 
       const Value *left_value, bool left_inclusive,
       const Value *right_value, bool right_inclusive);
 
@@ -53,6 +53,7 @@ private:
 private:
   Trx * trx_ = nullptr;
   Table *table_ = nullptr;
+  std::string table_alias_;
   Index *index_ = nullptr;
   bool readonly_ = false;
   IndexScanner *index_scanner_ = nullptr;

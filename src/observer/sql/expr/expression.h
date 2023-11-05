@@ -111,8 +111,9 @@ class FieldExpr : public Expression
 {
 public:
   FieldExpr() = default;
-  FieldExpr(const Table *table, const FieldMeta *field) : field_(table, field)
+  FieldExpr(const Table *table, const FieldMeta *field, std::string table_alias) : field_(table, field)
   {
+    field_.set_table_alias(table_alias);
     std::string name;
     name += table->name();
     name += ".";
@@ -137,7 +138,7 @@ public:
 
   const Field &field() const { return field_; }
 
-  const char *table_name() const { return field_.table_name(); }
+  const char *table_name() const { return field_.get_table_alias().c_str(); }
 
   const char *field_name() const { return field_.field_name(); }
 

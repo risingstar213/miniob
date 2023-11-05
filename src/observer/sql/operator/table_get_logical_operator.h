@@ -24,7 +24,7 @@ See the Mulan PSL v2 for more details. */
 class TableGetLogicalOperator : public LogicalOperator
 {
 public:
-  TableGetLogicalOperator(Table *table, const std::vector<Field> &fields, bool readonly);
+  TableGetLogicalOperator(Table *table, std::string table_alias ,const std::vector<Field> &fields, bool readonly);
   virtual ~TableGetLogicalOperator() = default;
 
   LogicalOperatorType type() const override
@@ -41,8 +41,13 @@ public:
     return predicates_;
   }
 
+  std::string table_alias() {
+    return table_alias_;
+  }
+
 private:
   Table *table_ = nullptr;
+  std::string table_alias_;
   std::vector<Field> fields_;
   bool readonly_ = false;
 

@@ -185,7 +185,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
   return RC::SUCCESS;
 }
 
-static void wildcard_fields(Table *table,  std::vector<ExprSqlNode> &expressions)
+static void wildcard_fields(Table *table, std::string alias, std::vector<ExprSqlNode> &expressions)
 {
   LOG_INFO("wildcard_fields");
   const TableMeta &table_meta = table->table_meta();
@@ -196,6 +196,9 @@ static void wildcard_fields(Table *table,  std::vector<ExprSqlNode> &expressions
     memset(&expr, 0, sizeof(ExprSqlNode));
     expr.table_ = table;
     expr.field_ = table_meta.field(i);
+    expr.attr = std::unique_ptr<DynNodeSqlNode>(new DynNodeSqlNode());
+    expr.attr->node.attribute_name = expr.field_->name();
+    expr.attr->node.relation_name = alias;
     // if (table.alias != nullptr) {
     //   expr.field->set_table_alias(table.alias);
     // }
@@ -204,19 +207,19 @@ static void wildcard_fields(Table *table,  std::vector<ExprSqlNode> &expressions
   }
 }
 
-RC append_select_expression_with_star(std::vector<Table *> tables, 
+RC append_select_expression_with_star(std::vector<Table *> tables, std::vector<std::string> table_alias,
       std::unordered_map<std::string, Table *> &tables_map, ExprSqlNode &expr, std::vector<ExprSqlNode> &expressions)
 {
   // TODO: The only star currently
   if (expr.type == E_DYN && expr.attr->node.attribute_name == "*" && expr.attr->aggType == A_UNDEFINED) {
     if (expr.attr->node.relation_name.length() == 0) {
-      for (auto &table_info : tables) {
-        wildcard_fields(table_info, expressions);
+      for (int i = 0; i < tables.size(); i++) {
+        wildcard_fields(tables[i],table_alias[i], expressions);
       }
     } else {
       Table *table = tables_map.find(expr.attr->node.relation_name)->second;
       // TableInfo info{table, expr->attr->relation_name};
-      wildcard_fields(table, expressions);
+      wildcard_fields(table, expr.attr->node.relation_name, expressions);
     }
   } else {
     expressions.push_back(std::move(expr));
@@ -233,9 +236,21 @@ Expression* generate_expression(ExprSqlNode &expr)
     // TODO: AGG
     if (expr.type == E_DYN) {
       if (expr.attr != nullptr && expr.attr->aggType != A_UNDEFINED) {
-        return new AggregationExpr(expr.attr->aggType, Field(expr.table_, expr.field_));
+        Field field = Field(expr.table_, expr.field_);
+        if (!expr.attr->node.relation_name.empty()) {
+          field.set_table_alias(expr.attr->node.relation_name);
+        } else {
+          field.set_table_alias(expr.table_->name());
+        }
+        return new AggregationExpr(expr.attr->aggType, field);
       } else {
-        return new FieldExpr(Field(expr.table_, expr.field_));
+        Field field = Field(expr.table_, expr.field_);
+        if (!expr.attr->node.relation_name.empty()) {
+          field.set_table_alias(expr.attr->node.relation_name);
+        } else {
+          field.set_table_alias(expr.table_->name());
+        }
+        return new FieldExpr(field);
       } 
     }
 
@@ -298,7 +313,7 @@ std::string generate_alias(bool multi_tables, ExprSqlNode &expr, std::unordered_
         str += "*";
       } else if (multi_tables) {
         // 一定访问的到
-        str += alias_map[expr.table_->name()];
+        str += expr.attr->node.relation_name;
         str += '.';
         str += expr.field_->name();
       } else {

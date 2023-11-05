@@ -127,6 +127,7 @@ RC LogicalPlanGenerator::create_plan(
   unique_ptr<LogicalOperator> table_oper(nullptr);
 
   const std::vector<Table *> &tables = select_stmt->tables();
+  auto &table_alias = select_stmt->table_alias();
   // TODO: SIMPLYFY 
   std::vector<Field> all_fields;
   const std::vector<FilterStmt *> &join_filters = select_stmt->join_filters();
@@ -146,7 +147,7 @@ RC LogicalPlanGenerator::create_plan(
       all_fields.push_back(Field(table, field_meta));
     }
 
-    unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, fields, true/*readonly*/));
+    unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, table_alias[iter_times], fields, true/*readonly*/));
     if (table_oper == nullptr) {
       table_oper = std::move(table_get_oper);
     } else {
@@ -298,7 +299,7 @@ RC LogicalPlanGenerator::create_plan(
     const FieldMeta *field_meta = table->table_meta().field(i);
     fields.push_back(Field(table, field_meta));
   }
-  unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, fields, false/*readonly*/));
+  unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, table->name(), fields, false/*readonly*/));
 
   unique_ptr<LogicalOperator> predicate_oper;
   RC rc = create_plan(filter_stmt, predicate_oper);
@@ -329,7 +330,7 @@ RC LogicalPlanGenerator::create_plan(
     const FieldMeta *field_meta = table->table_meta().field(i);
     fields.push_back(Field(table, field_meta));
   }
-  unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, fields, false/*readonly*/));
+  unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, table->name(), fields, false/*readonly*/));
 
   unique_ptr<LogicalOperator> predicate_oper;
   RC rc = create_plan(filter_stmt, predicate_oper);

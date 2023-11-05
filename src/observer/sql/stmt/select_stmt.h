@@ -50,6 +50,10 @@ public:
   {
     return tables_;
   }
+  const std::vector<std::string>  &table_alias() const
+  {
+    return table_alias_;
+  }
   const std::vector<Expression *> &query_exprs() const
   {
     return query_exprs_;
@@ -95,9 +99,9 @@ public:
 private:
   // std::vector<Field> query_fields_;
   std::vector<Expression *> query_exprs_;
-  std::vector<Field *>      query_fields_;
   std::vector<std::string>  query_alias_;
   std::vector<Table *>      tables_;
+  std::vector<std::string>  table_alias_;
   std::vector<FilterStmt *> join_filters_;
   std::vector<Field>        group_fields_;
   FilterStmt *having_filter_stmt_ = nullptr;
