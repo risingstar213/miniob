@@ -52,6 +52,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
         Table *table = tables[0];
         expr.table_ = table;
         expr.field_ = table->table_meta().trx_field();
+        expr.attr->node.relation_name = default_name;
         // if (expr->attr->alias != nullptr) {
         //   expr->field->set_alias(expr->attr->alias);
         // }
