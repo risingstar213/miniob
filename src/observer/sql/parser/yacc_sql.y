@@ -179,6 +179,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <number>              is_nullable
 %type <number>              number
 %type <string>              alias
+%type <string>              ID_AMENDED
 %type <comp>                comp_op
 %type <relation>            relation
 %type <rel_attr>            rel_attr
@@ -308,7 +309,7 @@ rollback_stmt:
     ;
 
 drop_table_stmt:    /*drop table 语句的语法解析树*/
-    DROP TABLE ID {
+    DROP TABLE ID_AMENDED {
       $$ = new ParsedSqlNode(SCF_DROP_TABLE);
       $$->drop_table.relation_name = $3;
       free($3);
@@ -321,7 +322,7 @@ show_tables_stmt:
     ;
 
 show_index_stmt:
-  SHOW INDEX FROM ID
+  SHOW INDEX FROM ID_AMENDED
 		{
 			$$ = new ParsedSqlNode(SCF_SHOW_INDEX);
 			$$->show_index.relation_name = $4;
@@ -330,7 +331,7 @@ show_index_stmt:
   ;
 
 desc_table_stmt:
-    DESC ID  {
+    DESC ID_AMENDED  {
       $$ = new ParsedSqlNode(SCF_DESC_TABLE);
       $$->desc_table.relation_name = $2;
       free($2);
@@ -347,13 +348,13 @@ is_unique:
   ;
 
 id_list:
-  ID {
+  ID_AMENDED {
     $$ = new std::deque<std::string>();
     std::string attribute_name = $1;
     free($1);
     $$->emplace_back(attribute_name);
   }
-  | ID COMMA id_list {
+  | ID_AMENDED COMMA id_list {
     $$ = $3;
     std::string attribute_name = $1;
     free($1);
@@ -361,7 +362,7 @@ id_list:
   }
   ;
 create_index_stmt:    /*create index 语句的语法解析树*/
-    CREATE is_unique INDEX ID ON ID LBRACE id_list RBRACE
+    CREATE is_unique INDEX ID_AMENDED ON ID_AMENDED LBRACE id_list RBRACE
     {
       $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
       CreateIndexSqlNode &create_index = $$->create_index;
@@ -376,7 +377,7 @@ create_index_stmt:    /*create index 语句的语法解析树*/
     ;
 
 drop_index_stmt:      /*drop index 语句的语法解析树*/
-    DROP INDEX ID ON ID
+    DROP INDEX ID_AMENDED ON ID_AMENDED
     {
       $$ = new ParsedSqlNode(SCF_DROP_INDEX);
       $$->drop_index.index_name = $3;
@@ -395,7 +396,7 @@ create_table_select:
   }
   ;
 create_table_stmt:    /*create table 语句的语法解析树*/
-    CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE
+    CREATE TABLE ID_AMENDED LBRACE attr_def attr_def_list RBRACE
     {
       $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
       CreateTableSqlNode &create_table = $$->create_table;
@@ -412,7 +413,7 @@ create_table_stmt:    /*create table 语句的语法解析树*/
       delete $5;
       delete $6;
     }
-    | CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE create_table_select
+    | CREATE TABLE ID_AMENDED LBRACE attr_def attr_def_list RBRACE create_table_select
     {
       $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
       CreateTableSqlNode &create_table = $$->create_table;
@@ -431,7 +432,7 @@ create_table_stmt:    /*create table 语句的语法解析树*/
 
       create_table.as_select = std::unique_ptr<SelectSqlNode>($8);
     }
-    | CREATE TABLE ID create_table_select
+    | CREATE TABLE ID_AMENDED create_table_select
     {
       $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
       CreateTableSqlNode &create_table = $$->create_table;
@@ -443,7 +444,7 @@ create_table_stmt:    /*create table 语句的语法解析树*/
     ;
 
 create_view_stmt:    /*create table 语句的语法解析树*/
-    CREATE VIEW ID LBRACE attr_def attr_def_list RBRACE create_table_select
+    CREATE VIEW ID_AMENDED LBRACE attr_def attr_def_list RBRACE create_table_select
     {
       $$ = new ParsedSqlNode(SCF_CREATE_VIEW);
       CreateViewSqlNode &create_view = $$->create_view;
@@ -462,7 +463,7 @@ create_view_stmt:    /*create table 语句的语法解析树*/
 
       create_view.as_select = std::unique_ptr<SelectSqlNode>($8);
     }
-    | CREATE VIEW ID create_table_select
+    | CREATE VIEW ID_AMENDED create_table_select
     {
       $$ = new ParsedSqlNode(SCF_CREATE_VIEW);
       CreateViewSqlNode &create_view = $$->create_view;
@@ -504,7 +505,7 @@ is_nullable:
   ;
 
 attr_def:
-    ID type LBRACE number RBRACE is_nullable
+    ID_AMENDED type LBRACE number RBRACE is_nullable
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
@@ -513,7 +514,7 @@ attr_def:
       $$->null_unsolved = $6;
       free($1);
     }
-    | ID type is_nullable
+    | ID_AMENDED type is_nullable
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
@@ -528,7 +529,7 @@ attr_def:
       $$->null_unsolved = $3;
       free($1);
     }
-    | ID is_nullable {
+    | ID_AMENDED is_nullable {
       $$ = new AttrInfoSqlNode;
       $$->name = $1;
       $$->type_unsolved = true;
@@ -551,19 +552,25 @@ alias:
   /* empty */ {
     $$ = nullptr;
   }
-  | ID {
+  | ID_AMENDED {
     $$ = $1;
   }
-  | AS ID {
+  | AS ID_AMENDED {
     $$ = $2;
   }
-  | AS DATA {
+  ;
+
+ID_AMENDED:
+  ID {
+    $$ = $1;
+  }
+  | DATA {
     $$ = strdup("data");
   }
   ;
 
 insert_stmt:        /*insert   语句的语法解析树*/
-    INSERT INTO ID VALUES insert_row_list 
+    INSERT INTO ID_AMENDED VALUES insert_row_list 
     {
       $$ = new ParsedSqlNode(SCF_INSERT);
       $$->insertion.relation_name = $3;
@@ -635,7 +642,7 @@ value:
     ;
     
 delete_stmt:    /*  delete 语句的语法解析树*/
-    DELETE FROM ID where 
+    DELETE FROM ID_AMENDED where 
     {
       $$ = new ParsedSqlNode(SCF_DELETE);
       $$->deletion.relation_name = $3;
@@ -647,7 +654,7 @@ delete_stmt:    /*  delete 语句的语法解析树*/
     }
     ;
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID update_list where 
+    UPDATE ID_AMENDED update_list where 
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
@@ -916,19 +923,19 @@ select_attr:
   ;
 
 rel_attr:
-    ID {
+    ID_AMENDED {
       $$ = new RelAttrSqlNode;
       $$->attribute_name = $1;
       free($1);
     }
-    | ID DOT ID {
+    | ID_AMENDED DOT ID_AMENDED {
       $$ = new RelAttrSqlNode;
       $$->relation_name  = $1;
       $$->attribute_name = $3;
       free($1);
       free($3);
     }
-    | ID DOT '*' {
+    | ID_AMENDED DOT '*' {
       $$ = new RelAttrSqlNode;
       $$->relation_name  = $1;
       $$->attribute_name = "*";
@@ -982,7 +989,7 @@ dyn_node:
   ;
 
 relation: 
-  ID alias {
+  ID_AMENDED alias {
     $$ = new RelSqlNode;
     $$->relation = $1;
     free($1);
@@ -1214,7 +1221,7 @@ join_list:
   /* EMPTY */{
     $$ = new std::deque<JoinSqlNode>();
   }
-	| INNER JOIN ID join_conditions join_list {
+	| INNER JOIN ID_AMENDED join_conditions join_list {
 		$$ = $5;
 		JoinSqlNode join;
 		join.relation = $3;
@@ -1325,7 +1332,7 @@ update_list:
 	;
 
 update_pair:
-	ID EQ value_list_cell {
+	ID_AMENDED EQ value_list_cell {
 		$$ = new UpdatePairSqlNode();
     $$->attr.attribute_name = $1;
 		$$->is_select = false;
@@ -1333,7 +1340,7 @@ update_pair:
 		delete $3;
     free($1);
 	}
-	| ID EQ LBRACE select RBRACE {
+	| ID_AMENDED EQ LBRACE select RBRACE {
 		$$ = new UpdatePairSqlNode();
     $$->attr.attribute_name = $1;
 		$$->is_select = true;
@@ -1344,7 +1351,7 @@ update_pair:
 	;
 
 load_data_stmt:
-    LOAD DATA INFILE SSS INTO TABLE ID 
+    LOAD DATA INFILE SSS INTO TABLE ID_AMENDED 
     {
       char *tmp_file_name = common::substr($4, 1, strlen($4) - 2);
       
@@ -1365,7 +1372,7 @@ explain_stmt:
     ;
 
 set_variable_stmt:
-    SET ID EQ value
+    SET ID_AMENDED EQ value
     {
       $$ = new ParsedSqlNode(SCF_SET_VARIABLE);
       $$->set_variable.name  = $2;
