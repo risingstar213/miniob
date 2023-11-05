@@ -29,6 +29,13 @@ See the Mulan PSL v2 for more details. */
 #include "storage/index/bplus_tree_index.h"
 #include "storage/trx/trx.h"
 
+#include "sql/operator/physical_operator.h"
+#include "sql/stmt/select_stmt.h"
+#include "sql/expr/expression.h"
+
+#include "sql/optimizer/logical_plan_generator.h"
+#include "sql/optimizer/physical_plan_generator.h"
+
 Table::~Table()
 {
   if (record_handler_ != nullptr) {
@@ -46,6 +53,16 @@ Table::~Table()
     delete index;
   }
   indexes_.clear();
+
+  // if (view_stmt_ != nullptr) {
+  //   delete view_stmt_;
+  //   view_stmt_ = nullptr;
+  // }
+
+  if (view_operator_ != nullptr) {
+    delete view_operator_;
+    view_operator_ = nullptr;
+  }
 
   LOG_INFO("Table has been closed: %s", name());
 }
@@ -124,6 +141,238 @@ RC Table::create(int32_t table_id,
   base_dir_ = base_dir;
   LOG_INFO("Successfully create table %s:%s", base_dir, name);
   return rc;
+}
+
+RC Table::create_view(int table_id,
+                const char *name,
+                int attribute_count,
+                const AttrInfoSqlNode attributes[],
+                SelectStmt *view_stmt)
+{
+  if (table_id < 0) {
+    LOG_WARN("invalid table id. table_id = %d, view_name=%s", table_id, name);
+  }
+
+  if (common::is_blank(name)) {
+    LOG_WARN("Name cannot be empty");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  LOG_INFO("Begin to create view %s", name);
+
+  if (attribute_count <= 0 || nullptr == attributes) {
+    LOG_WARN("Invalid arguments. table_name=%s, attribute_count=%d, attributes=%p", name, attribute_count, attributes);
+    return RC::INVALID_ARGUMENT;
+  }
+
+  RC rc = RC::SUCCESS;
+  // no persistence temporarily
+  if ((rc = table_meta_.init(table_id, name, attribute_count, attributes)) != RC::SUCCESS) {
+    LOG_ERROR("Failed to init table meta. name:%s, ret:%d", name, rc);
+    return rc;  // delete table file
+  }
+
+  Table *table = view_stmt->tables()[0];
+  auto &exprs = view_stmt->query_exprs();
+  for (int i = 0; i < exprs.size(); i++) {
+    FieldExpr *expr = dynamic_cast<FieldExpr *>(exprs[i]);
+    view_field_metas_.emplace_back(expr->field().meta());
+  }
+
+  is_view_ = true;
+  // view_stmt_ = view_stmt;
+
+  view_can_update_ = view_check_can_update(view_stmt);
+  view_table_ = view_stmt->tables()[0];
+
+  std::unique_ptr<LogicalOperator> logical_oper;
+  LogicalPlanGenerator logical_generator;
+  logical_generator.create(view_stmt, logical_oper);
+  PhysicalPlanGenerator physical_generator;
+  std::unique_ptr<PhysicalOperator> physical_oper;
+  physical_generator.create(*logical_oper, physical_oper);
+  view_operator_ = physical_oper.release();
+
+  return RC::SUCCESS;
+}
+
+void Table::set_view_trx(Trx *trx)
+{
+  view_trx_ = trx;
+}
+
+bool Table::view_check_can_update(SelectStmt *view_stmt)
+{
+  if (view_stmt->order_fields().size() > 0 || view_stmt->group_fields().size() >0 ) {
+    return false;
+  }
+  if (view_stmt->has_aggregation()) {
+    return false;
+  }
+
+  auto &exprs = view_stmt->query_exprs();
+  for (int i = 0; i < exprs.size(); i++) {
+    if (exprs[i]->type() != ExprType::FIELD) {
+      return false;
+    }
+  }
+
+  if (view_stmt->tables().size() > 1) {
+    return false;
+  }
+
+  return true;
+}
+
+static int find_index_in_tuple(Table *table, const FieldMeta* field)
+{
+  int field_num = table->table_meta().field_num();
+  int sys_field_num = table->table_meta().sys_field_num();
+  for (int i = 0; i < field_num - sys_field_num; i++) {
+    if (table->table_meta().field(i + sys_field_num)->name() == field->name()) {
+      return i;
+    }
+  }
+  return 0;
+}
+
+RC Table::view_insert_record(std::vector<Value> values)
+{
+  if (!view_can_update_) {
+    return RC::INTERNAL;
+  }
+
+  Table *table = view_table_; // view_stmt_->tables()[0];
+  
+  std::vector<Value> new_values;
+  Value temp;
+  int field_num = table->table_meta().field_num();
+  int sys_field_num = table->table_meta().sys_field_num();
+  for (int i = sys_field_num; i < field_num; i++) {
+    table->table_meta().field(i);
+    temp.cast_to_null(table->table_meta().field(i)->type());
+    new_values.emplace_back(temp);
+  }
+
+  for (int i = 0; i < view_field_metas_.size(); i++) {
+    // FieldExpr *expr = dynamic_cast<FieldExpr *>(exprs[i]);
+    int field_index = find_index_in_tuple(table, view_field_metas_[i]);
+    new_values[field_index] = values[i];
+  }
+
+  // check null
+  for (int i = 0; i < field_num - sys_field_num; i++) {
+    if (new_values[i].is_null() && !table->table_meta().field(i + sys_field_num)->nullable()) {
+      return RC::INTERNAL;
+    }
+  }
+
+  Record new_record;
+  RC rc = table->make_record(new_values.size(), new_values.data(), new_record);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+
+  rc = table->resolve_unique_before_insert(view_trx_, &new_record);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  
+  rc = table->insert_record(new_record);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  return RC::SUCCESS;
+}
+
+RC Table::view_delete_record()
+{
+  if (!view_can_update_) {
+    return RC::INTERNAL;
+  }
+
+  Table *table = view_table_; // view_stmt_->tables()[0];
+
+  Record *record;
+  if (!view_operator_->current_tuple()->get_record(table, record)) {
+    return RC::INTERNAL;
+  }
+  // delete it straightly
+  RC rc = view_trx_->delete_record(table, *record);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to delete record: %s", strrc(rc));
+    return rc;
+  }
+  return RC::SUCCESS;
+}
+
+RC Table::view_update_record(std::vector<Value> values)
+{
+  if (!view_can_update_) {
+    return RC::INTERNAL;
+  }
+
+  Table *table = view_table_; // view_stmt_->tables()[0];
+
+  Record *record;
+  if (!view_operator_->current_tuple()->get_record(table, record)) {
+    return RC::INTERNAL;
+  }
+
+  std::vector<Value> new_values;
+  int field_num = table->table_meta().field_num();
+  int sys_field_num = table->table_meta().sys_field_num();
+  for (int i = sys_field_num; i < field_num; i++) {
+    Value temp;
+    // RC rc = row_tuple->cell_at(i, temp);
+    // if (rc != RC::SUCCESS) {
+    //   return rc;
+    // }
+
+    const FieldMeta *field_meta = table->table_meta().field(i);
+    temp.set_type(field_meta->type());
+    temp.set_data(record->data() + field_meta->offset(), field_meta->len());
+    if (field_meta->nullable()) {
+      temp.set_null(*(bool *)(record->data() + field_meta->offset() - 1));
+    } else {
+      temp.set_null(false);
+    }
+    new_values.emplace_back(temp);
+  }
+
+  // auto &exprs = view_stmt_->query_exprs();
+  for (int i = 0; i < view_field_metas_.size(); i++) {
+    // FieldExpr *expr = dynamic_cast<FieldExpr *>(exprs[i]);
+    int field_index = find_index_in_tuple(table, view_field_metas_[i]);
+    new_values[field_index] = values[i];
+  }
+
+  // check null
+  for (int i = 0; i < field_num - sys_field_num; i++) {
+    if (new_values[i].is_null() && !table->table_meta().field(i + sys_field_num)->nullable()) {
+      return RC::INTERNAL;
+    }
+  }
+
+  Record new_record;
+  RC rc = table->make_record(new_values.size(), new_values.data(), new_record);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+
+  rc = table->resolve_unique_before_update(view_trx_, record, &new_record);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+
+  rc = view_trx_->update_record(table, *record, new_record);
+
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to update record: %s", strrc(rc));
+    return rc;
+  }
+
+  return RC::SUCCESS;
 }
 
 RC Table::remove(const char *name)

@@ -27,7 +27,17 @@ RC InsertPhysicalOperator::open(Trx *trx)
 {
   RC rc = RC::SUCCESS;
   for (int i = 0; i < rows_.size(); i++) {
-   std::vector<Value> values_ = rows_[i];
+    std::vector<Value> values_ = rows_[i];
+
+    if (table_->is_view()) {
+      rc = table_->view_insert_record(values_);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      continue;
+    }
+
+
     Record record;
     rc = table_->make_record(static_cast<int>(values_.size()), values_.data(), record);
     if (rc != RC::SUCCESS) {

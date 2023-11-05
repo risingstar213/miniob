@@ -43,10 +43,13 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
   const char *table_name = create_table_stmt->table_name().c_str();
   RC rc = session->get_current_db()->create_table(table_name, attribute_count, create_table_stmt->attr_infos().data());
 
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
   // insert
   auto &select_stmt = create_table_stmt->select_stmt();
   if (select_stmt == nullptr) {
-    return rc;
+    return RC::SUCCESS;
   }
 
   Table *table = session->get_current_db()->find_table(table_name);

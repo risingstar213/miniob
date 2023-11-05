@@ -24,6 +24,7 @@ See the Mulan PSL v2 for more details. */
 
 class Table;
 class CLogManager;
+class SelectStmt;
 
 /**
  * @brief 一个DB实例负责管理一批表
@@ -46,6 +47,8 @@ public:
   RC init(const char *name, const char *dbpath);
 
   RC create_table(const char *table_name, int attribute_count, const AttrInfoSqlNode *attributes);
+
+  RC create_view(const char *table_name, int attribute_count, const AttrInfoSqlNode *attributes, SelectStmt *view_stmt);
 
   RC drop_table(const char *table_name);
 

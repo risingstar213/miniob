@@ -29,6 +29,8 @@ class Index;
 class IndexScanner;
 class RecordDeleter;
 class Trx;
+class SelectStmt;
+class PhysicalOperator;
 
 /**
  * @brief 表
@@ -123,10 +125,48 @@ public:
   Index *find_index(const char *index_name) const;
   Index *find_index_by_field(std::vector<std::string> field_name) const;
 
+public:
+  // view
+  RC create_view(int table_id,
+                const char *name,
+                int attribute_count,
+                const AttrInfoSqlNode attributes[], 
+                SelectStmt *view_stmt);
+
+  // only one view is used !
+
+  void set_view_trx(Trx *trx);
+
+  bool view_check_can_update(SelectStmt *view_stmt);
+
+  RC view_insert_record(std::vector<Value> values);
+  RC view_delete_record();
+  RC view_update_record(std::vector<Value> values);
+
+  bool is_view() const {
+    return is_view_;
+  }
+
+  PhysicalOperator *view_operator()
+  {
+    return view_operator_;
+  }
+
+  // SelectStmt* view_stmt() const {
+  //   return view_stmt_;
+  // }
+
 private:
   std::string base_dir_;
   TableMeta   table_meta_;
   DiskBufferPool *data_buffer_pool_ = nullptr;   /// 数据文件关联的buffer pool
   RecordFileHandler *record_handler_ = nullptr;  /// 记录操作
   std::vector<Index *> indexes_;
+  bool is_view_ = false;
+  bool view_can_update_ = false;
+  // SelectStmt *view_stmt_ = nullptr;
+  Table * view_table_;
+  std::vector<const FieldMeta *> view_field_metas_;
+  PhysicalOperator *view_operator_ = nullptr;
+  Trx * view_trx_ = nullptr;
 };

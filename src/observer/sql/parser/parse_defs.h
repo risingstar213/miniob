@@ -340,6 +340,13 @@ struct CreateTableSqlNode
   std::unique_ptr<SelectSqlNode> as_select;
 };
 
+struct CreateViewSqlNode
+{
+  std::string          relation_name;
+  std::deque<AttrInfoSqlNode> attr_infos;
+  std::unique_ptr<SelectSqlNode> as_select;
+};
+
 
 struct ShowIndexSqlNode
 {
@@ -452,6 +459,7 @@ enum SqlCommandFlag
   SCF_CREATE_TABLE,
   SCF_DROP_TABLE,
   SCF_CREATE_INDEX,
+  SCF_CREATE_VIEW,
   SCF_DROP_INDEX,
   SCF_SYNC,
   SCF_SHOW_TABLES,
@@ -482,6 +490,7 @@ public:
   DeleteSqlNode             deletion;
   UpdateSqlNode             update;
   CreateTableSqlNode        create_table;
+  CreateViewSqlNode         create_view;
   DropTableSqlNode          drop_table;
   CreateIndexSqlNode        create_index;
   DropIndexSqlNode          drop_index;

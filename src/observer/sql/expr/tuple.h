@@ -126,6 +126,8 @@ public:
     }
     return str;
   }
+
+  virtual bool get_record(Table *table, Record *&record) const = 0;
 };
 
 /**
@@ -208,6 +210,16 @@ public:
       }
     }
     return RC::NOTFOUND;
+  }
+
+  virtual bool get_record(Table *table, Record *&record) const
+  {
+    const char *table_name = table->name();
+    if (0 != strcmp(table_name, table_->name())) {
+      return false;
+    }
+    record = record_;
+    return true;
   }
 
 #if 0
@@ -304,6 +316,11 @@ public:
     return RC::NOTFOUND;
   }
 
+  virtual bool get_record(Table *table, Record *&record) const
+  {
+    return tuple_->get_record(table, record);
+  }
+
 #if 0
   RC cell_spec_at(int index, const TupleCellSpec *&spec) const override
   {
@@ -356,6 +373,11 @@ public:
     return RC::NOTFOUND;
   }
 
+  virtual bool get_record(Table *table, Record *&record) const
+  {
+    return false;
+  }
+
 
 private:
   const std::vector<std::unique_ptr<Expression>> &expressions_;
@@ -395,6 +417,12 @@ public:
   {
     return RC::INTERNAL;
   }
+
+  virtual bool get_record(Table *table, Record *&record) const
+  {
+    return false;
+  }
+
 
 private:
   std::vector<Value> cells_;
@@ -448,6 +476,15 @@ public:
 
     return right_->find_cell(spec, value);
   }
+
+  virtual bool get_record(Table *table, Record *&record) const
+  {
+    if (left_->get_record(table, record)) {
+      return true;
+    }
+    return right_->get_record(table, record);
+  }
+
 
 private:
   Tuple *left_ = nullptr;
@@ -647,6 +684,11 @@ public:
     return cells_;
   }
 
+  virtual bool get_record(Table *table, Record *&record) const
+  {
+    return false;
+  }
+
 private:
   // A group of Tuple
   int count_;
@@ -718,6 +760,11 @@ public:
   std::vector<TupleCellSpec> get_speces_()
   {
     return cells_;
+  }
+
+  virtual bool get_record(Table *table, Record *&record) const
+  {
+    return false;
   }
 
 private:

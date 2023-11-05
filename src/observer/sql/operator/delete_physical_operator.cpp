@@ -51,6 +51,14 @@ RC DeletePhysicalOperator::next()
       LOG_WARN("failed to get current record: %s", strrc(rc));
       return rc;
     }
+    
+    if (table_->is_view()) {
+      rc = table_->view_delete_record();
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      continue;
+    }
 
     RowTuple *row_tuple = static_cast<RowTuple *>(tuple);
     Record &record = row_tuple->record();

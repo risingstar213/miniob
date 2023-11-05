@@ -50,7 +50,7 @@ int UpdatePhysicalOperator::find_index_in_tuple(const FieldMeta* field)
 {
   int field_num = table_->table_meta().field_num();
   int sys_field_num = table_->table_meta().sys_field_num();
-  for (int i = 0; i < field_num; i++) {
+  for (int i = 0; i < field_num - sys_field_num; i++) {
     if (table_->table_meta().field(i + sys_field_num)->name() == field->name()) {
       return i;
     }
@@ -113,6 +113,15 @@ RC UpdatePhysicalOperator::next()
 
     Record &old_record = row_tuple->record();
     Record new_record;
+
+    if (table_->is_view()) {
+      rc = table_->view_update_record(new_values);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      continue;
+    }
+
     rc = table_->make_record(static_cast<int>(new_values.size()), new_values.data(), new_record);
 
     if (rc != RC::SUCCESS) {

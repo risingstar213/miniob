@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/table_get_logical_operator.h"
 #include "sql/operator/table_scan_physical_operator.h"
 #include "sql/operator/index_scan_physical_operator.h"
+#include "sql/operator/view_scan_physical_operator.h"
 #include "sql/operator/predicate_logical_operator.h"
 #include "sql/operator/predicate_physical_operator.h"
 #include "sql/operator/project_logical_operator.h"
@@ -158,6 +159,11 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
     index_scan_oper->set_predicates(std::move(predicates));
     oper = unique_ptr<PhysicalOperator>(index_scan_oper);
     LOG_TRACE("use index scan");
+  } else if (table->is_view()) {
+    auto view_scan_oper = new ViewScanPhysicalOperator(table, table->view_operator());
+    view_scan_oper->set_predicates(std::move(predicates));
+    oper = unique_ptr<PhysicalOperator>(view_scan_oper);
+    LOG_TRACE("use view scan");
   } else {
     auto table_scan_oper = new TableScanPhysicalOperator(table, table_get_oper.readonly());
     table_scan_oper->set_predicates(std::move(predicates));

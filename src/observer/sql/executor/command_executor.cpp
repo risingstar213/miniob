@@ -26,6 +26,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/executor/trx_end_executor.h"
 #include "sql/executor/set_variable_executor.h"
 #include "sql/executor/load_data_executor.h"
+#include "sql/executor/create_view_executor.h"
 #include "common/log/log.h"
 
 RC CommandExecutor::execute(SQLStageEvent *sql_event)
@@ -40,6 +41,11 @@ RC CommandExecutor::execute(SQLStageEvent *sql_event)
 
     case StmtType::CREATE_TABLE: {
       CreateTableExecutor executor;
+      return executor.execute(sql_event);
+    } break;
+
+    case StmtType::CREATE_VIEW: {
+      CreateViewExecutor executor;
       return executor.execute(sql_event);
     } break;
 

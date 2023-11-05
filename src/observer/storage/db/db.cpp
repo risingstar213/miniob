@@ -101,6 +101,29 @@ RC Db::create_table(const char *table_name, int attribute_count, const AttrInfoS
   return RC::SUCCESS;
 }
 
+RC Db::create_view(const char *table_name, int attribute_count, const AttrInfoSqlNode *attributes, SelectStmt *view_stmt)
+{
+  RC rc = RC::SUCCESS;
+  // check table_name
+  if (opened_tables_.count(table_name) != 0) {
+    LOG_WARN("%s has been opened before.", table_name);
+    return RC::SCHEMA_TABLE_EXIST;
+  }
+
+  Table *table = new Table();
+  int32_t table_id = next_table_id_++;
+  rc = table->create_view(table_id, table_name, attribute_count, attributes, view_stmt);
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Failed to create table %s.", table_name);
+    delete table;
+    return rc;
+  }
+
+  opened_tables_[table_name] = table;
+  LOG_INFO("Create view success. table name=%s, table_id:%d", table_name, table_id);
+  return RC::SUCCESS;
+}
+
 RC Db::drop_table(const char *table_name)
 {
   // check table_name
