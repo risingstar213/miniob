@@ -28,10 +28,12 @@ RC CreateViewStmt::create(Db *db, const CreateViewSqlNode &create_view, Stmt *&s
 
     for (int i = 0; i < exprs.size(); i++) {
       AttrType type = exprs[i]->value_type();
-      if (has_attr_defs && type == attr_infos[i].type) {
-        continue;
-      } else if (has_attr_defs) {
-        return RC::INVALID_ARGUMENT;
+      if (has_attr_defs && !attr_infos[i].type_unsolved) {
+        if (attr_infos[i].type != type) {
+            return RC::INVALID_ARGUMENT;
+        } else {
+            return RC::SUCCESS;
+        }
       }
 
       size_t length = 4;
@@ -40,12 +42,19 @@ RC CreateViewStmt::create(Db *db, const CreateViewSqlNode &create_view, Stmt *&s
       } else if (type == TEXTS) {
         length = 50;
       }
+      // type unsolved
+      if (has_attr_defs) {
+        attr_infos[i].type = type;
+        attr_infos[i].length = length;
+        continue;
+      }
       attr_infos.emplace_back(AttrInfoSqlNode{
         type,
         alias[i],
         length,
         false,
         -1,
+        false
       });
     }
   }

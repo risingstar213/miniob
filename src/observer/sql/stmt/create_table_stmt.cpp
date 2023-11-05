@@ -42,7 +42,9 @@ RC CreateTableStmt::create(Db *db, const CreateTableSqlNode &create_table, Stmt 
 
     for (int i = 0; i < exprs.size(); i++) {
       AttrType type = exprs[i]->value_type();
-      if (has_attr_defs && type == attr_infos[i].type) {
+      if (attr_infos[i].type_unsolved) {
+        return RC::INVALID_ARGUMENT;
+      } else if (has_attr_defs && type == attr_infos[i].type) {
         continue;
       } else if (has_attr_defs) {
         return RC::INVALID_ARGUMENT;
@@ -60,6 +62,7 @@ RC CreateTableStmt::create(Db *db, const CreateTableSqlNode &create_table, Stmt 
         length,
         false,
         -1,
+        false
       });
     }
   }

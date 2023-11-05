@@ -510,7 +510,7 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
-      $$->unsolved = $6;
+      $$->null_unsolved = $6;
       free($1);
     }
     | ID type is_nullable
@@ -525,7 +525,14 @@ attr_def:
       } else {
         $$->length = 4;
       }
-      $$->unsolved = $3;
+      $$->null_unsolved = $3;
+      free($1);
+    }
+    | ID is_nullable {
+      $$ = new AttrInfoSqlNode;
+      $$->name = $1;
+      $$->type_unsolved = true;
+      $$->null_unsolved = $2;
       free($1);
     }
     ;

@@ -21,9 +21,9 @@ public:
   {
     for (size_t i = 0; i < attr_infos.size(); i++) {
       attr_infos_.push_back(attr_infos[i]);
-      if (attr_infos[i].unsolved == 0) {
+      if (attr_infos[i].null_unsolved == 0) {
         attr_infos_[i].nullable = false;
-      } else if (attr_infos[i].unsolved == 1) {
+      } else if (attr_infos[i].null_unsolved == 1) {
         attr_infos_[i].nullable = true;
       } else if (i == 0) {
         attr_infos_[i].nullable = false;
