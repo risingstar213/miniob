@@ -143,8 +143,10 @@ RC LogicalPlanGenerator::create_plan(
 
     for (int i = 0; i < table->table_meta().field_num(); i++) {
       const FieldMeta *field_meta = table->table_meta().field(i);
-      fields.push_back(Field(table, field_meta));
-      all_fields.push_back(Field(table, field_meta));
+      Field now_field(table, field_meta);
+      now_field.set_table_alias(table_alias[iter_times]);
+      fields.push_back(now_field);
+      all_fields.push_back(now_field);
     }
 
     unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, table_alias[iter_times], fields, true/*readonly*/));

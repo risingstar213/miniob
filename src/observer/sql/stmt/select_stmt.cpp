@@ -98,6 +98,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, std::unordered_map<std:
     }
 
     tables.push_back(table);
+    table_alias.push_back(table_name);
     table_map.insert(std::pair<std::string, Table *>(table_name, table));
     alias_map.insert(std::pair<std::string, std::string>(table_name, table_name));
 
