@@ -9,7 +9,7 @@
 
 static bool check_field(Field &rel_field, Field &target_field)
 {
-  if (strcmp(rel_field.table_name(), target_field.table_name()) == 0) {
+  if (strcmp(rel_field.get_table_alias().c_str(), target_field.get_table_alias().c_str()) == 0) {
     if (strcmp(rel_field.field_name(), target_field.field_name()) == 0) {
       return true;
     }
@@ -78,6 +78,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
       }
 
       table = tables[0];
+      expr.attr->node.relation_name = tables_map.begin()->first;
       // if (table->name() != expr.attr->node.relation_name) {
       //   LOG_WARN("invalid. I do not know the attr's table. table=%s", expr.attr->node.relation_name.c_str());
       //   return RC::SCHEMA_FIELD_MISSING;
@@ -113,6 +114,7 @@ RC check_select_expression_valid(ExprSqlNode &expr, int depth, std::vector<Table
     if (group_fields != nullptr) {
       for (auto &field : *group_fields) {
         Field expr_field = Field(expr.table_, expr.field_);
+        expr_field.set_table_alias(expr.attr->node.relation_name);
         if (check_field(expr_field, field)) {
           expr.aggregation_num += 1;
         }
